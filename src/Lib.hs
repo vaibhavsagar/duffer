@@ -58,26 +58,23 @@ hash :: GitObject -> String
 hash object = showDigest $ sha1 $ fromStrict $ stored object
 
 parseBlob :: Parser GitObject
-parseBlob =
-    do string "blob "
-       digit `manyTill` char '\NUL'
-       content <- takeByteString
-       return $ Blob content
+parseBlob = do
+    string "blob " >> digit `manyTill` char '\NUL'
+    content <- takeByteString
+    return $ Blob content
 
 parseTree :: Parser GitObject
-parseTree =
-    do string "tree "
-       digit `manyTill` char '\NUL'
-       entries <- many1 treeEntry
-       endOfInput
-       return $ Tree entries
+parseTree = do
+    string "tree " >> digit `manyTill` char '\NUL'
+    entries <- many1 treeEntry
+    return $ Tree entries
 
 treeEntry :: Parser TreeEntry
-treeEntry =
-    do mode     <- digit `manyTill` space
-       filename <- anyChar `manyTill` char '\NUL'
-       sha1     <- take 20
-       return $ readTreeEntry mode filename sha1
+treeEntry = do
+    mode     <- digit `manyTill` space
+    filename <- anyChar `manyTill` char '\NUL'
+    sha1     <- take 20
+    return $ readTreeEntry mode filename sha1
 
 readTreeEntry :: String -> String -> ByteString -> TreeEntry
 readTreeEntry modeString filenameString sha1String =
