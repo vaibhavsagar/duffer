@@ -4,8 +4,9 @@ module Lib where
 
 import Prelude hiding (concat, length, take)
 import Codec.Compression.Zlib (compress, decompress)
+import Control.Applicative ((<|>))
 import Data.List (intercalate)
-import Data.ByteString (ByteString, length, concat, pack, unpack)
+import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents)
 import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.Base16
 import Data.Digest.Pure.SHA (sha1, showDigest)
@@ -14,15 +15,18 @@ import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString.UTF8 (fromString, toString)
 
-data GitObject = Blob {content :: ByteString}
-               | Tree {entries :: [TreeEntry]}
+data GitObject = Blob {content          :: ByteString}
+               | Tree {entries          :: [TreeEntry]}
+               | Commit { treeRef       :: String
+                        , parentRefs    :: [String]
+                        , authorTime    :: String
+                        , committerTime :: String
+                        , message       :: String}
                deriving (Show)
 
-data TreeEntry = TreeEntry {
-                   entryMode :: Int,
-                   entryName :: String,
-                   entrySha1 :: String
-                 }
+data TreeEntry = TreeEntry { entryMode :: Int
+                           , entryName :: String
+                           , entrySha1 :: String}
                 deriving (Show)
 
 -- Given a directory and a SHA1 hash, generate a filepath
