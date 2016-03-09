@@ -90,3 +90,24 @@ showTreeEntry (TreeEntry mode name sha1) =
         sha1String = fst $ decode $ fromString sha1
         entryString = concat [modeString, " ", nameString, "\NUL", sha1String]
     in entryString
+
+parseCommit :: Parser GitObject
+parseCommit = do
+    string "commit " >> digit `manyTill` char '\NUL'
+    string "tree "
+    treeRef <- anyChar `manyTill` char '\n'
+    parentRefs <- many' parseParentRef
+    string "author"
+    authorTime <- anyChar `manyTill` char '\n'
+    string "committer"
+    committerTime <- anyChar `manyTill` char '\n'
+    char '\n'
+    msg <- takeByteString
+    let message = init $ toString msg
+    return $ Commit treeRef parentRefs authorTime committerTime message
+
+parseParentRef :: Parser String
+parseParentRef = do
+    string "parent"
+    commitRef <- anyChar `manyTill` char '\n'
+    return commitRef
