@@ -34,6 +34,11 @@ sha1Path :: String -> String -> String
 sha1Path directory (s1:s2:suffix) = intercalate "/" components
     where components = [directory, "objects", [s1,s2], suffix]
 
+-- Given a directory and a SHA1 hash, generate a directory
+sha1Dir :: String -> String -> String
+sha1Dir directory (s1:s2:suffix) = intercalate "/" components
+    where components = [directory, "objects", [s1,s2]]
+
 blobCreate :: String -> GitObject
 blobCreate string = Blob (fromString string)
 
