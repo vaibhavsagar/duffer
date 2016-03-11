@@ -116,3 +116,5 @@ parseParentRef = do
     string "parent"
     commitRef <- anyChar `manyTill` char '\n'
     return commitRef
+
+parseObject = parseBlob <|> parseTree <|> parseCommit
