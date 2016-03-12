@@ -14,6 +14,7 @@ import Numeric (showHex, readHex, showOct, readOct)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString.UTF8 (fromString, toString)
+import System.IO (openBinaryFile, IOMode(ReadMode))
 
 data GitObject = Blob {content          :: ByteString}
                | Tree {entries          :: [TreeEntry]}
@@ -118,3 +119,10 @@ parseParentRef = do
     return commitRef
 
 parseObject = parseBlob <|> parseTree <|> parseCommit
+
+readObject :: String -> IO (Either String GitObject)
+readObject path = do
+    handle      <- openBinaryFile path ReadMode
+    compressed  <- hGetContents handle
+    let decompressed = toStrict $ decompress $ fromStrict compressed
+    return (parseOnly parseObject decompressed)
