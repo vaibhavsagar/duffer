@@ -23,6 +23,7 @@ library
                      , SHA
                      , base16-bytestring
                      , attoparsec
+                     , directory
   default-language:    Haskell2010
 
 executable duffer-exe

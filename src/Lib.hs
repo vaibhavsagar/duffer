@@ -6,7 +6,7 @@ import Prelude hiding (concat, length, take)
 import Codec.Compression.Zlib (compress, decompress)
 import Control.Applicative ((<|>))
 import Data.List (intercalate)
-import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents)
+import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents, hPut)
 import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.Base16
 import Data.Digest.Pure.SHA (sha1, showDigest)
@@ -14,7 +14,8 @@ import Numeric (showHex, readHex, showOct, readOct)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString.UTF8 (fromString, toString)
-import System.IO (openBinaryFile, IOMode(ReadMode))
+import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
+import System.Directory (doesFileExist, createDirectoryIfMissing)
 
 data GitObject = Blob {content          :: ByteString}
                | Tree {entries          :: [TreeEntry]}
@@ -126,3 +127,16 @@ readObject path = do
     compressed  <- hGetContents handle
     let decompressed = toStrict $ decompress $ fromStrict compressed
     return (parseOnly parseObject decompressed)
+
+writeObject :: String -> GitObject -> IO String
+writeObject dir object = do
+    let objectHash = hash object
+    let path = sha1Path dir objectHash
+    fileExists <- doesFileExist path
+    if fileExists
+        then return objectHash
+        else do
+            createDirectoryIfMissing True $ sha1Dir dir objectHash
+            handle <- openBinaryFile path WriteMode
+            hPut handle $ toStrict $ compress $ fromStrict $ stored object
+            return objectHash
