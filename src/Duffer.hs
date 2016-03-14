@@ -1,21 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lib where
+module Duffer where
 
-import Prelude hiding (concat, length, take)
 import Codec.Compression.Zlib (compress, decompress)
 import Control.Applicative ((<|>))
-import Data.List (intercalate)
-import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents, hPut)
-import Data.ByteString.Lazy (toStrict, fromStrict)
-import Data.ByteString.Base16
-import Data.Digest.Pure.SHA (sha1, showDigest)
-import Numeric (showHex, readHex, showOct, readOct)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
+import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents, hPut)
+import Data.ByteString.Base16
+import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.UTF8 (fromString, toString)
-import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
+import Data.Digest.Pure.SHA (sha1, showDigest)
+import Data.List (intercalate)
+import Numeric (showHex, readHex, showOct, readOct)
+import Prelude hiding (concat, length, take)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
+import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
 
 data GitObject = Blob {content          :: ByteString}
                | Tree {entries          :: [TreeEntry]}
@@ -119,6 +119,7 @@ parseParentRef = do
     commitRef <- anyChar `manyTill` char '\n'
     return commitRef
 
+parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
 
 readObject :: String -> IO (Either String GitObject)

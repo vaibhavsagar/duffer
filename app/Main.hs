@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import Duffer
 
 main :: IO ()
-main = someFunc
+main = print "Hello world!"
