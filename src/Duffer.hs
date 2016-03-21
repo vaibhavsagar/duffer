@@ -103,7 +103,7 @@ parseCommit = do
     string "commit " >> digit `manyTill` char '\NUL'
     string "tree "
     treeRef <- anyChar `manyTill` char '\n'
-    parentRefs <- many' parseParentRef
+    parentRefs <- many' (string "parent " >> anyChar `manyTill` char '\n')
     string "author"
     authorTime <- anyChar `manyTill` char '\n'
     string "committer"
