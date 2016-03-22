@@ -113,12 +113,6 @@ parseCommit = do
     let message = init $ toString msg
     return $ Commit treeRef parentRefs authorTime committerTime message
 
-parseParentRef :: Parser String
-parseParentRef = do
-    string "parent"
-    commitRef <- anyChar `manyTill` char '\n'
-    return commitRef
-
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
 
