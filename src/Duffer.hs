@@ -64,6 +64,9 @@ stored (Tree entries) =
 hash :: GitObject -> String
 hash object = showDigest $ sha1 $ fromStrict $ stored object
 
+parseHeader :: ByteString -> Parser String
+parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
+
 parseBlob :: Parser GitObject
 parseBlob = do
     string "blob " >> digit `manyTill` char '\NUL'
