@@ -102,19 +102,19 @@ showTreeEntry (TreeEntry mode name sha1) =
     in entryString
 
 parseCommit :: Parser GitObject
-parseCommit = do
-    string "commit " >> digit `manyTill` char '\NUL'
-    string "tree "
-    treeRef <- anyChar `manyTill` char '\n'
-    parentRefs <- many' (string "parent " >> anyChar `manyTill` char '\n')
-    string "author"
-    authorTime <- anyChar `manyTill` char '\n'
-    string "committer"
-    committerTime <- anyChar `manyTill` char '\n'
+parseCommit = parseHeader "commit" >> do
+    string "tree "; treeRef <- parseRef
+    parentRefs <- many' (string "parent " >> parseRef)
+    string "author ";    authorTime    <- parseUserTime
+    string "committer "; committerTime <- parseUserTime
     char '\n'
     msg <- takeByteString
     let message = init $ toString msg
     return $ Commit treeRef parentRefs authorTime committerTime message
+    where
+        -- Same same but different.
+        parseRef = anyChar `manyTill` char '\n'
+        parseUserTime = anyChar `manyTill` char '\n'
 
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
