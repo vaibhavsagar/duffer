@@ -61,6 +61,13 @@ stored (Tree entries) =
         stored = concat [header, content]
     in stored
 
+makeStored :: String -> ByteString -> ByteString
+makeStored objectType content =
+    let len = contentLength content
+        header = concat [fromString $ objectType ++ " ", len, fromString "\NUL"]
+        stored = concat [header, content]
+    in stored
+
 hash :: GitObject -> String
 hash object = showDigest $ sha1 $ fromStrict $ stored object
 
