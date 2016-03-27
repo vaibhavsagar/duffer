@@ -49,17 +49,9 @@ contentLength content = fromString $ show $ length content
 
 -- Generate a stored representation of a git object.
 stored :: GitObject -> ByteString
-stored (Blob content) =
-    let len = contentLength content
-        header = concat [(fromString "blob "), len, (fromString "\NUL")]
-        stored = concat [header, content]
-    in stored
-stored (Tree entries) =
-    let content = concat $ map showTreeEntry entries
-        len = contentLength content
-        header = concat [(fromString "tree "), len, (fromString "\NUL")]
-        stored = concat [header, content]
-    in stored
+stored object = case object of
+    Blob content -> makeStored "blob" content
+    Tree entries -> makeStored "tree" $ concat $ map showTreeEntry entries
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content =
