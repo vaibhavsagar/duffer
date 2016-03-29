@@ -108,8 +108,7 @@ parseCommit = parseHeader "commit" >> do
     let message = init $ toString msg
     return $ Commit treeRef parentRefs authorTime committerTime message
     where
-        -- Same same but different.
-        parseRef = anyChar `manyTill` char '\n'
+        parseRef = take 40 >>= \ref -> char '\n' >> (return $ toString ref)
         parseUserTime = anyChar `manyTill` char '\n'
 
 parseObject :: Parser GitObject
