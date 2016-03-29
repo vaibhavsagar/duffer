@@ -122,14 +122,12 @@ readObject path = do
     return (parseOnly parseObject decompressed)
 
 writeObject :: String -> GitObject -> IO String
-writeObject dir object = do
+writeObject dir object =
     let objectHash = hash object
-    let path = sha1Path dir objectHash
-    fileExists <- doesFileExist path
-    if fileExists
-        then return objectHash
-        else do
-            createDirectoryIfMissing True $ sha1Dir dir objectHash
-            handle <- openBinaryFile path WriteMode
-            hPut handle $ toStrict $ compress $ fromStrict $ stored object
-            return objectHash
+        path = sha1Path dir objectHash
+    in doesFileExist path >>= \fileExists ->
+    if fileExists then return objectHash else do
+        createDirectoryIfMissing True $ sha1Dir dir objectHash
+        handle <- openBinaryFile path WriteMode
+        hPut handle $ toStrict $ compress $ fromStrict $ stored object
+        return objectHash
