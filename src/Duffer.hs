@@ -114,12 +114,12 @@ parseCommit = parseHeader "commit" >> do
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
 
-readObject :: String -> IO (Either String GitObject)
+readObject :: String -> IO GitObject
 readObject path = do
     handle      <- openBinaryFile path ReadMode
     compressed  <- hGetContents handle
     let decompressed = toStrict $ decompress $ fromStrict compressed
-    return (parseOnly parseObject decompressed)
+    either error return $ parseOnly parseObject decompressed
 
 writeObject :: String -> GitObject -> IO String
 writeObject dir object =
