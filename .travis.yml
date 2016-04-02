@@ -13,6 +13,7 @@ addons:
         - ghc-7.10.2
 
 before_install:
+- sh .ci/unpack.sh
 - mkdir -p $HOME/.local/bin
 - export PATH=/opt/ghc/7.10.2/bin:$HOME/.local/bin:$PATH
 - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
