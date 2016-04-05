@@ -27,4 +27,4 @@ objectsOfType objectType = do
 
 readHashObject :: String -> String -> Expectation
 readHashObject path sha1 =
-    readObject (sha1Path path sha1) >>= \object -> hash object `shouldBe` sha1
+    readObject path sha1 >>= \object -> hash (storedObject object) `shouldBe` sha1

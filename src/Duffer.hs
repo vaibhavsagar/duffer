@@ -31,6 +31,10 @@ data TreeEntry = TreeEntry { entryMode :: Int
                            , entrySha1 :: String}
                 deriving (Show)
 
+data StoredObject = StoredObject { repository   :: String
+                                 , storedObject :: GitObject}
+                  deriving (Show)
+
 -- Given a directory and a SHA1 hash, generate a filepath
 sha1Path :: String -> String -> String
 sha1Path directory (s1:s2:suffix) = intercalate "/" components
@@ -111,15 +115,17 @@ parseCommit = parseHeader "commit" >> do
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
 
-readObject :: String -> IO GitObject
-readObject path = do
+readObject :: String -> String -> IO StoredObject
+readObject repo sha1 = do
+    let path = sha1Path repo sha1
     handle      <- openBinaryFile path ReadMode
     compressed  <- hGetContents handle
     let decompressed = toStrict $ decompress $ fromStrict compressed
-    either error return $ parseOnly parseObject decompressed
+        parsed       = parseOnly parseObject decompressed
+    return $ either error (StoredObject repo) parsed
 
-writeObject :: String -> GitObject -> IO String
-writeObject dir object =
+writeObject :: StoredObject -> IO String
+writeObject (StoredObject dir object) =
     let objectHash = hash object
         path = sha1Path dir objectHash
     in doesFileExist path >>= \fileExists ->
