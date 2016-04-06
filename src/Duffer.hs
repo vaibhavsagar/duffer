@@ -126,11 +126,27 @@ readObject repo sha1 = do
 
 writeObject :: StoredObject -> IO String
 writeObject (StoredObject dir object) =
-    let objectHash = hash object
-        path = sha1Path dir objectHash
+    let sha1 = hash object
+        path = sha1Path dir sha1
     in doesFileExist path >>= \fileExists ->
-    if fileExists then return objectHash else do
-        createDirectoryIfMissing True $ sha1Dir dir objectHash
+    if fileExists then return sha1 else do
+        createDirectoryIfMissing True $ sha1Dir dir sha1
         handle <- openBinaryFile path WriteMode
         hPut handle $ toStrict $ compress $ fromStrict $ stored object
-        return objectHash
+        return sha1
+
+resolveRef :: String -> String -> IO StoredObject
+resolveRef repo refPath = do
+    let path = intercalate "/" [repo, refPath]
+    handle <- openBinaryFile path ReadMode
+    sha1   <- hGetContents handle
+    readObject repo $ init $ toString sha1
+
+updateRef :: String -> StoredObject -> IO String
+updateRef refPath (StoredObject repo object) =
+    let sha1 = hash object
+        path = intercalate "/" [repo, refPath]
+    in do
+        handle <- openBinaryFile path WriteMode
+        hPut handle $ fromString $ sha1 ++ "\n"
+        return sha1
