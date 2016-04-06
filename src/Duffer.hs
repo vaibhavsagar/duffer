@@ -14,6 +14,7 @@ import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.List (intercalate)
 import Numeric (showHex, readHex, showOct, readOct)
 import Prelude hiding (concat, length, take)
+import qualified Prelude as P (concat)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
 
@@ -53,6 +54,14 @@ stored :: GitObject -> ByteString
 stored object = case object of
     Blob content -> makeStored "blob" content
     Tree entries -> makeStored "tree" $ concat $ map showTreeEntry entries
+    Commit treeRef parentRefs authorTime committerTime message ->
+        let treeLine      = ["tree ", treeRef, "\n"]
+            parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
+            authorLine    = ["author ", authorTime, "\n"]
+            committerLine = ["committer ", committerTime, "\n"]
+            messageLines  = ["\n", message, "\n"]
+            content       = collate [treeLine, parentLines, authorLine, committerLine, messageLines]
+        in makeStored "commit" content
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content =
