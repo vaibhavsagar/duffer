@@ -62,6 +62,7 @@ stored object = case object of
             messageLines  = ["\n", message, "\n"]
             content       = collate [treeLine, parentLines, authorLine, committerLine, messageLines]
         in makeStored "commit" content
+    where collate = concat . map (fromString . P.concat)
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content =
