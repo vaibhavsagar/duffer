@@ -36,15 +36,15 @@ data StoredObject = StoredObject { repository   :: String
                                  , storedObject :: GitObject}
                   deriving (Show)
 
--- Given a directory and a SHA1 hash, generate a filepath
-sha1Path :: String -> String -> String
-sha1Path directory (s1:s2:suffix) = intercalate "/" components
-    where components = [directory, "objects", [s1,s2], suffix]
-
 -- Given a directory and a SHA1 hash, generate a directory
 sha1Dir :: String -> String -> String
-sha1Dir directory (s1:s2:suffix) = intercalate "/" components
+sha1Dir directory (s1:s2:_) = intercalate "/" components
     where components = [directory, "objects", [s1,s2]]
+
+-- Given a directory and a SHA1 hash, generate a filepath
+sha1Path :: String -> String -> String
+sha1Path directory sha1@(_:_:suffix) = intercalate "/" components
+    where components = [sha1Dir directory sha1, suffix]
 
 contentLength :: ByteString -> ByteString
 contentLength content = fromString $ show $ length content
