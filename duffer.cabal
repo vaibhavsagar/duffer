@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Vaibhav Sagar
 maintainer:          vaibhavsagar@gmail.com
-copyright:           2010 Author Here
+copyright:           2016 Vaibhav Sagar
 category:            Web
 build-type:          Simple
 -- extra-source-files:
