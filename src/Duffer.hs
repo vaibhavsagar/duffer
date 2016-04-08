@@ -46,9 +46,6 @@ sha1Path :: String -> String -> String
 sha1Path directory sha1@(_:_:suffix) = intercalate "/" components
     where components = [sha1Dir directory sha1, suffix]
 
-contentLength :: ByteString -> ByteString
-contentLength content = fromString $ show $ length content
-
 -- Generate a stored representation of a git object.
 stored :: GitObject -> ByteString
 stored object = case object of
@@ -65,8 +62,8 @@ stored object = case object of
     where collate = concat . map (fromString . P.concat)
 
 makeStored :: String -> ByteString -> ByteString
-makeStored objectType content =
-    concat [fromString $ objectType ++ " ", contentLength content, fromString "\NUL", content]
+makeStored objectType content = concat [header, content]
+    where header = concat $ map fromString [objectType, " ", show $ length content, "\NUL"]
 
 hash :: GitObject -> String
 hash object = showDigest $ sha1 $ fromStrict $ stored object
