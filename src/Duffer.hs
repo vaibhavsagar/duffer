@@ -98,7 +98,7 @@ readTreeEntry modeString filenameString sha1String =
 
 showTreeEntry :: TreeEntry -> ByteString
 showTreeEntry (TreeEntry mode name sha1) =
-    let modeString = fromString $ (showOct mode) ""
+    let modeString = fromString $ showOct mode ""
         nameString = fromString name
         sha1String = fst $ decode $ fromString sha1
         entryString = concat [modeString, " ", nameString, "\NUL", sha1String]
