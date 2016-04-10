@@ -71,6 +71,9 @@ hash object = showDigest $ sha1 $ fromStrict $ stored object
 parseHeader :: ByteString -> Parser String
 parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
 
+parseRef :: Parser String
+parseRef = take 40 >>= \ref -> char '\n' >> return (toString ref)
+
 parseBlob :: Parser GitObject
 parseBlob = parseHeader "blob" >>
     takeByteString >>= \content -> return $ Blob content
@@ -111,9 +114,7 @@ parseCommit = parseHeader "commit" >> do
     msg <- takeByteString
     let message = init $ toString msg
     return $ Commit treeRef parentRefs authorTime committerTime message
-    where
-        parseRef = take 40 >>= \ref -> char '\n' >> (return $ toString ref)
-        parseUserTime = anyChar `manyTill` char '\n'
+    where parseUserTime = anyChar `manyTill` char '\n'
 
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
