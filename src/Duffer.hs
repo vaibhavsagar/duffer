@@ -72,16 +72,12 @@ parseHeader :: ByteString -> Parser String
 parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
 
 parseBlob :: Parser GitObject
-parseBlob = do
-    string "blob " >> digit `manyTill` char '\NUL'
-    content <- takeByteString
-    return $ Blob content
+parseBlob = parseHeader "blob" >>
+    takeByteString >>= \content -> return $ Blob content
 
 parseTree :: Parser GitObject
-parseTree = do
-    string "tree " >> digit `manyTill` char '\NUL'
-    entries <- many1 treeEntry
-    return $ Tree entries
+parseTree = parseHeader "tree" >>
+    many1 treeEntry >>= \entries -> return $ Tree entries
 
 treeEntry :: Parser TreeEntry
 treeEntry = do
