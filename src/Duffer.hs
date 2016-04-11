@@ -116,6 +116,18 @@ parseCommit = parseHeader "commit" >> do
     return $ Commit treeRef parentRefs authorTime committerTime message
     where parseUserTime = anyChar `manyTill` char '\n'
 
+(~~) :: StoredObject -> Int -> IO StoredObject
+(~~) object 0 = return object
+(~~) object n =
+    let ref = head $ parentRefs $ storedObject object
+    in readObject (repository object) ref >>= \parent ->
+    parent ~~ (n-1)
+
+(^^) :: StoredObject -> Int -> IO StoredObject
+(^^) object n =
+    let ref = parentRefs (storedObject object) !! (n-1)
+    in readObject (repository object) ref
+
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
 
