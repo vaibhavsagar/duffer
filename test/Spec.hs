@@ -10,11 +10,15 @@ main :: IO ()
 main = do
 
     blobs   <- objectsOfType "blob"
+    trees   <- objectsOfType "tree"
 
     hspec $ do
         describe "blob" $
             it "correctly parses and hashes all blobs" $
                 mapM_ (readHashObject ".git") blobs
+        describe "tree" $
+            it "correctly parses and hashes all trees" $
+                mapM_ (readHashObject ".git") trees
 
 objectsOfType :: String -> IO [String]
 objectsOfType objectType = do
