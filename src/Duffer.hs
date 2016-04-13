@@ -20,8 +20,8 @@ import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
 
 data GitObject = Blob {content          :: ByteString}
                | Tree {entries          :: [TreeEntry]}
-               | Commit { treeRef       :: String
-                        , parentRefs    :: [String]
+               | Commit { treeRef       :: Ref
+                        , parentRefs    :: [Ref]
                         , authorTime    :: String
                         , committerTime :: String
                         , message       :: String}
@@ -29,20 +29,22 @@ data GitObject = Blob {content          :: ByteString}
 
 data TreeEntry = TreeEntry { entryMode :: Int
                            , entryName :: String
-                           , entrySha1 :: String}
+                           , entrySha1 :: Ref}
                 deriving (Show)
 
 data StoredObject = StoredObject { repository   :: String
                                  , storedObject :: GitObject}
                   deriving (Show)
 
+type Ref = String
+
 -- Given a directory and a SHA1 hash, generate a directory
-sha1Dir :: String -> String -> String
+sha1Dir :: String -> Ref -> String
 sha1Dir directory (s1:s2:_) = intercalate "/" components
     where components = [directory, "objects", [s1,s2]]
 
 -- Given a directory and a SHA1 hash, generate a filepath
-sha1Path :: String -> String -> String
+sha1Path :: String -> Ref -> String
 sha1Path directory sha1@(_:_:suffix) = intercalate "/" components
     where components = [sha1Dir directory sha1, suffix]
 
@@ -65,13 +67,13 @@ makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
     where header = concat $ map fromString [objectType, " ", show $ length content, "\NUL"]
 
-hash :: GitObject -> String
+hash :: GitObject -> Ref
 hash object = showDigest $ sha1 $ fromStrict $ stored object
 
 parseHeader :: ByteString -> Parser String
 parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
 
-parseRef :: Parser String
+parseRef :: Parser Ref
 parseRef = take 40 >>= \ref -> char '\n' >> return (toString ref)
 
 parseBlob :: Parser GitObject
@@ -131,7 +133,7 @@ parseCommit = parseHeader "commit" >> do
 parseObject :: Parser GitObject
 parseObject = parseBlob <|> parseTree <|> parseCommit
 
-readObject :: String -> String -> IO StoredObject
+readObject :: String -> Ref -> IO StoredObject
 readObject repo sha1 = do
     let path = sha1Path repo sha1
     handle      <- openBinaryFile path ReadMode
