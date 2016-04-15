@@ -82,7 +82,7 @@ parseBlob = parseHeader "blob" >>
 
 parseTree :: Parser GitObject
 parseTree = parseHeader "tree" >>
-    many1 treeEntry >>= \entries -> return $ Tree entries
+    many' treeEntry >>= \entries -> return $ Tree entries
 
 treeEntry :: Parser TreeEntry
 treeEntry = do
