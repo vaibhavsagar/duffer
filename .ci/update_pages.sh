@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 BRANCH=gh-pages
-TARGET_REPO=vaibhavsagar/resume.git
+TARGET_REPO=vaibhavsagar/duffer.hs.git
 
 echo -e "Starting to deploy to Github Pages\n"
 if [ "$TRAVIS" == "true" ]; then
