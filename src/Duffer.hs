@@ -25,6 +25,11 @@ data GitObject = Blob {content          :: ByteString}
                         , authorTime    :: String
                         , committerTime :: String
                         , message       :: String}
+               | Tag { objectRef  :: Ref
+                     , objectType :: String
+                     , tagName    :: String
+                     , tagger     :: String
+                     , annotation :: String}
                deriving (Show)
 
 data TreeEntry = TreeEntry { entryMode :: Int
@@ -61,6 +66,14 @@ stored object = case object of
             messageLines  = ["\n", message, "\n"]
             content       = collate [treeLine, parentLines, authorLine, committerLine, messageLines]
         in makeStored "commit" content
+    Tag objectRef objectType tagName tagger annotation ->
+        let objectLine = ["object ", objectRef, "\n"]
+            typeLine   = ["type ", objectType, "\n"]
+            tagLine    = ["tag ", tagName, "\n"]
+            taggerLine = ["tagger ", tagger, "\n"]
+            annotLines = ["\n", annotation, "\n"]
+            content    = collate [objectLine, typeLine, tagLine, taggerLine, annotLines]
+        in makeStored "tag" content
     where collate = fromString . concatMap P.concat
 
 makeStored :: String -> ByteString -> ByteString
@@ -130,8 +143,20 @@ parseCommit = parseHeader "commit" >> do
     let ref = parentRefs (storedObject object) !! (n-1)
     in readObject (repository object) ref
 
+parseTag :: Parser GitObject
+parseTag = parseHeader "tag" >> do
+    string "object "; objectRef <- parseRef
+    string "type ";   objectType <- restOfLine
+    string "tag ";    tagName <- restOfLine
+    string "tagger "; tagger <- restOfLine
+    char '\n'
+    ann <- takeByteString
+    let annotation = init $ toString ann
+    return $ Tag objectRef objectType tagName tagger annotation
+    where restOfLine = anyChar `manyTill` char '\n'
+
 parseObject :: Parser GitObject
-parseObject = parseBlob <|> parseTree <|> parseCommit
+parseObject = parseBlob <|> parseTree <|> parseCommit <|> parseTag
 
 readObject :: String -> Ref -> IO StoredObject
 readObject repo sha1 = do
