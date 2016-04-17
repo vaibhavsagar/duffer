@@ -11,6 +11,7 @@ main = do
 
     blobs   <- objectsOfType "blob"
     trees   <- objectsOfType "tree"
+    commits <- objectsOfType "commit"
 
     hspec $ do
         describe "blob" $
@@ -19,6 +20,9 @@ main = do
         describe "tree" $
             it "correctly parses and hashes all trees" $
                 mapM_ (readHashObject ".git") trees
+        describe "commit" $
+            it "correctly parses and hashes all commits" $
+                mapM_ (readHashObject ".git") commits
 
 objectsOfType :: String -> IO [String]
 objectsOfType objectType = do
