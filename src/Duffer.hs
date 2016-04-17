@@ -3,7 +3,6 @@
 module Duffer where
 
 import Codec.Compression.Zlib (compress, decompress)
-import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents, hPut)
@@ -156,7 +155,7 @@ parseTag = parseHeader "tag" >> do
     where restOfLine = anyChar `manyTill` char '\n'
 
 parseObject :: Parser GitObject
-parseObject = parseBlob <|> parseTree <|> parseCommit <|> parseTag
+parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: String -> Ref -> IO StoredObject
 readObject repo sha1 = do
