@@ -10,7 +10,7 @@ import Data.ByteString.Base16
 import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, showDigest)
-import Data.List (intercalate)
+import Data.List (intercalate, nub, sortOn)
 import Numeric (showHex, readHex, showOct, readOct)
 import Prelude hiding (concat, length, take)
 import qualified Prelude as P (concat)
