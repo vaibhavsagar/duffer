@@ -45,7 +45,7 @@
 
 ## Details
 
-- \<content\> => "blob \<length\>\NUL\<content\>"
+- \<content\> => "blob \<length\>\\NUL\<content\>"
 - e.g. b75f4c9dbe3b61cacba052f23461834468832e41
 
 # Tree
@@ -53,7 +53,7 @@
 ## Details
 
 - \<content\> is a sorted list of tree entries
-- \<entry\> => "\<mode\> \<name\>\NUL\<SHA1\>"
+- \<entry\> => "\<mode\> \<name\>\\NUL\<SHA1\>"
 - tree entries are either blobs or other trees
 - e.g. `git cat-file tree HEAD`
 - `git submodule` uses a commit as a tree entry (not implemented)
@@ -73,15 +73,15 @@
 ## Details
 
 - object, type, tag, tagger, annotation
-- ref is created at `refs/tags/\<name\>` pointing to tag object
+- ref is created at `refs/tags/<name>` pointing to tag object
 - tags can be GPG signed (not implemented)
 
 # Ref
 
 ## Details
 
-- a file at `refs/heads/\<name\>` with commit SHA1
-- a file at `refs/tags/\<name\>` with commit SHA1 or tag SHA1
+- a file at `refs/heads/<name>` with commit SHA1
+- a file at `refs/tags/<name>` with commit SHA1 or tag SHA1
 
 # Demo
 
@@ -89,7 +89,7 @@
 
 - Create a "hello world" blob and store it
 - Create a new branch with the same history
-- Add the "hello world" blob to the root tree and write it (index has not been updated)
+- Add the "hello world" blob to the root tree and write it (index will not be updated)
 - Create a new commit on the new branch
 - View the parent of the new commit
 - Watch things break horribly
