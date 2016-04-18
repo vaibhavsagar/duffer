@@ -46,11 +46,13 @@ type Ref = String
 sha1Dir :: String -> Ref -> String
 sha1Dir directory (s1:s2:_) = intercalate "/" components
     where components = [directory, "objects", [s1,s2]]
+sha1Dir _ _ = error "Invalid ref provided"
 
 -- Given a directory and a SHA1 hash, generate a filepath
 sha1Path :: String -> Ref -> String
-sha1Path directory sha1@(_:_:suffix) = intercalate "/" components
-    where components = [sha1Dir directory sha1, suffix]
+sha1Path directory ref@(_:_:suffix) = intercalate "/" components
+    where components = [sha1Dir directory ref, suffix]
+sha1Path _ _ = error "Invalid ref provided"
 
 -- Generate a stored representation of a git object.
 stored :: GitObject -> ByteString
