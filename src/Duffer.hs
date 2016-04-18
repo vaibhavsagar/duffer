@@ -56,7 +56,7 @@ sha1Path directory sha1@(_:_:suffix) = intercalate "/" components
 stored :: GitObject -> ByteString
 stored object = case object of
     Blob content -> makeStored "blob" content
-    Tree entries -> makeStored "tree" $ concat $ map showTreeEntry entries
+    Tree entries    -> makeStored "tree" $ concat $ map showTreeEntry $ ordered entries
     Commit treeRef parentRefs authorTime committerTime message ->
         let treeLine      = ["tree ", treeRef, "\n"]
             parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
@@ -74,6 +74,7 @@ stored object = case object of
             content    = collate [objectLine, typeLine, tagLine, taggerLine, annotLines]
         in makeStored "tag" content
     where collate = fromString . concatMap P.concat
+          ordered = sortOn entryName . nub
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
