@@ -34,7 +34,7 @@ data GitObject = Blob {content          :: ByteString}
 data TreeEntry = TreeEntry { entryMode :: Int
                            , entryName :: String
                            , entrySha1 :: Ref}
-                deriving (Show)
+                deriving (Show, Eq)
 
 data StoredObject = StoredObject { repository   :: String
                                  , storedObject :: GitObject}
