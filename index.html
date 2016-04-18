@@ -79,7 +79,7 @@
 <section><section id="blob" class="titleslide slide level1"><h1>Blob</h1></section><section id="details" class="slide level2">
 <h1>Details</h1>
 <ul>
-<li>&lt;content&gt; =&gt; &quot;blob &lt;length&gt;&lt;content&gt;&quot;</li>
+<li>&lt;content&gt; =&gt; &quot;blob &lt;length&gt;\NUL&lt;content&gt;&quot;</li>
 <li>e.g. b75f4c9dbe3b61cacba052f23461834468832e41</li>
 </ul>
 </section></section>
@@ -87,7 +87,7 @@
 <h1>Details</h1>
 <ul>
 <li>&lt;content&gt; is a sorted list of tree entries</li>
-<li>&lt;entry&gt; =&gt; &quot;&lt;mode&gt; &lt;name&gt;&lt;SHA1&gt;&quot;</li>
+<li>&lt;entry&gt; =&gt; &quot;&lt;mode&gt; &lt;name&gt;\NUL&lt;SHA1&gt;&quot;</li>
 <li>tree entries are either blobs or other trees</li>
 <li>e.g. <code>git cat-file tree HEAD</code></li>
 <li><code>git submodule</code> uses a commit as a tree entry (not implemented)</li>
@@ -107,15 +107,15 @@
 <h1>Details</h1>
 <ul>
 <li>object, type, tag, tagger, annotation</li>
-<li>ref is created at <code>refs/tags/\&lt;name\&gt;</code> pointing to tag object</li>
+<li>ref is created at <code>refs/tags/&lt;name&gt;</code> pointing to tag object</li>
 <li>tags can be GPG signed (not implemented)</li>
 </ul>
 </section></section>
 <section><section id="ref" class="titleslide slide level1"><h1>Ref</h1></section><section id="details-4" class="slide level2">
 <h1>Details</h1>
 <ul>
-<li>a file at <code>refs/heads/\&lt;name\&gt;</code> with commit SHA1</li>
-<li>a file at <code>refs/tags/\&lt;name\&gt;</code> with commit SHA1 or tag SHA1</li>
+<li>a file at <code>refs/heads/&lt;name&gt;</code> with commit SHA1</li>
+<li>a file at <code>refs/tags/&lt;name&gt;</code> with commit SHA1 or tag SHA1</li>
 </ul>
 </section></section>
 <section><section id="demo" class="titleslide slide level1"><h1>Demo</h1></section><section id="tasks" class="slide level2">
@@ -123,7 +123,7 @@
 <ul>
 <li>Create a &quot;hello world&quot; blob and store it</li>
 <li>Create a new branch with the same history</li>
-<li>Add the &quot;hello world&quot; blob to the root tree and write it (index has not been updated)</li>
+<li>Add the &quot;hello world&quot; blob to the root tree and write it (index will not be updated)</li>
 <li>Create a new commit on the new branch</li>
 <li>View the parent of the new commit</li>
 <li>Watch things break horribly</li>
