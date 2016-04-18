@@ -26,5 +26,4 @@ script:
 - stack --no-terminal --skip-ghc-check test
 
 after_success:
-- pandoc --standalone -t revealjs presentation/presentation.md -o index.html
 - bash .ci/update_pages.sh
