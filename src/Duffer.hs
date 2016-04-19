@@ -31,20 +31,53 @@ data GitObject
           , tagName    :: String
           , tagger     :: String
           , annotation :: String}
-    deriving (Show)
 
 data TreeEntry
     = TreeEntry { entryMode :: Int
                 , entryName :: String
                 , entrySha1 :: Ref}
-    deriving (Show, Eq)
+    deriving (Eq)
 
 data StoredObject
     = StoredObject { repository   :: String
                    , storedObject :: GitObject}
-    deriving (Show)
 
 type Ref = String
+
+instance Show GitObject where
+    show object = case object of
+        Blob content -> show content
+        Tree entries -> unlines $ map show $ sortUnique entries
+        Commit treeRef parentRefs authorTime committerTime message ->
+            let treeLine      = ["tree ", treeRef, "\n"]
+                parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
+                authorLine    = ["author ", authorTime, "\n"]
+                committerLine = ["committer ", committerTime, "\n"]
+                messageLines  = ["\n", message, "\n"]
+                content       = [treeLine, parentLines, authorLine, committerLine, messageLines]
+            in collate content
+        Tag objectRef objectType tagName tagger annotation ->
+            let objectLine = ["object ", objectRef, "\n"]
+                typeLine   = ["type ", objectType, "\n"]
+                tagLine    = ["tag ", tagName, "\n"]
+                taggerLine = ["tagger ", tagger, "\n"]
+                annotLines = ["\n", annotation, "\n"]
+                content    = [objectLine, typeLine, tagLine, taggerLine, annotLines]
+            in collate content
+        where collate = concatMap P.concat
+
+instance Show TreeEntry where
+    show (TreeEntry mode name sha) = intercalate "\t" components
+        where components = [octMode, entryType, sha, name]
+              octMode = printf "%06o" mode :: String
+              entryType = case octMode of
+                "040000" -> "tree"
+                "160000" -> "commit"
+                _        -> "blob"
+
+instance Show StoredObject where
+    show (StoredObject repo object) = unlines [objectPath, show object]
+        where objectPath = sha1Path repo $ hash object
 
 -- Given a directory and a SHA1 hash, generate a directory
 sha1Dir :: String -> Ref -> String
@@ -70,25 +103,10 @@ sortableName (TreeEntry mode name _) =
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> ByteString
 showObject object = case object of
-    Blob content -> makeStored "blob" content
+    Blob content    -> makeStored "blob" content
     Tree entries    -> makeStored "tree" $ concat $ map showTreeEntry $ sortUnique entries
-    Commit treeRef parentRefs authorTime committerTime message ->
-        let treeLine      = ["tree ", treeRef, "\n"]
-            parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
-            authorLine    = ["author ", authorTime, "\n"]
-            committerLine = ["committer ", committerTime, "\n"]
-            messageLines  = ["\n", message, "\n"]
-            content       = collate [treeLine, parentLines, authorLine, committerLine, messageLines]
-        in makeStored "commit" content
-    Tag objectRef objectType tagName tagger annotation ->
-        let objectLine = ["object ", objectRef, "\n"]
-            typeLine   = ["type ", objectType, "\n"]
-            tagLine    = ["tag ", tagName, "\n"]
-            taggerLine = ["tagger ", tagger, "\n"]
-            annotLines = ["\n", annotation, "\n"]
-            content    = collate [objectLine, typeLine, tagLine, taggerLine, annotLines]
-        in makeStored "tag" content
-    where collate = fromString . concatMap P.concat
+    commit@Commit{} -> makeStored "commit" $ fromString $ show commit
+    tag@Tag{}       -> makeStored "tag" $ fromString $ show tag
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
