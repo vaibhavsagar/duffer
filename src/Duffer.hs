@@ -58,11 +58,20 @@ sha1Path directory ref@(_:_:suffix) = intercalate "/" components
     where components = [sha1Dir directory ref, suffix]
 sha1Path _ _ = error "Invalid ref provided"
 
+sortUnique :: [TreeEntry] -> [TreeEntry]
+sortUnique = sortOn sortableName . nub
+
+sortableName :: TreeEntry -> String
+sortableName (TreeEntry mode name _) =
+    if mode == 16384 || mode == 57344
+        then name ++ "/"
+        else name
+
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> ByteString
 showObject object = case object of
     Blob content -> makeStored "blob" content
-    Tree entries    -> makeStored "tree" $ concat $ map showTreeEntry $ ordered entries
+    Tree entries    -> makeStored "tree" $ concat $ map showTreeEntry $ sortUnique entries
     Commit treeRef parentRefs authorTime committerTime message ->
         let treeLine      = ["tree ", treeRef, "\n"]
             parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
@@ -80,7 +89,6 @@ showObject object = case object of
             content    = collate [objectLine, typeLine, tagLine, taggerLine, annotLines]
         in makeStored "tag" content
     where collate = fromString . concatMap P.concat
-          ordered = sortOn entryName . nub
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
