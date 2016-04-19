@@ -83,7 +83,8 @@ showObject object = case object of
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
-    where header = concat $ map fromString [objectType, " ", show $ length content, "\NUL"]
+    where header = fromString $ P.concat [objectType, " ", len, "\NUL"]
+          len    = show $ length content
 
 hash :: GitObject -> Ref
 hash object = showDigest $ sha1 $ fromStrict $ showObject object
@@ -121,8 +122,7 @@ showTreeEntry (TreeEntry mode name sha1) =
     let modeString = fromString $ showOct mode ""
         nameString = fromString name
         sha1String = fst $ decode $ fromString sha1
-        entryString = concat [modeString, " ", nameString, "\NUL", sha1String]
-    in entryString
+    in concat [modeString, " ", nameString, "\NUL", sha1String]
 
 parseCommit :: Parser GitObject
 parseCommit = parseHeader "commit" >> do
@@ -194,7 +194,6 @@ updateRef :: String -> StoredObject -> IO String
 updateRef refPath (StoredObject repo object) =
     let sha1 = hash object
         path = intercalate "/" [repo, refPath]
-    in do
-        handle <- openBinaryFile path WriteMode
-        hPut handle $ fromString $ sha1 ++ "\n"
-        return sha1
+    in do handle <- openBinaryFile path WriteMode
+          hPut handle $ fromString $ sha1 ++ "\n"
+          return sha1
