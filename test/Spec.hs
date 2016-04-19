@@ -33,6 +33,6 @@ objectsOfType objectType = do
     objectLines <- hGetContents h4
     return $ lines (toString objectLines)
 
-readHashObject :: String -> String -> Expectation
+readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 =
     readObject path sha1 >>= \object -> hash (storedObject object) `shouldBe` sha1
