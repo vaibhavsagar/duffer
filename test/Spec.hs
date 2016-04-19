@@ -14,19 +14,21 @@ main = do
     commits <- objectsOfType "commit"
     tags    <- objectsOfType "tag"
 
+    let readCurrent = readHashObject ".git"
+
     hspec $ do
         describe "blob" $
             it "correctly parses and hashes all blobs" $
-                mapM_ (readHashObject ".git") blobs
+                mapM_ readCurrent blobs
         describe "tree" $
             it "correctly parses and hashes all trees" $
-                mapM_ (readHashObject ".git") trees
+                mapM_ readCurrent trees
         describe "commit" $
             it "correctly parses and hashes all commits" $
-                mapM_ (readHashObject ".git") commits
+                mapM_ readCurrent commits
         describe "tag" $
             it "correctly parses and hashes all tags" $
-                mapM_ (readHashObject ".git") tags
+                mapM_ readCurrent tags
 
 objectsOfType :: String -> IO [String]
 objectsOfType objectType = do
