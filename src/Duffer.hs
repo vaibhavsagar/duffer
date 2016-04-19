@@ -55,8 +55,8 @@ sha1Path directory ref@(_:_:suffix) = intercalate "/" components
 sha1Path _ _ = error "Invalid ref provided"
 
 -- Generate a stored representation of a git object.
-stored :: GitObject -> ByteString
-stored object = case object of
+showObject :: GitObject -> ByteString
+showObject object = case object of
     Blob content -> makeStored "blob" content
     Tree entries    -> makeStored "tree" $ concat $ map showTreeEntry $ ordered entries
     Commit treeRef parentRefs authorTime committerTime message ->
@@ -83,7 +83,7 @@ makeStored objectType content = concat [header, content]
     where header = concat $ map fromString [objectType, " ", show $ length content, "\NUL"]
 
 hash :: GitObject -> Ref
-hash object = showDigest $ sha1 $ fromStrict $ stored object
+hash object = showDigest $ sha1 $ fromStrict $ showObject object
 
 parseHeader :: ByteString -> Parser String
 parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
@@ -177,7 +177,7 @@ writeObject (StoredObject dir object) =
     if fileExists then return sha1 else do
         createDirectoryIfMissing True $ sha1Dir dir sha1
         handle <- openBinaryFile path WriteMode
-        hPut handle $ toStrict $ compress $ fromStrict $ stored object
+        hPut handle $ toStrict $ compress $ fromStrict $ showObject object
         return sha1
 
 resolveRef :: String -> String -> IO StoredObject
