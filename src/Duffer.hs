@@ -16,6 +16,7 @@ import Prelude hiding (concat, length, take)
 import qualified Prelude as P (concat)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
+import Text.Printf (printf)
 
 data GitObject
     = Blob {content :: ByteString}
@@ -119,7 +120,7 @@ readTreeEntry modeString filenameString sha1String =
 
 showTreeEntry :: TreeEntry -> ByteString
 showTreeEntry (TreeEntry mode name sha1) =
-    let modeString = fromString $ showOct mode ""
+    let modeString = fromString $ printf "%o" mode
         nameString = fromString name
         sha1String = fst $ decode $ fromString sha1
     in concat [modeString, " ", nameString, "\NUL", sha1String]
