@@ -17,28 +17,31 @@ import qualified Prelude as P (concat)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
 
-data GitObject = Blob {content          :: ByteString}
-               | Tree {entries          :: [TreeEntry]}
-               | Commit { treeRef       :: Ref
-                        , parentRefs    :: [Ref]
-                        , authorTime    :: String
-                        , committerTime :: String
-                        , message       :: String}
-               | Tag { objectRef  :: Ref
-                     , objectType :: String
-                     , tagName    :: String
-                     , tagger     :: String
-                     , annotation :: String}
-               deriving (Show)
+data GitObject
+    = Blob {content :: ByteString}
+    | Tree {entries :: [TreeEntry]}
+    | Commit { treeRef       :: Ref
+             , parentRefs    :: [Ref]
+             , authorTime    :: String
+             , committerTime :: String
+             , message       :: String}
+    | Tag { objectRef  :: Ref
+          , objectType :: String
+          , tagName    :: String
+          , tagger     :: String
+          , annotation :: String}
+    deriving (Show)
 
-data TreeEntry = TreeEntry { entryMode :: Int
-                           , entryName :: String
-                           , entrySha1 :: Ref}
-                deriving (Show, Eq)
+data TreeEntry
+    = TreeEntry { entryMode :: Int
+                , entryName :: String
+                , entrySha1 :: Ref}
+    deriving (Show, Eq)
 
-data StoredObject = StoredObject { repository   :: String
-                                 , storedObject :: GitObject}
-                  deriving (Show)
+data StoredObject
+    = StoredObject { repository   :: String
+                   , storedObject :: GitObject}
+    deriving (Show)
 
 type Ref = String
 
