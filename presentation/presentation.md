@@ -81,7 +81,7 @@
 ## Details
 
 - a file at `refs/heads/<name>` with commit SHA1
-- a file at `refs/tags/<name>` with commit SHA1 or tag SHA1
+- a file at `refs/tags/<name>` with SHA1 (lightweight tag) or tag SHA1 (annotated tag)
 
 # Demo
 
