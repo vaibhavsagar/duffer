@@ -5,17 +5,17 @@ module Duffer where
 import Codec.Compression.Zlib (compress, decompress)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
-import Data.ByteString (ByteString, length, concat, pack, unpack, hGetContents, hPut)
+import Data.ByteString (ByteString, length, concat, hGetContents, hPut)
 import Data.ByteString.Base16
 import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.List (intercalate, nub, sortOn)
-import Numeric (showHex, readHex, showOct, readOct)
+import Numeric (readOct)
 import Prelude hiding (concat, length, take)
 import qualified Prelude as P (concat)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
-import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode), writeFile)
+import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode))
 import Text.Printf (printf)
 
 data GitObject

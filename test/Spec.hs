@@ -4,7 +4,7 @@ import Duffer
 import Test.Hspec
 import System.Process
 import Data.ByteString (hGetContents)
-import Data.ByteString.UTF8 (fromString, toString)
+import Data.ByteString.UTF8 (toString)
 
 main :: IO ()
 main = do
