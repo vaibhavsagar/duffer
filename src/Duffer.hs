@@ -191,13 +191,16 @@ parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: String -> Ref -> IO StoredObject
-readObject repo sha1 = do
-    let path = sha1Path repo sha1
+readObject repo sha1 =
+    decompressed (sha1Path repo sha1) >>= \decompressed ->
+    let parsed = parseOnly parseObject decompressed
+    in return $ either error (StoredObject repo) parsed
+
+decompressed :: String -> IO ByteString
+decompressed path = do
     handle      <- openBinaryFile path ReadMode
     compressed  <- hGetContents handle
-    let decompressed = toStrict $ decompress $ fromStrict compressed
-        parsed       = parseOnly parseObject decompressed
-    return $ either error (StoredObject repo) parsed
+    return $ toStrict $ decompress $ fromStrict compressed
 
 writeObject :: StoredObject -> IO String
 writeObject (StoredObject dir object) =
