@@ -24,6 +24,10 @@ library
                      , base16-bytestring
                      , attoparsec
                      , directory
+  ghc-options:       -fwarn-unused-imports
+                     -fwarn-tabs
+                     -fwarn-missing-signatures
+                     -fwarn-incomplete-patterns
   default-language:    Haskell2010
 
 test-suite duffer-test
