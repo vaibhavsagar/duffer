@@ -8,6 +8,11 @@
 - Aspiring functional programmer
 - Enjoy poking at Git for fun and profit
 
+## About this presentation
+
+- Code is at <https://github.com/vaibhavsagar/duffer.hs>
+- Presentation is in the `gh-pages` branch or <http://www.vaibhavsagar.com/duffer.hs>
+
 ## You will learn
 
 - Reading blobs, trees, tags, and commits
