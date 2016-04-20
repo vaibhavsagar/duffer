@@ -16,7 +16,7 @@ main = do
 
     let readCurrent = readHashObject ".git"
 
-    hspec $ do
+    hspec . parallel $ do
         describe "blob" $
             it "correctly parses and hashes all blobs" $
                 mapM_ readCurrent blobs
