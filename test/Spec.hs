@@ -3,6 +3,7 @@
 import Duffer
 import Test.Hspec
 import System.Process
+import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString (hGetContents)
 import Data.ByteString.UTF8 (toString)
 
@@ -41,4 +42,4 @@ objectsOfType objectType = do
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 =
-    readObject path sha1 >>= \object -> hash (storedObject object) `shouldBe` sha1
+    runReaderT (readObject sha1) path >>= \object -> hash object `shouldBe` sha1
