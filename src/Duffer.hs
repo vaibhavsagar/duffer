@@ -3,6 +3,9 @@
 module Duffer where
 
 import Codec.Compression.Zlib (compress, decompress)
+import Control.Monad (unless, (>=>))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString (ByteString, length, concat, hGetContents, hPut)
@@ -43,6 +46,8 @@ data StoredObject
                    , storedObject :: GitObject}
 
 type Ref = String
+type Repo = String
+type WithRepo = ReaderT Repo IO
 
 instance Show GitObject where
     show object = case object of
@@ -163,17 +168,16 @@ parseCommit = parseHeader "commit" >> do
     return $ Commit treeRef parentRefs authorTime committerTime message
     where parseUserTime = anyChar `manyTill` char '\n'
 
-(~~) :: StoredObject -> Int -> IO StoredObject
-(~~) object 0 = return object
-(~~) object n =
-    let ref = head $ parentRefs $ storedObject object
-    in readObject (repository object) ref >>= \parent ->
-    parent ~~ (n-1)
+(~~) :: GitObject -> Int -> WithRepo GitObject
+-- (~~) object 0 = return object
+(~~) object n = ask >>= \repo -> do
+    let ref = head $ parentRefs object
+    readObject ref >>= \parent -> parent ~~ (n-1)
 
-(^^) :: StoredObject -> Int -> IO StoredObject
-(^^) object n =
-    let ref = parentRefs (storedObject object) !! (n-1)
-    in readObject (repository object) ref
+(^^) :: GitObject -> Int -> WithRepo GitObject
+(^^) object n = ask >>= \repo -> do
+    let ref = parentRefs object !! (n-1)
+    readObject ref
 
 parseTag :: Parser GitObject
 parseTag = parseHeader "tag" >> do
@@ -190,11 +194,10 @@ parseTag = parseHeader "tag" >> do
 parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
-readObject :: String -> Ref -> IO StoredObject
-readObject repo sha1 =
-    decompressed (sha1Path repo sha1) >>= \decompressed ->
-    let parsed = parseOnly parseObject decompressed
-    in return $ either error (StoredObject repo) parsed
+readObject :: Ref -> WithRepo GitObject
+readObject sha1 = ask >>= \repo ->
+    liftIO (decompressed $ sha1Path repo sha1) >>= \decompressed ->
+    return $ either error id $ parseOnly parseObject decompressed
 
 decompressed :: String -> IO ByteString
 decompressed path = do
@@ -202,28 +205,27 @@ decompressed path = do
     compressed  <- hGetContents handle
     return $ toStrict $ decompress $ fromStrict compressed
 
-writeObject :: StoredObject -> IO String
-writeObject (StoredObject dir object) =
+writeObject :: GitObject -> WithRepo Ref
+writeObject object = ask >>= \repo -> do
     let sha1 = hash object
-        path = sha1Path dir sha1
-    in doesFileExist path >>= \fileExists ->
-    if fileExists then return sha1 else do
-        createDirectoryIfMissing True $ sha1Dir dir sha1
+    let path = sha1Path repo sha1
+    liftIO $ doesFileExist path >>= \fileExists -> unless fileExists $ do
+        createDirectoryIfMissing True $ sha1Dir repo sha1
         handle <- openBinaryFile path WriteMode
         hPut handle $ toStrict $ compress $ fromStrict $ showObject object
-        return sha1
+    return sha1
 
-resolveRef :: String -> String -> IO StoredObject
-resolveRef repo refPath = do
+resolveRef :: String -> WithRepo GitObject
+resolveRef refPath = ask >>= \repo -> do
     let path = intercalate "/" [repo, refPath]
-    handle <- openBinaryFile path ReadMode
-    sha1   <- hGetContents handle
-    readObject repo $ init $ toString sha1
+    sha1 <- liftIO $ openBinaryFile path ReadMode >>=
+        (hGetContents >=> \content -> return $ init $ toString content)
+    readObject sha1
 
-updateRef :: String -> StoredObject -> IO String
-updateRef refPath (StoredObject repo object) =
+updateRef :: String -> GitObject -> WithRepo Ref
+updateRef refPath object = ask >>= \repo -> do
     let sha1 = hash object
-        path = intercalate "/" [repo, refPath]
-    in do handle <- openBinaryFile path WriteMode
-          hPut handle $ fromString $ sha1 ++ "\n"
-          return sha1
+    let path = intercalate "/" [repo, refPath]
+    liftIO $ do handle <- openBinaryFile path WriteMode
+                hPut handle $ fromString $ sha1 ++ "\n"
+    return sha1
