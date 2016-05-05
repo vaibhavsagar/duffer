@@ -41,10 +41,6 @@ data TreeEntry
                 , entrySha1 :: Ref}
     deriving (Eq)
 
-data StoredObject
-    = StoredObject { repository   :: String
-                   , storedObject :: GitObject}
-
 type Ref = String
 type Repo = String
 type WithRepo = ReaderT Repo IO
@@ -79,10 +75,6 @@ instance Show TreeEntry where
                 "040000" -> "tree"
                 "160000" -> "commit"
                 _        -> "blob"
-
-instance Show StoredObject where
-    show (StoredObject repo object) = unlines [objectPath, show object]
-        where objectPath = sha1Path repo $ hash object
 
 -- Given a directory and a SHA1 hash, generate a directory
 sha1Dir :: String -> Ref -> String
@@ -169,7 +161,7 @@ parseCommit = parseHeader "commit" >> do
     where parseUserTime = anyChar `manyTill` char '\n'
 
 (~~) :: GitObject -> Int -> WithRepo GitObject
--- (~~) object 0 = return object
+(~~) object 0 = return object
 (~~) object n = ask >>= \repo -> do
     let ref = head $ parentRefs object
     readObject ref >>= \parent -> parent ~~ (n-1)
