@@ -93,9 +93,7 @@ sortUnique = sortOn sortableName . nub
 
 sortableName :: TreeEntry -> String
 sortableName (TreeEntry mode name _) =
-    if mode == 16384 || mode == 57344
-        then name ++ "/"
-        else name
+    if mode == 16384 || mode == 57344 then name ++ "/" else name
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> ByteString
