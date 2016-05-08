@@ -213,9 +213,9 @@ resolveRef refPath = ask >>= \repo -> do
     readObject sha1
 
 updateRef :: String -> GitObject -> WithRepo Ref
-updateRef refPath object = ask >>= \repo -> do
+updateRef refPath object = ask >>= \repo ->
     let sha1 = hash object
-    let path = intercalate "/" [repo, refPath]
-    liftIO $ do handle <- openBinaryFile path WriteMode
-                hPut handle $ fromString $ sha1 ++ "\n"
-    return sha1
+        path = intercalate "/" [repo, refPath]
+    in liftIO $ do handle <- openBinaryFile path WriteMode
+                   hPut handle $ fromString $ sha1 ++ "\n"
+                   return sha1
