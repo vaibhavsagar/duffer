@@ -97,11 +97,12 @@ sortableName (TreeEntry mode name _) =
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> ByteString
-showObject object = case object of
-    Blob content    -> makeStored "blob" content
-    Tree entries    -> makeStored "tree" $ concat $ map showTreeEntry $ sortUnique entries
-    commit@Commit{} -> makeStored "commit" $ fromString $ show commit
-    tag@Tag{}       -> makeStored "tag" $ fromString $ show tag
+showObject object = uncurry makeStored $ case object of
+    Blob content    -> ("blob", content)
+    Tree _          -> ("tree", concat $ map showTreeEntry sortedEntries)
+    commit@Commit{} -> ("commit", fromString $ show commit)
+    tag@Tag{}       -> ("tag", fromString $ show tag)
+    where sortedEntries = sortUnique $ entries object
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
