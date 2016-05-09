@@ -48,7 +48,7 @@ type WithRepo = ReaderT Repo IO
 instance Show GitObject where
     show object = case object of
         Blob content -> show content
-        Tree entries -> unlines $ map show $ sortUnique entries
+        Tree entries -> unlines $ map show $ sortEntries entries
         Commit treeRef parentRefs authorTime committerTime message ->
             let treeLine      = ["tree ", treeRef, "\n"]
                 parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
@@ -88,8 +88,8 @@ sha1Path directory ref@(_:_:suffix) = intercalate "/" components
     where components = [sha1Dir directory ref, suffix]
 sha1Path _ _ = error "Invalid ref provided"
 
-sortUnique :: [TreeEntry] -> [TreeEntry]
-sortUnique = sortOn sortableName . nub
+sortEntries :: [TreeEntry] -> [TreeEntry]
+sortEntries = sortOn sortableName . nub
 
 sortableName :: TreeEntry -> String
 sortableName (TreeEntry mode name _) =
@@ -102,7 +102,7 @@ showObject object = uncurry makeStored $ case object of
     Tree _          -> ("tree", concat $ map showTreeEntry sortedEntries)
     commit@Commit{} -> ("commit", fromString $ show commit)
     tag@Tag{}       -> ("tag", fromString $ show tag)
-    where sortedEntries = sortUnique $ entries object
+    where sortedEntries = sortEntries $ entries object
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
