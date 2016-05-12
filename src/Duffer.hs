@@ -36,9 +36,7 @@ data GitObject
           , annotation :: String}
 
 data TreeEntry
-    = TreeEntry { entryMode :: Int
-                , entryName :: String
-                , entrySha1 :: Ref}
+    = TreeEntry { entryMode :: Int, entryName :: String, entrySha1 :: Ref}
     deriving (Eq)
 
 type Ref = String
