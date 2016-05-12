@@ -131,14 +131,8 @@ treeEntry = do
     mode     <- digit `manyTill` space
     filename <- anyChar `manyTill` char '\NUL'
     sha1     <- take 20
-    return $ readTreeEntry mode filename sha1
-
-readTreeEntry :: String -> String -> ByteString -> TreeEntry
-readTreeEntry modeString filenameString sha1String =
-    let mode     = fst $ head $ readOct modeString
-        filename = filenameString
-        sha1     = toString $ encode sha1String
-    in TreeEntry mode filename sha1
+    return $
+        TreeEntry (fst $ head $ readOct mode) filename (toString $ encode sha1)
 
 showTreeEntry :: TreeEntry -> ByteString
 showTreeEntry (TreeEntry mode name sha1) =
