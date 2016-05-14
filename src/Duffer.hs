@@ -99,6 +99,11 @@ showObject object = uncurry makeStored $ case object of
     commit@Commit{} -> ("commit", fromString $ show commit)
     tag@Tag{}       -> ("tag", fromString $ show tag)
     where sortedEntries = sortEntries $ entries object
+          showTreeEntry (TreeEntry mode name sha1) =
+            let modeString = fromString $ printf "%o" mode
+                nameString = fromString name
+                sha1String = fst $ decode $ fromString sha1
+            in concat [modeString, " ", nameString, "\NUL", sha1String]
 
 makeStored :: String -> ByteString -> ByteString
 makeStored objectType content = concat [header, content]
@@ -129,13 +134,6 @@ treeEntry = do
     sha1     <- take 20
     return $
         TreeEntry (fst $ head $ readOct mode) filename (toString $ encode sha1)
-
-showTreeEntry :: TreeEntry -> ByteString
-showTreeEntry (TreeEntry mode name sha1) =
-    let modeString = fromString $ printf "%o" mode
-        nameString = fromString name
-        sha1String = fst $ decode $ fromString sha1
-    in concat [modeString, " ", nameString, "\NUL", sha1String]
 
 parseCommit :: Parser GitObject
 parseCommit = parseHeader "commit" >> do
