@@ -3,7 +3,7 @@
 module Duffer where
 
 import Codec.Compression.Zlib (compress, decompress)
-import Control.Monad (liftM, unless, (>=>))
+import Control.Monad (unless, (>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Attoparsec.ByteString
@@ -174,7 +174,7 @@ parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: Ref -> WithRepo GitObject
-readObject sha1 = liftM (either error id . parseOnly parseObject) . liftIO .
+readObject sha1 = fmap (either error id . parseOnly parseObject) . liftIO .
     decompressed . flip sha1Path sha1 =<< ask
 
 decompressed :: String -> IO ByteString
