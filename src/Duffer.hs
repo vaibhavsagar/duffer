@@ -8,15 +8,15 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8
-import Data.ByteString (ByteString, length, concat, hGetContents, hPut)
+import Data.ByteString (ByteString, length, hGetContents, hPut)
+import qualified Data.ByteString as B (concat)
 import Data.ByteString.Base16
 import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.List (intercalate, nub, sortOn)
 import Numeric (readOct)
-import Prelude hiding (concat, length, take)
-import qualified Prelude as P (concat)
+import Prelude hiding (length, take)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode))
 import Text.Printf (printf)
@@ -63,7 +63,7 @@ instance Show GitObject where
                 annotLines = ["\n", annotation, "\n"]
                 content    = [objectLine, typeLine, tagLine, taggerLine, annotLines]
             in collate content
-        where collate = concatMap P.concat
+        where collate = concatMap concat
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha) = intercalate "\t" components
@@ -95,7 +95,7 @@ sortEntries = sortOn sortableName . nub
 showObject :: GitObject -> ByteString
 showObject object = uncurry makeStored $ case object of
     Blob content    -> ("blob", content)
-    Tree _          -> ("tree", concat $ map showTreeEntry sortedEntries)
+    Tree _          -> ("tree", B.concat $ map showTreeEntry sortedEntries)
     commit@Commit{} -> ("commit", fromString $ show commit)
     tag@Tag{}       -> ("tag", fromString $ show tag)
     where sortedEntries = sortEntries $ entries object
@@ -103,11 +103,11 @@ showObject object = uncurry makeStored $ case object of
             let modeString = fromString $ printf "%o" mode
                 nameString = fromString name
                 sha1String = fst $ decode $ fromString sha1
-            in concat [modeString, " ", nameString, "\NUL", sha1String]
+            in B.concat [modeString, " ", nameString, "\NUL", sha1String]
 
 makeStored :: String -> ByteString -> ByteString
-makeStored objectType content = concat [header, content]
-    where header = fromString $ P.concat [objectType, " ", len, "\NUL"]
+makeStored objectType content = B.concat [header, content]
+    where header = fromString $ concat [objectType, " ", len, "\NUL"]
           len    = show $ length content
 
 hash :: GitObject -> Ref
