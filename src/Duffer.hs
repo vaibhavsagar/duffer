@@ -111,7 +111,7 @@ makeStored objectType content = B.concat [header, content]
           len    = show $ length content
 
 hash :: GitObject -> Ref
-hash object = showDigest $ sha1 $ fromStrict $ showObject object
+hash = showDigest . sha1 . fromStrict . showObject
 
 parseHeader :: ByteString -> Parser String
 parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
