@@ -174,8 +174,8 @@ parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: Ref -> WithRepo GitObject
-readObject sha1 = fmap (either error id . parseOnly parseObject) . liftIO .
-    decompressed . flip sha1Path sha1 =<< ask
+readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
+    liftIO . decompressed) .) . flip sha1Path
 
 decompressed :: String -> IO ByteString
 decompressed path = do
