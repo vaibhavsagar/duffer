@@ -18,6 +18,7 @@ library
   exposed-modules:     Duffer
   build-depends:       base >= 4.7 && < 5
                      , bytestring
+                     , filepath
                      , utf8-string
                      , zlib
                      , SHA

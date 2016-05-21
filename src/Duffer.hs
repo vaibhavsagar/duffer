@@ -18,7 +18,8 @@ import Data.List (intercalate, nub, sortOn)
 import Numeric (readOct)
 import Prelude hiding (length, take)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
-import System.IO (openBinaryFile, IOMode(ReadMode, WriteMode))
+import System.FilePath ((</>), takeDirectory)
+import System.IO (openBinaryFile, IOMode(..))
 import Text.Printf (printf)
 
 data GitObject
@@ -74,16 +75,8 @@ instance Show TreeEntry where
                 "160000" -> "commit"
                 _        -> "blob"
 
--- Given a directory and a SHA1 hash, generate a directory
-sha1Dir :: Repo -> Ref -> String
-sha1Dir directory (s1:s2:_) = intercalate "/" components
-    where components = [directory, "objects", [s1,s2]]
-sha1Dir _ _ = error "Invalid ref provided"
-
--- Given a directory and a SHA1 hash, generate a filepath
-sha1Path :: Repo -> Ref -> String
-sha1Path directory ref@(_:_:suffix) = intercalate "/" components
-    where components = [sha1Dir directory ref, suffix]
+sha1Path :: Repo -> Ref -> FilePath
+sha1Path repo (sa:sb:suffix) = repo </> "objects" </> [sa, sb] </> suffix
 sha1Path _ _ = error "Invalid ref provided"
 
 sortEntries :: [TreeEntry] -> [TreeEntry]
@@ -188,7 +181,7 @@ writeObject object = ask >>= \repo -> do
     let sha1 = hash object
     let path = sha1Path repo sha1
     liftIO $ doesFileExist path >>= \fileExists -> unless fileExists $ do
-        createDirectoryIfMissing True $ sha1Dir repo sha1
+        createDirectoryIfMissing True $ takeDirectory path
         handle <- openBinaryFile path WriteMode
         hPut handle $ toStrict $ compress $ fromStrict $ showObject object
     return sha1
