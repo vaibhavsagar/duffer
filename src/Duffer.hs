@@ -3,7 +3,7 @@
 module Duffer where
 
 import Codec.Compression.Zlib (compress, decompress)
-import Control.Monad (unless, (>=>))
+import Control.Monad (join, unless, (>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Attoparsec.ByteString
@@ -178,10 +178,10 @@ readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
     liftIO . decompressed) .) . flip sha1Path
 
 decompressed :: String -> IO ByteString
-decompressed path = do
-    handle      <- openBinaryFile path ReadMode
-    compressed  <- hGetContents handle
-    return $ toStrict $ decompress $ fromStrict compressed
+decompressed = fmap (toStrict . decompress . fromStrict) . fileContents
+
+fileContents :: String -> IO ByteString
+fileContents = join . fmap hGetContents . (`openBinaryFile` ReadMode)
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = ask >>= \repo -> do
