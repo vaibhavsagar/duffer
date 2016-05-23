@@ -142,14 +142,10 @@ parseCommit = parseHeader "commit" >> do
 
 (~~) :: GitObject -> Int -> WithRepo GitObject
 (~~) object 0 = return object
-(~~) object n = ask >>= \repo -> do
-    let ref = head $ parentRefs object
-    readObject ref >>= \parent -> parent ~~ (n-1)
+(~~) object n = readObject (head $ parentRefs object) >>= \p -> p ~~ (n-1)
 
 (^^) :: GitObject -> Int -> WithRepo GitObject
-(^^) object n = ask >>= \repo -> do
-    let ref = parentRefs object !! (n-1)
-    readObject ref
+(^^) object n = readObject $ parentRefs object !! (n-1)
 
 parseTag :: Parser GitObject
 parseTag = parseHeader "tag" >> do
