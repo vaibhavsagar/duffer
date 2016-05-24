@@ -107,7 +107,7 @@ hash :: GitObject -> Ref
 hash = showDigest . sha1 . fromStrict . showObject
 
 parseHeader :: ByteString -> Parser String
-parseHeader object = string object >> char ' ' >> digit `manyTill` char '\NUL'
+parseHeader = (>> digit `manyTill` char '\NUL') . (>> char ' ') . string
 
 parseRef :: Parser Ref
 parseRef = take 40 >>= \ref -> char '\n' >> return (toString ref)
