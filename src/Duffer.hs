@@ -110,7 +110,7 @@ parseHeader :: ByteString -> Parser String
 parseHeader = (>> digit `manyTill` char '\NUL') . (>> char ' ') . string
 
 parseRef :: Parser Ref
-parseRef = take 40 >>= \ref -> char '\n' >> return (toString ref)
+parseRef = take 40 >>= (char '\n' >>) . return . toString
 
 parseBlob :: Parser GitObject
 parseBlob = parseHeader "blob" >>
