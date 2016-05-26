@@ -164,10 +164,8 @@ parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: Ref -> WithRepo GitObject
 readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
-    liftIO . decompressed) .) . flip sha1Path
-
-decompressed :: String -> IO ByteString
-decompressed = fmap (toStrict . decompress . fromStrict) . fileContents
+    liftIO . inflated) .) . flip sha1Path
+    where inflated = fmap (toStrict. decompress . fromStrict) . fileContents
 
 fileContents :: String -> IO ByteString
 fileContents = join . fmap hGetContents . (`openBinaryFile` ReadMode)
