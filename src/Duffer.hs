@@ -7,19 +7,18 @@ import Control.Monad (join, unless, (>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Attoparsec.ByteString
-import Data.Attoparsec.ByteString.Char8
-import Data.ByteString (ByteString, length, hGetContents, hPut)
+import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
+import Data.ByteString (ByteString, append, init, length, readFile, writeFile)
 import qualified Data.ByteString as B (concat)
 import Data.ByteString.Base16
 import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.UTF8 (fromString, toString)
-import Data.Digest.Pure.SHA (sha1, showDigest)
+import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.List (intercalate, nub, sortOn)
 import Numeric (readOct)
-import Prelude hiding (length, take)
+import Prelude hiding (init, length, readFile, writeFile, take, null)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
-import System.IO (openBinaryFile, IOMode(..))
 import Text.Printf (printf)
 
 data GitObject
@@ -37,10 +36,10 @@ data GitObject
           , annotation :: String}
 
 data TreeEntry
-    = TreeEntry { entryMode :: Int, entryName :: String, entrySha1 :: Ref}
+    = TreeEntry { entryMode :: Int, entryName :: ByteString, entrySha1 :: Ref}
     deriving (Eq)
 
-type Ref = String
+type Ref = ByteString
 type Repo = String
 type WithRepo = ReaderT Repo IO
 
@@ -49,26 +48,23 @@ instance Show GitObject where
         Blob content -> show content
         Tree entries -> unlines $ map show $ sortEntries entries
         Commit treeRef parentRefs authorTime committerTime message ->
-            let treeLine      = ["tree ", treeRef, "\n"]
-                parentLines   = map (\ref -> "parent " ++ ref ++ "\n") parentRefs
-                authorLine    = ["author ", authorTime, "\n"]
-                committerLine = ["committer ", committerTime, "\n"]
-                messageLines  = ["\n", message, "\n"]
-                content       = [treeLine, parentLines, authorLine, committerLine, messageLines]
-            in collate content
+            concat [    "tree "      `is`    toString  treeRef
+                   , concatMap (
+                       ("parent "    `is`) . toString) parentRefs
+                   ,    "author "    `is`              authorTime
+                   ,    "committer " `is`              committerTime
+                   ,    "\n"         `is`              message]
         Tag objectRef objectType tagName tagger annotation ->
-            let objectLine = ["object ", objectRef, "\n"]
-                typeLine   = ["type ", objectType, "\n"]
-                tagLine    = ["tag ", tagName, "\n"]
-                taggerLine = ["tagger ", tagger, "\n"]
-                annotLines = ["\n", annotation, "\n"]
-                content    = [objectLine, typeLine, tagLine, taggerLine, annotLines]
-            in collate content
-        where collate = concatMap concat
+            concat [ "object " `is` toString objectRef
+                   , "type "   `is` objectType
+                   , "tag "    `is` tagName
+                   , "tagger " `is` tagger
+                   , "\n"      `is` annotation]
+        where is prefix value = concat [prefix, value, "\n"] :: String
 
 instance Show TreeEntry where
-    show (TreeEntry mode name sha) = intercalate "\t" components
-        where components = [octMode, entryType, sha, name]
+    show (TreeEntry mode name sha1) = intercalate "\t" components
+        where components = [octMode, entryType, toString sha1, toString name]
               octMode = printf "%06o" mode :: String
               entryType = case octMode of
                 "040000" -> "tree"
@@ -76,13 +72,13 @@ instance Show TreeEntry where
                 _        -> "blob"
 
 sha1Path :: Repo -> Ref -> FilePath
-sha1Path repo (sa:sb:suffix) = repo </> "objects" </> [sa, sb] </> suffix
-sha1Path _ _ = error "Invalid ref provided"
+sha1Path repo ref = let (sa:sb:suffix) = toString ref in
+    repo </> "objects" </> [sa, sb] </> suffix
 
 sortEntries :: [TreeEntry] -> [TreeEntry]
 sortEntries = sortOn sortableName . nub
     where sortableName (TreeEntry mode name _) =
-            name ++ (if mode == 16384 || mode == 57344 then "/" else "")
+            B.concat [name, if mode == 16384 || mode == 57344 then "/" else ""]
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> ByteString
@@ -94,23 +90,25 @@ showObject object = uncurry makeStored $ case object of
     where sortedEntries = sortEntries $ entries object
           showTreeEntry (TreeEntry mode name sha1) =
             let modeString = fromString $ printf "%o" mode
-                nameString = fromString name
-                sha1String = fst $ decode $ fromString sha1
-            in B.concat [modeString, " ", nameString, "\NUL", sha1String]
+                sha1String = fst $ decode sha1
+            in B.concat [modeString, " ", name, "\NUL", sha1String]
 
-makeStored :: String -> ByteString -> ByteString
-makeStored objectType content = B.concat [header, content]
-    where header = fromString $ concat [objectType, " ", len, "\NUL"]
-          len    = show $ length content
+makeStored :: ByteString -> ByteString -> ByteString
+makeStored objectType content = header `append` content
+    where header = B.concat [objectType, " ", len, "\NUL"]
+          len    = fromString . show $ length content
 
 hash :: GitObject -> Ref
-hash = showDigest . sha1 . fromStrict . showObject
+hash = encode . toStrict . bytestringDigest . sha1 . fromStrict . showObject
+
+null :: Parser Char
+null = char '\NUL'
 
 parseHeader :: ByteString -> Parser String
 parseHeader = (>> digit `manyTill` char '\NUL') . (>> char ' ') . string
 
 parseRef :: Parser Ref
-parseRef = take 40 >>= (char '\n' >>) . return . toString
+parseRef = take 40 <* endOfLine
 
 parseBlob :: Parser GitObject
 parseBlob = parseHeader "blob" >>
@@ -118,27 +116,26 @@ parseBlob = parseHeader "blob" >>
 
 parseTree :: Parser GitObject
 parseTree = parseHeader "tree" >>
-    many' treeEntry >>= \entries -> return $ Tree entries
+    many' parseTreeEntry >>= \entries -> return $ Tree entries
 
-treeEntry :: Parser TreeEntry
-treeEntry = do
-    mode     <- digit `manyTill` space
-    filename <- anyChar `manyTill` char '\NUL'
-    sha1     <- take 20
-    return $
-        TreeEntry (fst $ head $ readOct mode) filename (toString $ encode sha1)
+parseTreeEntry :: Parser TreeEntry
+parseTreeEntry = do
+    mode <- (fst . head . readOct) <$> digit `manyTill` space
+    name <- takeTill (==0) <* null
+    sha1 <- encode <$> take 20
+    return $ TreeEntry mode name sha1
 
 parseCommit :: Parser GitObject
-parseCommit = parseHeader "commit" >> do
-    string "tree "; treeRef <- parseRef
-    parentRefs <- many' (string "parent " >> parseRef)
-    string "author ";    authorTime    <- parseUserTime
-    string "committer "; committerTime <- parseUserTime
-    char '\n'
-    msg <- takeByteString
-    let message = init $ toString msg
+parseCommit = parseHeader "commit" *> do
+    treeRef <-       "tree "      *> parseRef
+    parentRefs <- many' (
+                     "parent "    *> parseRef)
+    authorTime <-    "author "    *> restOfLine
+    committerTime <- "committer " *> restOfLine
+    endOfLine
+    message <- (toString . init) <$> takeByteString
     return $ Commit treeRef parentRefs authorTime committerTime message
-    where parseUserTime = anyChar `manyTill` char '\n'
+    where restOfLine = toString <$> takeTill (==10) <* "\n"
 
 (~~) :: GitObject -> Int -> WithRepo GitObject
 (~~) object 0 = return object
@@ -148,16 +145,15 @@ parseCommit = parseHeader "commit" >> do
 (^^) object n = readObject $ parentRefs object !! (n-1)
 
 parseTag :: Parser GitObject
-parseTag = parseHeader "tag" >> do
-    string "object "; objectRef <- parseRef
-    string "type ";   objectType <- restOfLine
-    string "tag ";    tagName <- restOfLine
-    string "tagger "; tagger <- restOfLine
-    char '\n'
-    ann <- takeByteString
-    let annotation = init $ toString ann
+parseTag = parseHeader "tag" *> do
+    objectRef  <- "object " *> parseRef
+    objectType <- "type "   *> restOfLine
+    tagName    <- "tag "    *> restOfLine
+    tagger     <- "tagger " *> restOfLine
+    endOfLine
+    annotation <- (toString . init) <$> takeByteString
     return $ Tag objectRef objectType tagName tagger annotation
-    where restOfLine = anyChar `manyTill` char '\n'
+    where restOfLine = toString <$> takeTill (==10) <* "\n"
 
 parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
@@ -165,10 +161,7 @@ parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 readObject :: Ref -> WithRepo GitObject
 readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
     liftIO . inflated) .) . flip sha1Path
-    where inflated = fmap (toStrict. decompress . fromStrict) . fileContents
-
-fileContents :: String -> IO ByteString
-fileContents = join . fmap hGetContents . (`openBinaryFile` ReadMode)
+    where inflated = fmap (toStrict . decompress . fromStrict) . readFile
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = ask >>= \repo -> do
@@ -176,21 +169,13 @@ writeObject object = ask >>= \repo -> do
     let path = sha1Path repo sha1
     liftIO $ doesFileExist path >>= \fileExists -> unless fileExists $ do
         createDirectoryIfMissing True $ takeDirectory path
-        handle <- openBinaryFile path WriteMode
-        hPut handle $ toStrict $ compress $ fromStrict $ showObject object
+        writeFile path $ toStrict $ compress $ fromStrict $ showObject object
     return sha1
 
 resolveRef :: String -> WithRepo GitObject
-resolveRef refPath = ask >>= \repo -> do
-    let path = intercalate "/" [repo, refPath]
-    sha1 <- liftIO $ openBinaryFile path ReadMode >>=
-        (hGetContents >=> \content -> return $ init $ toString content)
-    readObject sha1
+resolveRef = (ask >>=) . (((readObject =<<) . liftIO . (init <$>)
+    . readFile) .) . flip (</>)
 
 updateRef :: String -> GitObject -> WithRepo Ref
-updateRef refPath object = ask >>= \repo ->
-    let sha1 = hash object
-        path = intercalate "/" [repo, refPath]
-    in liftIO $ do handle <- openBinaryFile path WriteMode
-                   hPut handle $ fromString $ sha1 ++ "\n"
-                   return sha1
+updateRef refPath object = let sha1 = hash object in ask >>= liftIO .
+    (>> return sha1) . flip writeFile (sha1 `append` "\n") . (</> refPath)
