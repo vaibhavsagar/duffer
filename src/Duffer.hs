@@ -35,9 +35,7 @@ data GitObject
           , tagger     :: String
           , annotation :: String}
 
-data TreeEntry
-    = TreeEntry { entryMode :: Int, entryName :: ByteString, entrySha1 :: Ref}
-    deriving (Eq)
+data TreeEntry = TreeEntry Int ByteString Ref deriving (Eq)
 
 type Ref = ByteString
 type Repo = String
