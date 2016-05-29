@@ -69,9 +69,9 @@ instance Show TreeEntry where
                 "160000" -> "commit"
                 _        -> "blob"
 
-sha1Path :: Repo -> Ref -> FilePath
-sha1Path repo ref = let (sa:sb:suffix) = toString ref in
-    repo </> "objects" </> [sa, sb] </> suffix
+sha1Path :: Ref -> Repo -> FilePath
+sha1Path ref = let (sa:sb:suffix) = toString ref in
+    (</> "objects" </> [sa, sb] </> suffix)
 
 sortEntries :: [TreeEntry] -> [TreeEntry]
 sortEntries = sortOn sortableName . nub
@@ -158,13 +158,13 @@ parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: Ref -> WithRepo GitObject
 readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
-    liftIO . inflated) .) . flip sha1Path
+    liftIO . inflated) .) . sha1Path
     where inflated = fmap (toStrict . decompress . fromStrict) . readFile
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = ask >>= \repo -> do
     let sha1 = hash object
-    let path = sha1Path repo sha1
+    let path = sha1Path sha1 repo
     liftIO $ doesFileExist path >>= \fileExists -> unless fileExists $ do
         createDirectoryIfMissing True $ takeDirectory path
         writeFile path $ toStrict $ compress $ fromStrict $ showObject object
