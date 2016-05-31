@@ -103,7 +103,13 @@ null :: Parser Char
 null = char '\NUL'
 
 parseHeader :: ByteString -> Parser String
-parseHeader = (>> digit `manyTill` char '\NUL') . (>> char ' ') . string
+parseHeader = (*> digit `manyTill` null) . (*> space) . string
+
+parseRestOfLine :: Parser String
+parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
+
+parseMessage :: Parser String
+parseMessage = (toString . init) <$> takeByteString
 
 parseRef :: Parser Ref
 parseRef = take 40 <* endOfLine
