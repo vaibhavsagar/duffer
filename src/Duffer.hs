@@ -3,7 +3,7 @@
 module Duffer where
 
 import Codec.Compression.Zlib (compress, decompress)
-import Control.Monad (join, unless, (>=>))
+import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Attoparsec.ByteString
