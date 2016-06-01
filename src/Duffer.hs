@@ -20,6 +20,7 @@ import Prelude hiding (init, length, readFile, writeFile, take, null)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Text.Printf (printf)
+import qualified Data.ByteString as B
 
 data GitObject
     = Blob {content :: ByteString}
@@ -44,7 +45,7 @@ type WithRepo = ReaderT Repo IO
 instance Show GitObject where
     show object = case object of
         Blob content -> show content
-        Tree entries -> unlines $ map show $ sortEntries entries
+        Tree entries -> unlines $ map show $ sortedUnique entries
         Commit treeRef parentRefs authorTime committerTime message ->
             concat [    "tree "      `is`    toString  treeRef
                    , concatMap (
@@ -73,10 +74,10 @@ sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
     (</> "objects" </> [sa, sb] </> suffix)
 
-sortEntries :: [TreeEntry] -> [TreeEntry]
-sortEntries = sortOn sortableName . nub
-    where sortableName (TreeEntry mode name _) =
-            B.concat [name, if mode == 16384 || mode == 57344 then "/" else ""]
+sortedUnique :: [TreeEntry] -> [TreeEntry]
+sortedUnique = sortOn sortableName . nub where
+    sortableName (TreeEntry mode name _) =
+        B.append name $ if mode == 16384 || mode == 57344 then "/" else ""
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> ByteString
@@ -85,7 +86,7 @@ showObject object = uncurry makeStored $ case object of
     Tree _          -> ("tree", B.concat $ map showTreeEntry sortedEntries)
     commit@Commit{} -> ("commit", fromString $ show commit)
     tag@Tag{}       -> ("tag", fromString $ show tag)
-    where sortedEntries = sortEntries $ entries object
+    where sortedEntries = sortedUnique $ entries object
           showTreeEntry (TreeEntry mode name sha1) =
             let modeString = fromString $ printf "%o" mode
                 sha1String = fst $ decode sha1
