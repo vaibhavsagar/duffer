@@ -27,16 +27,20 @@ data GitObject
     | Tree {entries :: [TreeEntry]}
     | Commit { treeRef       :: Ref
              , parentRefs    :: [Ref]
-             , authorTime    :: String
-             , committerTime :: String
+             , authorTime    :: PersonTime
+             , committerTime :: PersonTime
              , message       :: String}
     | Tag { objectRef  :: Ref
           , objectType :: String
           , tagName    :: String
-          , tagger     :: String
+          , tagger     :: PersonTime
           , annotation :: String}
 
 data TreeEntry = TreeEntry Int ByteString Ref deriving (Eq)
+data PersonTime = PersonTime { personName :: String
+                             , personMail :: String
+                             , personTime :: String
+                             , personTZ   :: String}
 
 type Ref = ByteString
 type Repo = String
@@ -50,14 +54,14 @@ instance Show GitObject where
             concat [    "tree "      `is`    toString  treeRef
                    , concatMap (
                        ("parent "    `is`) . toString) parentRefs
-                   ,    "author "    `is`              authorTime
-                   ,    "committer " `is`              committerTime
+                   ,    "author "    `is`    show      authorTime
+                   ,    "committer " `is`    show      committerTime
                    ,    "\n"         `is`              message]
         Tag objectRef objectType tagName tagger annotation ->
             concat [ "object " `is` toString objectRef
                    , "type "   `is` objectType
                    , "tag "    `is` tagName
-                   , "tagger " `is` tagger
+                   , "tagger " `is` show tagger
                    , "\n"      `is` annotation]
         where is prefix value = concat [prefix, value, "\n"] :: String
 
@@ -69,6 +73,10 @@ instance Show TreeEntry where
                 "040000" -> "tree"
                 "160000" -> "commit"
                 _        -> "blob"
+
+instance Show PersonTime where
+    show (PersonTime name mail time tz) = concat components
+        where components = [name, " <", mail, "> ", time, " ", tz]
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
@@ -124,19 +132,25 @@ parseTree = parseHeader "tree" >>
     many' parseTreeEntry >>= \entries -> return $ Tree entries
 
 parseTreeEntry :: Parser TreeEntry
-parseTreeEntry = do
-    mode <- (fst . head . readOct) <$> digit `manyTill` space
-    name <- takeTill (==0) <* null
-    sha1 <- encode <$> take 20
-    return $ TreeEntry mode name sha1
+parseTreeEntry = TreeEntry
+    <$> ((fst . head . readOct) <$> digit `manyTill` space)
+    <*> takeTill (==0) <* null
+    <*> (encode <$> take 20)
+
+parsePersonTime :: Parser PersonTime
+parsePersonTime = PersonTime
+    <$> (anyChar `manyTill` string " <")
+    <*> (anyChar `manyTill` string "> ")
+    <*> (digit   `manyTill` space)
+    <*> (anyChar `manyTill` endOfLine)
 
 parseCommit :: Parser GitObject
 parseCommit = parseHeader "commit" *> do
     treeRef <-       "tree "      *> parseRef
     parentRefs <- many' (
                      "parent "    *> parseRef)
-    authorTime <-    "author "    *> restOfLine
-    committerTime <- "committer " *> restOfLine
+    authorTime <-    "author "    *> parsePersonTime
+    committerTime <- "committer " *> parsePersonTime
     endOfLine
     message <- (toString . init) <$> takeByteString
     return $ Commit treeRef parentRefs authorTime committerTime message
@@ -154,7 +168,7 @@ parseTag = parseHeader "tag" *> do
     objectRef  <- "object " *> parseRef
     objectType <- "type "   *> restOfLine
     tagName    <- "tag "    *> restOfLine
-    tagger     <- "tagger " *> restOfLine
+    tagger     <- "tagger " *> parsePersonTime
     endOfLine
     annotation <- (toString . init) <$> takeByteString
     return $ Tag objectRef objectType tagName tagger annotation
