@@ -5,7 +5,7 @@ module Duffer where
 import Codec.Compression.Zlib (compress, decompress)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Reader (ReaderT, ask)
+import Control.Monad.Trans.Reader (ReaderT, ask, asks)
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
 import Data.ByteString (ByteString, append, init, length, readFile, writeFile)
@@ -21,6 +21,7 @@ import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Text.Printf (printf)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
 
 data GitObject
     = Blob {content :: ByteString}
@@ -183,13 +184,11 @@ readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
     where inflated = fmap (toStrict . decompress . fromStrict) . readFile
 
 writeObject :: GitObject -> WithRepo Ref
-writeObject object = ask >>= \repo -> do
-    let sha1 = hash object
-    let path = sha1Path sha1 repo
-    liftIO $ doesFileExist path >>= \fileExists -> unless fileExists $ do
-        createDirectoryIfMissing True $ takeDirectory path
-        writeFile path $ toStrict $ compress $ fromStrict $ showObject object
-    return sha1
+writeObject object = asks (sha1Path sha1) >>= \path ->
+    liftIO $ doesFileExist path >>= flip unless (
+        createDirectoryIfMissing True (takeDirectory path) >>
+        L.writeFile path ((compress . fromStrict . showObject) object)) >>
+    return sha1 where sha1 = hash object
 
 resolveRef :: String -> WithRepo GitObject
 resolveRef = (ask >>=) . (((readObject =<<) . liftIO . (init <$>)
