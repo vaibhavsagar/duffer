@@ -51,19 +51,18 @@ instance Show GitObject where
     show object = case object of
         Blob content -> show content
         Tree entries -> unlines $ map show $ sortedUnique entries
-        Commit treeRef parentRefs authorTime committerTime message ->
-            concat [    "tree "      `is`    toString  treeRef
-                   , concatMap (
-                       ("parent "    `is`) . toString) parentRefs
-                   ,    "author "    `is`    show      authorTime
-                   ,    "committer " `is`    show      committerTime
-                   ,    "\n"         `is`              message]
-        Tag objectRef objectType tagName tagger annotation ->
-            concat [ "object " `is` toString objectRef
-                   , "type "   `is` objectType
-                   , "tag "    `is` tagName
-                   , "tagger " `is` show tagger
-                   , "\n"      `is` annotation]
+        Commit treeRef parentRefs authorTime committerTime message -> concat
+            [    "tree "            `is`    toString  treeRef
+            , concatMap (("parent " `is`) . toString) parentRefs
+            ,    "author "          `is`    show      authorTime
+            ,    "committer "       `is`    show      committerTime
+            ,    "\n"               `is`              message]
+        Tag objectRef objectType tagName tagger annotation -> concat
+            [ "object " `is` toString objectRef
+            , "type "   `is` objectType
+            , "tag "    `is` tagName
+            , "tagger " `is` show tagger
+            , "\n"      `is` annotation]
         where is prefix value = concat [prefix, value, "\n"] :: String
 
 instance Show TreeEntry where
