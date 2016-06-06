@@ -142,7 +142,7 @@ parsePersonTime = PersonTime
     <$> (anyChar `manyTill` string " <")
     <*> (anyChar `manyTill` string "> ")
     <*> (digit   `manyTill` space)
-    <*> (anyChar `manyTill` endOfLine)
+    <*> parseRestOfLine
 
 parseCommit :: Parser GitObject
 parseCommit = parseHeader "commit" *> do
