@@ -24,7 +24,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 
 data GitObject
-    = Blob {content :: ByteString}
+    = Blob {content :: B.ByteString}
     | Tree {entries :: [TreeEntry]}
     | Commit { treeRef       :: Ref
              , parentRefs    :: [Ref]
@@ -37,13 +37,13 @@ data GitObject
           , tagger     :: PersonTime
           , annotation :: String}
 
-data TreeEntry = TreeEntry Int ByteString Ref deriving (Eq)
+data TreeEntry = TreeEntry Int B.ByteString Ref deriving (Eq)
 data PersonTime = PersonTime { personName :: String
                              , personMail :: String
                              , personTime :: String
                              , personTZ   :: String}
 
-type Ref = ByteString
+type Ref = B.ByteString
 type Repo = String
 type WithRepo = ReaderT Repo IO
 
@@ -100,10 +100,10 @@ showObject object = uncurry makeStored $ case object of
                 sha1String = fst $ decode sha1
             in B.concat [modeString, " ", name, "\NUL", sha1String]
 
-makeStored :: ByteString -> ByteString -> ByteString
-makeStored objectType content = header `append` content
+makeStored :: B.ByteString -> B.ByteString -> B.ByteString
+makeStored objectType content = header `B.append` content
     where header = B.concat [objectType, " ", len, "\NUL"]
-          len    = fromString . show $ length content
+          len    = fromString . show $ B.length content
 
 hash :: GitObject -> Ref
 hash = encode . toStrict . bytestringDigest . sha1 . fromStrict . showObject
@@ -111,14 +111,14 @@ hash = encode . toStrict . bytestringDigest . sha1 . fromStrict . showObject
 null :: Parser Char
 null = char '\NUL'
 
-parseHeader :: ByteString -> Parser String
+parseHeader :: B.ByteString -> Parser String
 parseHeader = (*> digit `manyTill` null) . (*> space) . string
 
 parseRestOfLine :: Parser String
 parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
 
 parseMessage :: Parser String
-parseMessage = (toString . init) <$> takeByteString
+parseMessage = (toString . B.init) <$> takeByteString
 
 parseRef :: Parser Ref
 parseRef = take 40 <* endOfLine
@@ -195,4 +195,4 @@ resolveRef = (ask >>=) . (((readObject =<<) . liftIO . (init <$>)
 
 updateRef :: String -> GitObject -> WithRepo Ref
 updateRef refPath object = let sha1 = hash object in ask >>= liftIO .
-    (>> return sha1) . flip writeFile (sha1 `append` "\n") . (</> refPath)
+    (>> return sha1) . flip writeFile (sha1 `B.append` "\n") . (</> refPath)
