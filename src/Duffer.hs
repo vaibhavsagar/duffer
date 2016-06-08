@@ -86,7 +86,7 @@ sortedUnique = sortOn sortableName . nub where
         B.append name $ if mode == 16384 || mode == 57344 then "/" else ""
 
 -- Generate a stored representation of a git object.
-showObject :: GitObject -> ByteString
+showObject :: GitObject -> B.ByteString
 showObject object = uncurry makeStored $ case object of
     Blob content    -> ("blob", content)
     Tree _          -> ("tree", B.concat $ map showTreeEntry sortedEntries)
@@ -150,7 +150,7 @@ parseCommit = parseHeader "commit" *> do
     authorTime <-    "author "    *> parsePersonTime
     committerTime <- "committer " *> parsePersonTime
     endOfLine
-    message <- (toString . init) <$> takeByteString
+    message <- (toString . B.init) <$> takeByteString
     return $ Commit treeRef parentRefs authorTime committerTime message
     where restOfLine = toString <$> takeTill (==10) <* "\n"
 
@@ -168,7 +168,7 @@ parseTag = parseHeader "tag" *> do
     tagName    <- "tag "    *> restOfLine
     tagger     <- "tagger " *> parsePersonTime
     endOfLine
-    annotation <- (toString . init) <$> takeByteString
+    annotation <- (toString . B.init) <$> takeByteString
     return $ Tag objectRef objectType tagName tagger annotation
     where restOfLine = toString <$> takeTill (==10) <* "\n"
 
@@ -178,7 +178,7 @@ parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 readObject :: Ref -> WithRepo GitObject
 readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
     liftIO . inflated) .) . sha1Path
-    where inflated = fmap (L.toStrict . decompress . L.fromStrict) . readFile
+    where inflated = fmap (L.toStrict . decompress . L.fromStrict) . B.readFile
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = asks (sha1Path sha1) >>= \path ->
@@ -188,9 +188,9 @@ writeObject object = asks (sha1Path sha1) >>= \path ->
     return sha1 where sha1 = hash object
 
 resolveRef :: String -> WithRepo GitObject
-resolveRef = (ask >>=) . (((readObject =<<) . liftIO . (init <$>)
-    . readFile) .) . flip (</>)
+resolveRef = (ask >>=) . (((readObject =<<) . liftIO . (B.init <$>)
+    . B.readFile) .) . flip (</>)
 
 updateRef :: String -> GitObject -> WithRepo Ref
 updateRef refPath object = let sha1 = hash object in ask >>= liftIO .
-    (>> return sha1) . flip writeFile (sha1 `B.append` "\n") . (</> refPath)
+    (>> return sha1) . flip B.writeFile (sha1 `B.append` "\n") . (</> refPath)
