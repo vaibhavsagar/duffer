@@ -6,12 +6,10 @@ import Codec.Compression.Zlib (compress, decompress)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask, asks)
-import Data.Attoparsec.ByteString
-import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
-import Data.ByteString (ByteString, append, init, length, readFile, writeFile)
-import qualified Data.ByteString as B (concat)
+import Data.Attoparsec.ByteString hiding (parse, eitherResult)
+import Data.Attoparsec.ByteString.Char8 hiding (eitherResult, parse, takeTill)
+import Data.Attoparsec.ByteString.Lazy (eitherResult, parse)
 import Data.ByteString.Base16
-import Data.ByteString.Lazy (toStrict, fromStrict)
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.List (intercalate, nub, sortOn)
@@ -106,7 +104,7 @@ makeStored objectType content = header `B.append` content
           len    = fromString . show $ B.length content
 
 hash :: GitObject -> Ref
-hash = encode . toStrict . bytestringDigest . sha1 . fromStrict . showObject
+hash = encode . L.toStrict . bytestringDigest . sha1 . L.fromStrict . showObject
 
 null :: Parser Char
 null = char '\NUL'
@@ -180,13 +178,13 @@ parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 readObject :: Ref -> WithRepo GitObject
 readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
     liftIO . inflated) .) . sha1Path
-    where inflated = fmap (toStrict . decompress . fromStrict) . readFile
+    where inflated = fmap (L.toStrict . decompress . L.fromStrict) . readFile
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = asks (sha1Path sha1) >>= \path ->
     liftIO $ doesFileExist path >>= flip unless (
         createDirectoryIfMissing True (takeDirectory path) >>
-        L.writeFile path ((compress . fromStrict . showObject) object)) >>
+        L.writeFile path ((compress . L.fromStrict . showObject) object)) >>
     return sha1 where sha1 = hash object
 
 resolveRef :: String -> WithRepo GitObject
