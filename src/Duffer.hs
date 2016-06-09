@@ -14,7 +14,7 @@ import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.List (intercalate, nub, sortOn)
 import Numeric (readOct)
-import Prelude hiding (init, length, readFile, writeFile, take, null)
+import Prelude hiding (init, length, readFile, writeFile, take)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Text.Printf (printf)
@@ -106,11 +106,11 @@ makeStored objectType content = header `B.append` content
 hash :: GitObject -> Ref
 hash = encode . L.toStrict . bytestringDigest . sha1 . L.fromStrict . showObject
 
-null :: Parser Char
-null = char '\NUL'
+parseNull :: Parser Char
+parseNull = char '\NUL'
 
 parseHeader :: B.ByteString -> Parser String
-parseHeader = (*> digit `manyTill` null) . (*> space) . string
+parseHeader = (*> digit `manyTill` parseNull) . (*> space) . string
 
 parseRestOfLine :: Parser String
 parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
@@ -132,7 +132,7 @@ parseTree = parseHeader "tree" >>
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
     <$> ((fst . head . readOct) <$> digit `manyTill` space)
-    <*> takeTill (==0) <* null
+    <*> takeTill (==0) <* parseNull
     <*> (encode <$> take 20)
 
 parsePersonTime :: Parser PersonTime
