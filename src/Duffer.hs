@@ -94,9 +94,9 @@ showObject object = uncurry makeStored $ case object of
     tag@Tag{}       -> ("tag", fromString $ show tag)
     where sortedEntries = sortedUnique $ entries object
           showTreeEntry (TreeEntry mode name sha1) =
-            let modeString = fromString $ printf "%o" mode
-                sha1String = fst $ decode sha1
-            in B.concat [modeString, " ", name, "\NUL", sha1String]
+            let mode' = fromString $ printf "%o" mode
+                sha1' = fst $ decode sha1
+            in B.concat [mode', " ", name, "\NUL", sha1']
 
 makeStored :: B.ByteString -> B.ByteString -> B.ByteString
 makeStored objectType content = header `B.append` content
