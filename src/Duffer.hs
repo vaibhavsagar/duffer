@@ -132,8 +132,8 @@ parseTree = parseHeader "tree" >>
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
     <$> ((fst . head . readOct) <$> digit `manyTill` space)
-    <*> takeTill (==0) <* parseNull
-    <*> (encode <$> take 20)
+    <*> (takeTill (==0)         <*  parseNull)
+    <*> (encode                 <$> take 20)
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
