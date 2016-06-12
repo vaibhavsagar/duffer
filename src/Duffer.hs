@@ -122,12 +122,10 @@ parseRef :: Parser Ref
 parseRef = take 40 <* endOfLine
 
 parseBlob :: Parser GitObject
-parseBlob = parseHeader "blob" >>
-    takeByteString >>= \content -> return $ Blob content
+parseBlob = parseHeader "blob" >> Blob <$> takeByteString
 
 parseTree :: Parser GitObject
-parseTree = parseHeader "tree" >>
-    many' parseTreeEntry >>= \entries -> return $ Tree entries
+parseTree = parseHeader "tree" >> Tree <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
