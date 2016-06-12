@@ -142,11 +142,10 @@ parsePersonTime = PersonTime
 
 parseCommit :: Parser GitObject
 parseCommit = parseHeader "commit" *> do
-    treeRef <-       "tree "      *> parseRef
-    parentRefs <- many' (
-                     "parent "    *> parseRef)
-    authorTime <-    "author "    *> parsePersonTime
-    committerTime <- "committer " *> parsePersonTime
+    treeRef <-           "tree "      *> parseRef
+    parentRefs <- many' ("parent "    *> parseRef)
+    authorTime <-        "author "    *> parsePersonTime
+    committerTime <-     "committer " *> parsePersonTime
     endOfLine
     message <- (toString . B.init) <$> takeByteString
     return $ Commit treeRef parentRefs authorTime committerTime message
