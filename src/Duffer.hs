@@ -88,10 +88,10 @@ sortedUnique = sortOn sortableName . nub where
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> B.ByteString
 showObject object = uncurry makeStored $ case object of
-    Blob content    -> ("blob", content)
-    Tree _          -> ("tree", B.concat $ map showTreeEntry sortedEntries)
+    Blob content    -> ("blob",   content)
+    Tree _          -> ("tree",   B.concat $ map showTreeEntry sortedEntries)
     commit@Commit{} -> ("commit", fromString $ show commit)
-    tag@Tag{}       -> ("tag", fromString $ show tag)
+    tag@Tag{}       -> ("tag",    fromString $ show tag)
     where sortedEntries = sortedUnique $ entries object
           showTreeEntry (TreeEntry mode name sha1) =
             let mode' = fromString $ printf "%o" mode
