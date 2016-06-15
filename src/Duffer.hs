@@ -77,8 +77,8 @@ instance Show PersonTime where
         where components = [name, " <", mail, "> ", time, " ", tz]
 
 sha1Path :: Ref -> Repo -> FilePath
-sha1Path ref = let (sa:sb:suffix) = toString ref in
-    (</> "objects" </> [sa, sb] </> suffix)
+sha1Path ref = let (sa:sb:suffix) = toString ref in flip (foldl (</>))
+    ["objects", [sa,sb], suffix]
 
 sortedUnique :: [TreeEntry] -> [TreeEntry]
 sortedUnique = sortOn sortableName . nub where
