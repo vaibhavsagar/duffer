@@ -146,7 +146,7 @@ parseCommit = parseHeader "commit" >> Commit
     <*>  many' ("parent "    *> parseRef)
     <*>        ("author "    *> parsePersonTime)
     <*>        ("committer " *> parsePersonTime)
-    <*>        parseMessage
+    <*> (endOfLine *> parseMessage)
 
 (~~) :: GitObject -> Int -> WithRepo GitObject
 (~~) object 0 = return object
