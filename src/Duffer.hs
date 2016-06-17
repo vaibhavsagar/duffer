@@ -12,7 +12,8 @@ import Data.Attoparsec.ByteString.Lazy (eitherResult, parse)
 import Data.ByteString.Base16
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, bytestringDigest)
-import Data.List (intercalate, nub, sortOn)
+import Data.List (intercalate)
+import Data.Set (Set, toAscList, fromList)
 import Numeric (readOct)
 import Prelude hiding (init, length, readFile, writeFile, take)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
@@ -23,7 +24,7 @@ import qualified Data.ByteString.Lazy as L
 
 data GitObject
     = Blob {content :: B.ByteString}
-    | Tree {entries :: [TreeEntry]}
+    | Tree {entries :: Set TreeEntry}
     | Commit { treeRef       :: Ref
              , parentRefs    :: [Ref]
              , authorTime    :: PersonTime
@@ -48,7 +49,7 @@ type WithRepo = ReaderT Repo IO
 instance Show GitObject where
     show object = case object of
         Blob content -> show content
-        Tree entries -> unlines $ map show $ sortedUnique entries
+        Tree entries -> unlines $ map show $ toAscList entries
         Commit treeRef parentRefs authorTime committerTime message -> concat
             [    "tree "            `is`    toString  treeRef
             , concatMap (("parent " `is`) . toString) parentRefs
@@ -63,6 +64,10 @@ instance Show GitObject where
             , "\n"      `is` annotation]
         where is prefix value = concat [prefix, value, "\n"] :: String
 
+instance Show PersonTime where
+    show (PersonTime name mail time tz) = concat components
+        where components = [name, " <", mail, "> ", time, " ", tz]
+
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
         where components = [octMode, entryType, toString sha1, toString name]
@@ -72,18 +77,14 @@ instance Show TreeEntry where
                 "160000" -> "commit"
                 _        -> "blob"
 
-instance Show PersonTime where
-    show (PersonTime name mail time tz) = concat components
-        where components = [name, " <", mail, "> ", time, " ", tz]
+instance Ord TreeEntry where
+    compare t1 t2 = compare (sortableName t1) (sortableName t2)
+        where sortableName (TreeEntry mode name _) = name `B.append`
+                if mode == 16384 || mode == 57344 then "/" else ""
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in flip (foldl (</>))
     ["objects", [sa,sb], suffix]
-
-sortedUnique :: [TreeEntry] -> [TreeEntry]
-sortedUnique = sortOn sortableName . nub where
-    sortableName (TreeEntry mode name _) =
-        B.append name $ if mode == 16384 || mode == 57344 then "/" else ""
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> B.ByteString
@@ -92,7 +93,7 @@ showObject object = uncurry makeStored $ case object of
     Tree _          -> ("tree",   B.concat $ map showTreeEntry sortedEntries)
     commit@Commit{} -> ("commit", fromString $ show commit)
     tag@Tag{}       -> ("tag",    fromString $ show tag)
-    where sortedEntries = sortedUnique $ entries object
+    where sortedEntries = toAscList $ entries object
           showTreeEntry (TreeEntry mode name sha1) =
             let mode' = fromString $ printf "%o" mode
                 sha1' = fst $ decode sha1
@@ -125,7 +126,7 @@ parseBlob :: Parser GitObject
 parseBlob = parseHeader "blob" >> Blob <$> takeByteString
 
 parseTree :: Parser GitObject
-parseTree = parseHeader "tree" >> Tree <$> many' parseTreeEntry
+parseTree = parseHeader "tree" >> Tree . fromList <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
