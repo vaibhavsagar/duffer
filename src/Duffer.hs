@@ -83,8 +83,8 @@ instance Ord TreeEntry where
                 if mode == 16384 || mode == 57344 then "/" else ""
 
 sha1Path :: Ref -> Repo -> FilePath
-sha1Path ref = let (sa:sb:suffix) = toString ref in flip (foldl (</>))
-    ["objects", [sa,sb], suffix]
+sha1Path ref = let (sa:sb:suffix) = toString ref in
+    flip (foldl (</>)) ["objects", [sa, sb], suffix]
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> B.ByteString
