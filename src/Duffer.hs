@@ -157,15 +157,12 @@ parseCommit = parseHeader "commit" >> Commit
 (^^) object n = readObject $ parentRefs object !! (n-1)
 
 parseTag :: Parser GitObject
-parseTag = parseHeader "tag" *> do
-    objectRef  <- "object " *> parseRef
-    objectType <- "type "   *> restOfLine
-    tagName    <- "tag "    *> restOfLine
-    tagger     <- "tagger " *> parsePersonTime
-    endOfLine
-    annotation <- (toString . B.init) <$> takeByteString
-    return $ Tag objectRef objectType tagName tagger annotation
-    where restOfLine = toString <$> takeTill (==10) <* "\n"
+parseTag = parseHeader "tag" >> Tag
+    <$> ("object " *> parseRef)
+    <*> ("type "   *> parseRestOfLine)
+    <*> ("tag "    *> parseRestOfLine)
+    <*> ("tagger " *> parsePersonTime)
+    <*> (endOfLine *> parseMessage)
 
 parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
