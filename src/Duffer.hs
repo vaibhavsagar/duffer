@@ -117,7 +117,7 @@ parseRestOfLine :: Parser String
 parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
 
 parseMessage :: Parser String
-parseMessage = (toString . B.init) <$> takeByteString
+parseMessage = endOfLine *> ((toString . B.init) <$> takeByteString)
 
 parseRef :: Parser Ref
 parseRef = take 40 <* endOfLine
@@ -147,7 +147,7 @@ parseCommit = parseHeader "commit" >> Commit
     <*>  many' ("parent "    *> parseRef)
     <*>        ("author "    *> parsePersonTime)
     <*>        ("committer " *> parsePersonTime)
-    <*> (endOfLine *> parseMessage)
+    <*>        parseMessage
 
 (~~) :: GitObject -> Int -> WithRepo GitObject
 (~~) object 0 = return object
@@ -162,7 +162,7 @@ parseTag = parseHeader "tag" >> Tag
     <*> ("type "   *> parseRestOfLine)
     <*> ("tag "    *> parseRestOfLine)
     <*> ("tagger " *> parsePersonTime)
-    <*> (endOfLine *> parseMessage)
+    <*> parseMessage
 
 parseObject :: Parser GitObject
 parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
