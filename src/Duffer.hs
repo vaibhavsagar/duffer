@@ -15,7 +15,7 @@ import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.List (intercalate)
 import Data.Set (Set, toAscList, fromList)
 import Numeric (readOct)
-import Prelude hiding (init, length, readFile, writeFile, take)
+import Prelude hiding (init, length, take)
 import System.Directory (doesFileExist, createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Text.Printf (printf)
@@ -51,18 +51,18 @@ instance Show GitObject where
         Blob content -> show content
         Tree entries -> unlines $ map show $ toAscList entries
         Commit treeRef parentRefs authorTime committerTime message -> concat
-            [    "tree "            `is`    toString  treeRef
-            , concatMap (("parent " `is`) . toString) parentRefs
-            ,    "author "          `is`    show      authorTime
-            ,    "committer "       `is`    show      committerTime
-            ,    "\n"               `is`              message]
+            [             "tree "      ~>    toString  treeRef
+            , concatMap (("parent "    ~>) . toString) parentRefs
+            ,             "author "    ~>    show      authorTime
+            ,             "committer " ~>    show      committerTime
+            ,             "\n"         ~>              message]
         Tag objectRef objectType tagName tagger annotation -> concat
-            [ "object " `is` toString objectRef
-            , "type "   `is` objectType
-            , "tag "    `is` tagName
-            , "tagger " `is` show tagger
-            , "\n"      `is` annotation]
-        where is prefix value = concat [prefix, value, "\n"] :: String
+            [ "object " ~> toString objectRef
+            , "type "   ~> objectType
+            , "tag "    ~> tagName
+            , "tagger " ~> show tagger
+            , "\n"      ~> annotation]
+        where (~>) prefix value = concat [prefix, value, "\n"] :: String
 
 instance Show PersonTime where
     show (PersonTime name mail time tz) = concat components
