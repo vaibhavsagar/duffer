@@ -87,8 +87,8 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
     flip (foldl (</>)) ["objects", [sa, sb], suffix]
 
 -- Generate a stored representation of a git object.
-showObject :: GitObject -> B.ByteString
-showObject object = uncurry makeStored $ case object of
+showObject :: GitObject -> L.ByteString
+showObject object = L.fromStrict $ uncurry makeStored $ case object of
     Blob content    -> ("blob",   content)
     Tree _          -> ("tree",   B.concat $ map showTreeEntry sortedEntries)
     commit@Commit{} -> ("commit", fromString $ show commit)
@@ -105,7 +105,7 @@ makeStored objectType content = header `B.append` content
           len    = fromString . show $ B.length content
 
 hash :: GitObject -> Ref
-hash = encode . L.toStrict . bytestringDigest . sha1 . L.fromStrict . showObject
+hash = encode . L.toStrict . bytestringDigest . sha1 . showObject
 
 parseNull :: Parser Char
 parseNull = char '\NUL'
@@ -164,25 +164,26 @@ parseTag = parseHeader "tag" >> Tag
     <*> ("tagger " *> parsePersonTime)
     <*> parseMessage
 
-parseObject :: Parser GitObject
-parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
+parseObject :: L.ByteString -> GitObject
+parseObject = either error id . eitherResult . parse
+    (choice [parseBlob, parseTree, parseCommit, parseTag])
 
 readObject :: Ref -> WithRepo GitObject
-readObject = (ask >>=) . ((fmap (either error id . parseOnly parseObject) .
-    liftIO . inflated) .) . sha1Path
-    where inflated = fmap (L.toStrict . decompress . L.fromStrict) . B.readFile
+readObject = (ask >>=) . ((liftIO . parseInflated).) . sha1Path
+    where parseInflated = fmap (parseObject . decompress) . L.readFile
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = asks (sha1Path sha1) >>= \path ->
     liftIO $ doesFileExist path >>= flip unless (
         createDirectoryIfMissing True (takeDirectory path) >>
-        L.writeFile path ((compress . L.fromStrict . showObject) object)) >>
+        L.writeFile path ((compress . showObject) object)) >>
     return sha1 where sha1 = hash object
 
 resolveRef :: String -> WithRepo GitObject
-resolveRef = (ask >>=) . (((readObject =<<) . liftIO . (B.init <$>)
-    . B.readFile) .) . flip (</>)
+resolveRef = (ask >>=) . (((readObject =<<) . liftIO .
+    (L.toStrict . L.init  <$>) . L.readFile) .) . flip (</>)
 
 updateRef :: String -> GitObject -> WithRepo Ref
-updateRef refPath object = let sha1 = hash object in ask >>= liftIO .
-    (>> return sha1) . flip B.writeFile (sha1 `B.append` "\n") . (</> refPath)
+updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
+    flip L.writeFile (L.fromStrict $ B.append sha1 "\n")
+    where sha1 = hash object
