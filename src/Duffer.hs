@@ -90,11 +90,10 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
 showObject :: GitObject -> L.ByteString
 showObject object = L.fromStrict $ uncurry makeStored $ case object of
     Blob content    -> ("blob",   content)
-    Tree _          -> ("tree",   B.concat $ map showTreeEntry sortedEntries)
+    Tree entries    -> ("tree",   B.concat $ map showEntry $ toAscList entries)
     commit@Commit{} -> ("commit", fromString $ show commit)
     tag@Tag{}       -> ("tag",    fromString $ show tag)
-    where sortedEntries = toAscList $ entries object
-          showTreeEntry (TreeEntry mode name sha1) =
+    where showEntry (TreeEntry mode name sha1) =
             let mode' = fromString $ printf "%o" mode
                 sha1' = fst $ decode sha1
             in B.concat [mode', " ", name, "\NUL", sha1']
