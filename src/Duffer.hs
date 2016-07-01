@@ -80,7 +80,7 @@ instance Show TreeEntry where
 instance Ord TreeEntry where
     compare t1 t2 = compare (sortableName t1) (sortableName t2)
         where sortableName (TreeEntry mode name _) = name `B.append`
-                if mode == 16384 || mode == 57344 then "/" else ""
+                if mode == 0o040000 || mode == 0o160000 then "/" else ""
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
