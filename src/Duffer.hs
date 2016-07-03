@@ -72,9 +72,9 @@ instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
         where components = [octMode, entryType, toString sha1, toString name]
               octMode = printf "%06o" mode :: String
-              entryType = case octMode of
-                "040000" -> "tree"
-                "160000" -> "commit"
+              entryType = case mode of
+                0o040000 -> "tree"
+                0o160000 -> "commit"
                 _        -> "blob"
 
 instance Ord TreeEntry where
