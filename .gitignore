@@ -1,3 +1,5 @@
+*.hi
+*.o
 .stack-work
 .ipynb_checkpoints
 presentation/reveal.js
