@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Duffer where
 
@@ -48,15 +49,15 @@ type WithRepo = ReaderT Repo IO
 
 instance Show GitObject where
     show object = case object of
-        Blob content -> show content
-        Tree entries -> unlines $ map show $ toAscList entries
-        Commit treeRef parentRefs authorTime committerTime message -> concat
+        Blob {..} -> show content
+        Tree {..} -> unlines $ map show $ toAscList entries
+        Commit {..} -> concat
             [             "tree "      ~>    toString  treeRef
             , concatMap (("parent "    ~>) . toString) parentRefs
             ,             "author "    ~>    show      authorTime
             ,             "committer " ~>    show      committerTime
             ,             "\n"         ~>              message]
-        Tag objectRef objectType tagName tagger annotation -> concat
+        Tag {..} -> concat
             [ "object " ~> toString objectRef
             , "type "   ~> objectType
             , "tag "    ~> tagName
