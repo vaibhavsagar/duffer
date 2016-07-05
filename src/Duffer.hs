@@ -23,24 +23,24 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 
 data GitObject
-    = Blob {content :: B.ByteString}
-    | Tree {entries :: Set TreeEntry}
-    | Commit { treeRef       :: Ref
-             , parentRefs    :: [Ref]
-             , authorTime    :: PersonTime
-             , committerTime :: PersonTime
-             , message       :: String}
-    | Tag { objectRef  :: Ref
-          , objectType :: String
-          , tagName    :: String
-          , tagger     :: PersonTime
-          , annotation :: String}
+    = Blob {content :: !B.ByteString}
+    | Tree {entries :: !(Set TreeEntry)}
+    | Commit { treeRef       :: !Ref
+             , parentRefs    :: ![Ref]
+             , authorTime    :: !PersonTime
+             , committerTime :: !PersonTime
+             , message       :: !String}
+    | Tag { objectRef  :: !Ref
+          , objectType :: !String
+          , tagName    :: !String
+          , tagger     :: !PersonTime
+          , annotation :: !String}
 
-data TreeEntry = TreeEntry Int B.ByteString Ref deriving (Eq)
-data PersonTime = PersonTime { personName :: String
-                             , personMail :: String
-                             , personTime :: String
-                             , personTZ   :: String}
+data TreeEntry = TreeEntry !Int !B.ByteString !Ref deriving (Eq)
+data PersonTime = PersonTime { personName :: !String
+                             , personMail :: !String
+                             , personTime :: !String
+                             , personTZ   :: !String}
 
 type Ref = B.ByteString
 type Repo = String
