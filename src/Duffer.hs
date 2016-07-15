@@ -52,18 +52,20 @@ instance Show GitObject where
         Blob {..} -> show content
         Tree {..} -> unlines $ map show $ toAscList entries
         Commit {..} -> concat
-            [             "tree "      ~>    toString  treeRef
-            , concatMap (("parent "    ~>) . toString) parentRefs
-            ,             "author "    ~>    show      authorTime
-            ,             "committer " ~>    show      committerTime
-            ,             "\n"         ~>              message]
+            [             "tree"      ?    toString  treeRef
+            , concatMap (("parent"    ?) . toString) parentRefs
+            ,             "author"    ?    show      authorTime
+            ,             "committer" ?    show      committerTime
+            ,             '\n'        :              message
+            ,             "\n"]
         Tag {..} -> concat
-            [ "object " ~> toString objectRef
-            , "type "   ~> objectType
-            , "tag "    ~> tagName
-            , "tagger " ~> show tagger
-            , "\n"      ~> annotation]
-        where (~>) prefix value = concat [prefix, value, "\n"] :: String
+            [ "object" ? toString objectRef
+            , "type"   ? objectType
+            , "tag"    ? tagName
+            , "tagger" ? show tagger
+            , '\n'     : annotation
+            , "\n"]
+        where (?) prefix value = concat [prefix, " ", value, "\n"] :: String
 
 instance Show PersonTime where
     show (PersonTime name mail time tz) = concat components
