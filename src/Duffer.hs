@@ -10,7 +10,7 @@ import Control.Monad.Trans.Reader (ReaderT, ask, asks)
 import Data.Attoparsec.ByteString hiding (parse, eitherResult)
 import Data.Attoparsec.ByteString.Char8 hiding (eitherResult, parse, takeTill)
 import Data.Attoparsec.ByteString.Lazy (eitherResult, parse)
-import Data.ByteString.Base16
+import Data.ByteString.Base16.Lazy (encode, decode)
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.List (intercalate)
@@ -43,7 +43,7 @@ data PersonTime = PersonTime { personName :: !String
                              , personTime :: !String
                              , personTZ   :: !String}
 
-type Ref = B.ByteString
+type Ref = L.ByteString
 type Repo = String
 type WithRepo = ReaderT Repo IO
 
@@ -52,14 +52,14 @@ instance Show GitObject where
         Blob {..} -> show content
         Tree {..} -> unlines $ map show $ toAscList entries
         Commit {..} -> concat
-            [             "tree"      ?    toString  treeRef
-            , concatMap (("parent"    ?) . toString) parentRefs
-            ,             "author"    ?    show      authorTime
-            ,             "committer" ?    show      committerTime
-            ,             '\n'        :              message
+            [             "tree"      ?    showRef  treeRef
+            , concatMap (("parent"    ?) . showRef) parentRefs
+            ,             "author"    ?    show     authorTime
+            ,             "committer" ?    show     committerTime
+            ,             '\n'        :             message
             ,             "\n"]
         Tag {..} -> concat
-            [ "object" ? toString objectRef
+            [ "object" ? showRef objectRef
             , "type"   ? objectType
             , "tag"    ? tagName
             , "tagger" ? show tagger
@@ -73,7 +73,7 @@ instance Show PersonTime where
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
-        where components = [octMode, entryType, toString sha1, toString name]
+        where components = [octMode, entryType, showRef sha1, toString name]
               octMode = printf "%06o" mode :: String
               entryType = case mode of
                 0o040000 -> "tree"
@@ -85,8 +85,11 @@ instance Ord TreeEntry where
         where sortableName (TreeEntry mode name _) = name `B.append`
                 if mode == 0o040000 || mode == 0o160000 then "/" else ""
 
+showRef :: Ref -> String
+showRef = toString . L.toStrict
+
 sha1Path :: Ref -> Repo -> FilePath
-sha1Path ref = let (sa:sb:suffix) = toString ref in
+sha1Path ref = let (sa:sb:suffix) = showRef ref in
     flip (foldl (</>)) ["objects", [sa, sb], suffix]
 
 -- Generate a stored representation of a git object.
@@ -98,7 +101,7 @@ showObject object = L.fromStrict $ uncurry makeStored $ case object of
     tag@Tag{}       -> ("tag",    fromString $ show tag)
     where showEntry (TreeEntry mode name sha1) =
             let mode' = fromString $ printf "%o" mode
-                sha1' = fst $ decode sha1
+                sha1' = L.toStrict . fst $ decode sha1
             in B.concat [mode', " ", name, "\NUL", sha1']
 
 makeStored :: B.ByteString -> B.ByteString -> B.ByteString
@@ -107,7 +110,7 @@ makeStored objectType content = header `B.append` content
           len    = fromString . show $ B.length content
 
 hash :: GitObject -> Ref
-hash = encode . L.toStrict . bytestringDigest . sha1 . showObject
+hash = encode . bytestringDigest . sha1 . showObject
 
 parseNull :: Parser Char
 parseNull = char '\NUL'
@@ -122,7 +125,7 @@ parseMessage :: Parser String
 parseMessage = endOfLine *> ((toString . B.init) <$> takeByteString)
 
 parseRef :: Parser Ref
-parseRef = take 40 <* endOfLine
+parseRef = L.fromStrict <$> take 40 <* endOfLine
 
 parseBlob :: Parser GitObject
 parseBlob = parseHeader "blob" >> Blob <$> takeByteString
@@ -132,9 +135,9 @@ parseTree = parseHeader "tree" >> Tree . fromList <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
-    <$> (fst . head . readOct <$> digit `manyTill` space)
-    <*> (takeTill (==0)       <*  parseNull)
-    <*> (encode               <$> take 20)
+    <$> (fst . head . readOct  <$> digit `manyTill` space)
+    <*> (takeTill (==0)        <*  parseNull)
+    <*> (encode . L.fromStrict <$> take 20)
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
@@ -183,9 +186,8 @@ writeObject object = asks (sha1Path sha1) >>= \path ->
 
 resolveRef :: String -> WithRepo GitObject
 resolveRef = (ask >>=) . (((readObject =<<) . liftIO .
-    (L.toStrict . L.init  <$>) . L.readFile) .) . flip (</>)
+    (L.init <$>) . L.readFile) .) . flip (</>)
 
 updateRef :: String -> GitObject -> WithRepo Ref
 updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
-    flip L.writeFile (L.fromStrict $ B.append sha1 "\n")
-    where sha1 = hash object
+    flip L.writeFile (L.append sha1 "\n") where sha1 = hash object
