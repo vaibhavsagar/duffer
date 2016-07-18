@@ -68,8 +68,7 @@ instance Show GitObject where
         where (?) prefix value = concat [prefix, " ", value, "\n"] :: String
 
 instance Show PersonTime where
-    show (PersonTime name mail time tz) = concat components
-        where components = [name, " <", mail, "> ", time, " ", tz]
+    show (PersonTime nm ml ti tz) = concat [nm, " <", ml, "> ", ti, " ", tz]
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
