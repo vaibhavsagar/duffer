@@ -168,13 +168,13 @@ parseTag = parseHeader "tag" >> Tag
     <*> ("tagger " *> parsePersonTime)
     <*> parseMessage
 
-parseObject :: L.ByteString -> GitObject
-parseObject = either error id . eitherResult . parse
-    (choice [parseBlob, parseTree, parseCommit, parseTag])
+parseObject :: Parser GitObject
+parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
 
 readObject :: Ref -> WithRepo GitObject
 readObject = (ask >>=) . ((liftIO . parseInflated).) . sha1Path
-    where parseInflated = fmap (parseObject . decompress) . L.readFile
+    where parseInflated = fmap (parseObject' . decompress) . L.readFile
+          parseObject' = either error id . eitherResult . parse parseObject
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = asks (sha1Path sha1) >>= \path ->
