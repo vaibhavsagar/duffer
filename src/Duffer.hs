@@ -147,10 +147,10 @@ parsePersonTime = PersonTime
 
 parseCommit :: Parser GitObject
 parseCommit = parseHeader "commit" >> Commit
-    <$>        ("tree "      *> parseRef)
-    <*>  many' ("parent "    *> parseRef)
-    <*>        ("author "    *> parsePersonTime)
-    <*>        ("committer " *> parsePersonTime)
+    <$>        ("tree"      *> space *> parseRef)
+    <*>  many' ("parent"    *> space *> parseRef)
+    <*>        ("author"    *> space *> parsePersonTime)
+    <*>        ("committer" *> space *> parsePersonTime)
     <*>        parseMessage
 
 (~~) :: GitObject -> Int -> WithRepo GitObject
@@ -162,10 +162,10 @@ parseCommit = parseHeader "commit" >> Commit
 
 parseTag :: Parser GitObject
 parseTag = parseHeader "tag" >> Tag
-    <$> ("object " *> parseRef)
-    <*> ("type "   *> parseRestOfLine)
-    <*> ("tag "    *> parseRestOfLine)
-    <*> ("tagger " *> parsePersonTime)
+    <$> ("object" *> space *> parseRef)
+    <*> ("type"   *> space *> parseRestOfLine)
+    <*> ("tag"    *> space *> parseRestOfLine)
+    <*> ("tagger" *> space *> parsePersonTime)
     <*> parseMessage
 
 parseObject :: Parser GitObject
