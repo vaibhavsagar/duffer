@@ -65,7 +65,7 @@ instance Show GitObject where
             , "tagger" ? show tagger
             , '\n'     : toString annotation
             , "\n"]
-        where (?) prefix value = concat [prefix, " ", value, "\n"] :: String
+        where (?) prefix value = concat [prefix, ' ':value, "\n"] :: String
 
 instance Show PersonTime where
     show (PersonTime nm ml ti tz) = concat [nm, " <", ml, "> ", ti, " ", tz]
