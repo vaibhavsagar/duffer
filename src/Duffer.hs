@@ -30,12 +30,12 @@ data GitObject
              , parentRefs    :: ![Ref]
              , authorTime    :: !PersonTime
              , committerTime :: !PersonTime
-             , message       :: !String}
+             , message       :: !B.ByteString }
     | Tag { objectRef  :: !Ref
           , objectType :: !String
           , tagName    :: !String
           , tagger     :: !PersonTime
-          , annotation :: !String}
+          , annotation :: !B.ByteString }
 
 data TreeEntry = TreeEntry !Int !B.ByteString !Ref deriving (Eq)
 data PersonTime = PersonTime { personName :: !String
@@ -56,14 +56,14 @@ instance Show GitObject where
             , concatMap (("parent"    ?) . showRef) parentRefs
             ,             "author"    ?    show     authorTime
             ,             "committer" ?    show     committerTime
-            ,             '\n'        :             message
+            ,             '\n'        :    toString message
             ,             "\n"]
         Tag {..} -> concat
             [ "object" ? showRef objectRef
             , "type"   ? objectType
             , "tag"    ? tagName
             , "tagger" ? show tagger
-            , '\n'     : annotation
+            , '\n'     : toString annotation
             , "\n"]
         where (?) prefix value = concat [prefix, " ", value, "\n"] :: String
 
@@ -120,8 +120,8 @@ parseHeader = (*> digit `manyTill` parseNull) . (*> space) . string
 parseRestOfLine :: Parser String
 parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
 
-parseMessage :: Parser String
-parseMessage = endOfLine *> ((toString . B.init) <$> takeByteString)
+parseMessage :: Parser B.ByteString
+parseMessage = endOfLine *> (B.init <$> takeByteString)
 
 parseRef :: Parser Ref
 parseRef = L.fromStrict <$> take 40 <* endOfLine
