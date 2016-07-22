@@ -56,15 +56,13 @@ instance Show GitObject where
             , concatMap (("parent"    ?) . showRef) parentRefs
             ,             "author"    ?    show     authorTime
             ,             "committer" ?    show     committerTime
-            ,             '\n'        :    toString message
-            ,             "\n"]
+            ,             '\n'        :    toString message , "\n"]
         Tag {..} -> concat
             [ "object" ? showRef objectRef
             , "type"   ? objectType
             , "tag"    ? tagName
             , "tagger" ? show tagger
-            , '\n'     : toString annotation
-            , "\n"]
+            , '\n'     : toString annotation , "\n"]
         where (?) prefix value = concat [prefix, ' ':value, "\n"] :: String
 
 instance Show PersonTime where
