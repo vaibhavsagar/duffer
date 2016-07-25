@@ -30,6 +30,7 @@ library
                      , attoparsec
                      , directory
                      , transformers
+  default-extensions:  OverloadedStrings
   ghc-options:       -fwarn-unused-imports
                      -fwarn-tabs
                      -fwarn-missing-signatures

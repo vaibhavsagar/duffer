@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Duffer.Loose where
 
 import qualified Data.ByteString.Lazy as L

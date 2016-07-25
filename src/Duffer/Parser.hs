@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Duffer.Parser where
 
 import qualified Data.ByteString      as B
