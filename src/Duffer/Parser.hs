@@ -1,16 +1,15 @@
 module Duffer.Parser where
 
 import qualified Data.ByteString      as B
-import qualified Data.ByteString.Lazy as L
 
 import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
 import Prelude                          hiding (take)
 
 import Data.Attoparsec.ByteString
-import Data.ByteString.Base16.Lazy     (encode)
-import Data.ByteString.UTF8            (toString)
-import Data.Set                        (fromList)
-import Numeric                         (readOct)
+import Data.ByteString.Base16     (encode)
+import Data.ByteString.UTF8       (toString)
+import Data.Set                   (fromList)
+import Numeric                    (readOct)
 
 import Duffer.Types
 
@@ -27,19 +26,19 @@ parseMessage :: Parser B.ByteString
 parseMessage = endOfLine *> (B.init <$> takeByteString)
 
 parseRef :: Parser Ref
-parseRef = L.fromStrict <$> take 40 <* endOfLine
+parseRef = take 40 <* endOfLine
 
 parseBlob :: Parser GitObject
-parseBlob = parseHeader "blob" >> Blob <$> takeByteString
+parseBlob = Blob <$> takeByteString
 
 parseTree :: Parser GitObject
-parseTree = parseHeader "tree" >> Tree . fromList <$> many' parseTreeEntry
+parseTree = Tree . fromList <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
     <$> (fst . head . readOct  <$> digit `manyTill` space)
     <*> (takeTill (==0)        <*  parseNull)
-    <*> (encode . L.fromStrict <$> take 20)
+    <*> (encode                <$> take 20)
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
@@ -49,7 +48,7 @@ parsePersonTime = PersonTime
     <*> parseRestOfLine
 
 parseCommit :: Parser GitObject
-parseCommit = parseHeader "commit" >> Commit
+parseCommit = Commit
     <$>        ("tree"      *> space *> parseRef)
     <*>  many' ("parent"    *> space *> parseRef)
     <*>        ("author"    *> space *> parsePersonTime)
@@ -57,7 +56,7 @@ parseCommit = parseHeader "commit" >> Commit
     <*>        parseMessage
 
 parseTag :: Parser GitObject
-parseTag = parseHeader "tag" >> Tag
+parseTag = Tag
     <$> ("object" *> space *> parseRef)
     <*> ("type"   *> space *> parseRestOfLine)
     <*> ("tag"    *> space *> parseRestOfLine)
@@ -65,4 +64,9 @@ parseTag = parseHeader "tag" >> Tag
     <*> parseMessage
 
 parseObject :: Parser GitObject
-parseObject = choice [parseBlob, parseTree, parseCommit, parseTag]
+parseObject = choice
+    [ "blob"   ? parseBlob
+    , "tree"   ? parseTree
+    , "commit" ? parseCommit
+    , "tag"    ? parseTag
+    ] where (?) oType parser = parseHeader oType >> parser

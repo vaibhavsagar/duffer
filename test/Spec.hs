@@ -6,7 +6,6 @@ import System.Process
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString (hGetContents)
 import Data.ByteString.UTF8 (lines)
-import Data.ByteString.Lazy (fromStrict)
 
 main :: IO ()
 main = do
@@ -39,7 +38,7 @@ objectsOfType objectType = do
     (_, Just h2, _, _) <- createProcess (shell "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'") {std_out = CreatePipe, std_in = UseHandle h1}
     (_, Just h3, _, _) <- createProcess (shell $ "grep '^[^ ]* " ++ objectType ++ "'") {std_out = CreatePipe, std_in = UseHandle h2}
     (_, Just h4, _, _) <- createProcess (shell "cut -d' ' -f1") {std_out = CreatePipe, std_in = UseHandle h3}
-    map fromStrict . Data.ByteString.UTF8.lines  <$> hGetContents h4
+    Data.ByteString.UTF8.lines  <$> hGetContents h4
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 =
