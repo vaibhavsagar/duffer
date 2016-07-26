@@ -11,7 +11,7 @@ import Data.ByteString.UTF8       (toString)
 import Data.Set                   (fromList)
 import Numeric                    (readOct)
 
-import Duffer.Types
+import Duffer.Objects
 
 parseNull :: Parser Char
 parseNull = char '\NUL'

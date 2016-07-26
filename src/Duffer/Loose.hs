@@ -11,8 +11,8 @@ import Data.Attoparsec.ByteString (parseOnly)
 import System.Directory           (doesFileExist, createDirectoryIfMissing)
 import System.FilePath            ((</>), takeDirectory)
 
-import Duffer.Types  (GitObject(..), Ref, Repo, sha1Path, hash, showObject)
-import Duffer.Parser (parseObject)
+import Duffer.Objects (GitObject(..), Ref, Repo, sha1Path, hash, showObject)
+import Duffer.Parser  (parseObject)
 
 type WithRepo = ReaderT Repo IO
 
