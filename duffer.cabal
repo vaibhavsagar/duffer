@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Duffer
-  other-modules:       Duffer.Loose
+                       Duffer.Loose
                        Duffer.Objects
                        Duffer.Parser
   build-depends:       base >= 4.7 && < 5
