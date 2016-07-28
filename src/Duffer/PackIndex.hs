@@ -20,7 +20,7 @@ word8s = mapM word8
 fromBytes :: (Bits t, Integral t) => [t] -> t
 fromBytes = foldl (\a b -> (fromIntegral a `shiftL` 8) + b) 0
 
-toBytes :: Integral t => t  -> [t]
+toBytes :: (Bits t, Integral t) => t -> [t]
 toBytes n = case divMod n (bit 8) of
     (0, i) -> [i]
     (x, y) -> toBytes x ++ toBytes y
