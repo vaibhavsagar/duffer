@@ -36,7 +36,7 @@ fixOffsets :: [Int] -> Int -> Int
 fixOffsets fOffsets offset
     | offset >= msb = fOffsets !! (offset-msb)
     | otherwise     = offset
-    where msb = bit 7 `shiftL` (8*3)
+    where msb = bit 31
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
@@ -44,9 +44,9 @@ parsePackIndex = do
     version   <- word8s [0, 0, 0, 2]
     totals    <- count 256 (fromPack <$> take 4)
     let total =  count (last totals)
-    names     <- total $ encode <$> take 20
+    names     <- total $ encode      <$> take 20
     checks    <- total $ take 4
-    offsets   <- total $ fromPack <$> take 4
+    offsets   <- total $ fromPack    <$> take 4
     remaining <- takeByteString
     let (fifth, checks) = B.splitAt (B.length remaining - 40) remaining
     let fixedOffsets    = if fifth /= B.empty
