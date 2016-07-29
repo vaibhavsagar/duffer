@@ -7,7 +7,6 @@ import Data.ByteString (hGetContents)
 import Data.ByteString.UTF8 (lines)
 
 import Duffer
-import Duffer.Loose.Objects (Ref, hash)
 
 main :: IO ()
 main = do
