@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Duffer.Objects where
+module Duffer.Loose.Objects where
 
 import qualified Data.ByteString      as B
 import qualified Data.ByteString.Lazy as L (fromStrict, toStrict)

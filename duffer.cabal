@@ -17,9 +17,10 @@ library
   hs-source-dirs:      src
   exposed-modules:     Duffer
                        Duffer.Loose
-                       Duffer.Objects
-                       Duffer.Parser
-                       Duffer.PackIndex
+                       Duffer.Loose.Objects
+                       Duffer.Loose.Parser
+                       Duffer.Packed.PackIndex
+                       Duffer.Packed.Parser
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , containers

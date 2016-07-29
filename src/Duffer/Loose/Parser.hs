@@ -1,4 +1,4 @@
-module Duffer.Parser where
+module Duffer.Loose.Parser where
 
 import qualified Data.ByteString      as B
 
@@ -11,7 +11,7 @@ import Data.ByteString.UTF8       (toString)
 import Data.Set                   (fromList)
 import Numeric                    (readOct)
 
-import Duffer.Objects
+import Duffer.Loose.Objects
 
 parseNull :: Parser Char
 parseNull = char '\NUL'

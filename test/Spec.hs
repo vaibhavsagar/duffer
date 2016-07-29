@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Duffer
 import Test.Hspec
 import System.Process
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString (hGetContents)
 import Data.ByteString.UTF8 (lines)
+
+import Duffer
+import Duffer.Loose.Objects (Ref, hash)
 
 main :: IO ()
 main = do
