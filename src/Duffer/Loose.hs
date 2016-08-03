@@ -1,6 +1,5 @@
 module Duffer.Loose where
 
-import qualified Data.ByteString        as B
 import qualified Data.ByteString.Lazy   as L (toStrict, fromStrict)
 import qualified Codec.Compression.Zlib as Z (compress, decompress)
 
@@ -8,6 +7,8 @@ import Control.Monad              (unless)
 import Control.Monad.IO.Class     (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask, asks)
 import Data.Attoparsec.ByteString (parseOnly)
+import Data.ByteString
+    (ByteString, append, readFile, writeFile, init)
 import System.Directory           (doesFileExist, createDirectoryIfMissing)
 import System.FilePath            ((</>), takeDirectory)
 
@@ -26,14 +27,14 @@ type WithRepo = ReaderT Repo IO
 (^^) :: GitObject -> Int -> WithRepo GitObject
 (^^) object n = readObject $ parentRefs object !! (n-1)
 
-compress, decompress :: B.ByteString -> B.ByteString
+compress, decompress :: ByteString -> ByteString
 compress   = L.toStrict . Z.compress   . L.fromStrict
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
 readObject :: Ref -> WithRepo GitObject
 readObject ref = do
     path    <- asks (sha1Path ref)
-    content <- liftIO $ decompress <$> B.readFile path
+    content <- liftIO $ decompress <$> readFile path
     return  $ either error id $ parseOnly parseObject content
 
 writeObject :: GitObject -> WithRepo Ref
@@ -42,13 +43,13 @@ writeObject object = let sha1 = hash object in do
     exists <- liftIO $ doesFileExist path
     liftIO $ unless exists $ do
         createDirectoryIfMissing True (takeDirectory path)
-        B.writeFile path $ (compress . showObject) object
+        writeFile path $ (compress . showObject) object
     return sha1
 
 resolveRef :: String -> WithRepo GitObject
 resolveRef = (ask >>=) . (((readObject =<<) . liftIO .
-    (B.init <$>) . B.readFile) .) . flip (</>)
+    (init <$>) . readFile) .) . flip (</>)
 
 updateRef :: String -> GitObject -> WithRepo Ref
 updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
-    flip B.writeFile (B.append sha1 "\n") where sha1 = hash object
+    flip writeFile (append sha1 "\n") where sha1 = hash object
