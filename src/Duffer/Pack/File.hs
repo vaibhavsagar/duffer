@@ -1,4 +1,4 @@
-module Duffer.Packed.PackFile where
+module Duffer.Pack.File where
 
 import qualified Data.ByteString as B
 

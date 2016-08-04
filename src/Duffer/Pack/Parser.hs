@@ -1,4 +1,4 @@
-module Duffer.Packed.Parser where
+module Duffer.Pack.Parser where
 
 import qualified Data.ByteString as B
 
