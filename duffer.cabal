@@ -20,6 +20,7 @@ library
                        Duffer.Loose.Objects
                        Duffer.Loose.Parser
                        Duffer.Packed.PackIndex
+                       Duffer.Packed.PackFile
                        Duffer.Packed.Parser
   build-depends:       base >= 4.7 && < 5
                      , bytestring
