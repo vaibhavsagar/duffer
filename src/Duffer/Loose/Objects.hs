@@ -100,4 +100,4 @@ showContent object = case object of
             in B.concat [mode', " ", name, "\NUL", sha1']
 
 hash :: GitObject -> Ref
-hash = encode . L.toStrict .bytestringDigest . sha1 . L.fromStrict . showObject
+hash = encode . L.toStrict . bytestringDigest . sha1 . L.fromStrict . showObject
