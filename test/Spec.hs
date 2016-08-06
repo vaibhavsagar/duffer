@@ -43,4 +43,4 @@ objectsOfType objectType = do
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 =
-    runReaderT (readObject sha1) path >>= (`shouldBe` sha1) . hash
+    hash <$> runReaderT (readObject sha1) path `shouldReturn` sha1
