@@ -9,7 +9,7 @@ import GHC.Word               (Word8)
 
 import Prelude hiding (take)
 
-import Duffer.Packed.PackIndex
+import Duffer.Pack.Index
 
 
 word8s :: [Word8] -> Parser [Word8]
