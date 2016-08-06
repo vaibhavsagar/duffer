@@ -25,8 +25,8 @@ parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
 parseMessage :: Parser B.ByteString
 parseMessage = endOfLine *> (B.init <$> takeByteString)
 
-parseRef :: Parser Ref
-parseRef = take 40 <* endOfLine
+parseHexRef :: Parser Ref
+parseHexRef = take 40
 
 parseBlob :: Parser GitObject
 parseBlob = Blob <$> takeByteString
@@ -49,15 +49,15 @@ parsePersonTime = PersonTime
 
 parseCommit :: Parser GitObject
 parseCommit = Commit
-    <$>        ("tree"      *> space *> parseRef)
-    <*>  many' ("parent"    *> space *> parseRef)
+    <$>        ("tree"      *> space *> parseHexRef <* endOfLine)
+    <*>  many' ("parent"    *> space *> parseHexRef <* endOfLine)
     <*>        ("author"    *> space *> parsePersonTime)
     <*>        ("committer" *> space *> parsePersonTime)
     <*>        parseMessage
 
 parseTag :: Parser GitObject
 parseTag = Tag
-    <$> ("object" *> space *> parseRef)
+    <$> ("object" *> space *> parseHexRef <* endOfLine)
     <*> ("type"   *> space *> parseRestOfLine)
     <*> ("tag"    *> space *> parseRestOfLine)
     <*> ("tagger" *> space *> parsePersonTime)
