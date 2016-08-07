@@ -3,8 +3,8 @@
 module Duffer.Loose.Objects where
 
 import qualified Data.ByteString      as B
-import qualified Data.ByteString.Lazy as L (fromStrict, toStrict)
 
+import Data.ByteString.Lazy   (fromStrict, toStrict)
 import Data.ByteString.UTF8   (fromString, toString)
 import Data.ByteString.Base16 (encode, decode)
 import Data.Digest.Pure.SHA   (sha1, bytestringDigest)
@@ -47,9 +47,10 @@ instance Show PersonTime where
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
-        where components = [octMode, entryType, toString sha1, toString name]
-              octMode = printf "%06o" mode :: String
-              entryType = case mode of
+        where components = [octMode, entryType, sha1', toString name]
+              octMode    = printf "%06o" mode :: String
+              sha1'      = toString $ encode sha1
+              entryType  = case mode of
                 0o040000 -> "tree"
                 0o160000 -> "commit"
                 _        -> "blob"
@@ -100,4 +101,4 @@ showContent object = case object of
             in B.concat [mode', " ", name, "\NUL", sha1']
 
 hash :: GitObject -> Ref
-hash = encode . L.toStrict . bytestringDigest . sha1 . L.fromStrict . showObject
+hash = encode . toStrict . bytestringDigest . sha1 . fromStrict . showObject
