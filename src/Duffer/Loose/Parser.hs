@@ -28,6 +28,9 @@ parseMessage = endOfLine *> (B.init <$> takeByteString)
 parseHexRef :: Parser Ref
 parseHexRef = take 40
 
+parseBinRef :: Parser Ref
+parseBinRef = encode <$> take 20
+
 parseBlob :: Parser GitObject
 parseBlob = Blob <$> takeByteString
 
@@ -38,7 +41,7 @@ parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry
     <$> (fst . head . readOct  <$> digit `manyTill` space)
     <*> (takeTill (==0)        <*  parseNull)
-    <*> (encode                <$> take 20)
+    <*> parseBinRef
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
