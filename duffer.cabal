@@ -25,10 +25,10 @@ library
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , containers
+                     , cryptohash
                      , filepath
                      , utf8-string
                      , zlib
-                     , SHA
                      , base16-bytestring
                      , attoparsec
                      , directory
