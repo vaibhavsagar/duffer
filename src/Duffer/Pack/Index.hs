@@ -4,13 +4,7 @@ import qualified Data.ByteString as B
 
 import Prelude hiding (take)
 
-import Data.Bits
-
-data PackIndexEntry
-    = PackIndexEntry { packIndexEntryRef    :: B.ByteString
-                     , packIndexEntryOffset :: Int
-                     }
-
+import Data.Bits (Bits, bit, shiftL)
 
 fromBytes :: (Bits t, Integral t) => [t] -> t
 fromBytes = foldl (\a b -> (fromIntegral a `shiftL` 8) + b) 0

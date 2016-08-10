@@ -19,14 +19,17 @@ library
                        Duffer.Loose
                        Duffer.Loose.Objects
                        Duffer.Loose.Parser
+                       Duffer.Pack
                        Duffer.Pack.Index
                        Duffer.Pack.File
                        Duffer.Pack.Parser
+                       Duffer.Pack.Entries
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , containers
                      , cryptohash
                      , filepath
+                     , mmap
                      , utf8-string
                      , zlib
                      , base16-bytestring
