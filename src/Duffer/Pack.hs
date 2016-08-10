@@ -2,7 +2,7 @@ module Duffer.Pack (
     indexedEntryMap,
     makeOffsetMap,
     resolveAll',
-    resolveDelta
+    resolveDelta'
 ) where
 
 import qualified Data.ByteString as B

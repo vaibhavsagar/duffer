@@ -1,12 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import qualified Data.ByteString as B
+
+import Data.Attoparsec.ByteString
 import Test.Hspec
+import Control.Monad (forM_)
 import System.Process
+import System.FilePath
+import System.Directory
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString (hGetContents)
 import Data.ByteString.UTF8 (lines)
+import Prelude hiding (lines)
 
 import Duffer
+import Duffer.Pack
+import Duffer.Pack.Parser
+import Duffer.Pack.Entries
 
 main :: IO ()
 main = do
@@ -17,6 +27,17 @@ main = do
     tags    <- objectsOfType "tag"
 
     let readCurrent = readHashObject ".git"
+
+    hspec . parallel $ describe "reading pack indexes" $ do
+        filenames <- runIO $ getPackIndexes ".git"
+        forM_ filenames $ \indexPath -> it (show indexPath) $ do
+            content <- B.readFile indexPath
+            let entries = either error id (parseOnly parsePackIndex content)
+            let refs = map (snd . toAssoc) entries
+            objects <- resolveAll' indexPath
+            let writeLoose = flip runReaderT ".git" . writeObject
+            resolvedRefs <- mapM writeLoose objects
+            resolvedRefs `shouldMatchList` refs
 
     hspec . parallel $
         describe "reading" $ do
@@ -40,6 +61,11 @@ objectsOfType objectType = do
     (_, Just h3, _, _) <- createProcess (shell $ "grep '^[^ ]* " ++ objectType ++ "'") {std_out = CreatePipe, std_in = UseHandle h2}
     (_, Just h4, _, _) <- createProcess (shell "cut -d' ' -f1") {std_out = CreatePipe, std_in = UseHandle h3}
     Data.ByteString.UTF8.lines  <$> hGetContents h4
+
+getPackIndexes :: String -> IO [FilePath]
+getPackIndexes path = let packFilePath = path ++ "/objects/pack" in
+    map (combine packFilePath) .  filter (\f -> takeExtension f == ".idx") <$>
+    getDirectoryContents packFilePath
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 =
