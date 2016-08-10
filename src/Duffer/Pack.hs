@@ -1,7 +1,6 @@
 module Duffer.Pack (
     indexedEntryMap,
     makeOffsetMap,
-    resolveAll,
     resolveAll',
     resolveDelta
 ) where
@@ -64,15 +63,6 @@ combinedEntryMap indexPath = do
     indexedMap <- indexedEntryMap indexPath
     refIndex   <- makeRefIndex <$> B.readFile indexPath
     return $ CombinedMap indexedMap refIndex
-
-resolveAll :: FilePath -> IO [GitObject]
-resolveAll indexPath = do
-    offsetMap <- indexedEntryMap indexPath
-    let reconstitute = makeObject . resolveDelta offsetMap
-    return $ map reconstitute $ Map.keys offsetMap
-    where makeObject packEntry = case packEntry of
-            (PackedObject t _ content) -> parseResolved t content
-            (PackedDelta _)            -> error "delta not resolved"
 
 resolveAll' :: FilePath -> IO [GitObject]
 resolveAll' indexPath = do
