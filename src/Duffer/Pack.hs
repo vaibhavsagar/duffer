@@ -1,8 +1,8 @@
 module Duffer.Pack (
     indexedEntryMap,
     makeOffsetMap,
-    resolveAll',
-    resolveDelta'
+    resolveAll,
+    resolveDelta
 ) where
 
 import qualified Data.ByteString as B
@@ -64,10 +64,10 @@ combinedEntryMap indexPath = do
     refIndex   <- makeRefIndex <$> B.readFile indexPath
     return $ CombinedMap indexedMap refIndex
 
-resolveAll' :: FilePath -> IO [GitObject]
-resolveAll' indexPath = do
+resolveAll :: FilePath -> IO [GitObject]
+resolveAll indexPath = do
     combined <- combinedEntryMap indexPath
-    let reconstitute = makeObject . resolveDelta' combined
+    let reconstitute = makeObject . resolveDelta combined
     return $ map reconstitute $ Map.elems (getRefIndex combined)
     where makeObject packEntry = case packEntry of
             (PackedObject t _ content) -> parseResolved t content

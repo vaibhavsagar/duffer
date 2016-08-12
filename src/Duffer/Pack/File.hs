@@ -17,8 +17,8 @@ applyInstruction instruction = case instruction of
     (CopyInstruction offset length) -> substring offset length
     (InsertInstruction content)     -> const content
 
-resolveDelta' :: CombinedMap -> Int -> PackEntry
-resolveDelta' combinedMap index = case (Map.!) (getOffsetMap combinedMap) index of
+resolveDelta :: CombinedMap -> Int -> PackEntry
+resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index of
     object@(PackedObject t _ _)
         -- If we find a commit, tree, blob, or tag, our work is done.
         | fullObject t -> object
@@ -26,7 +26,7 @@ resolveDelta' combinedMap index = case (Map.!) (getOffsetMap combinedMap) index 
     -- An OfsDelta needs to be resolved against a base object
     PackedDelta (OfsDelta o (Delta _ _ instructions)) -> let
         -- Find base object type and source.
-        PackedObject t _ source = resolveDelta' combinedMap (index-o)
+        PackedObject t _ source = resolveDelta combinedMap (index-o)
         -- Interpret the delta instructions with the provided source.
         resolvedDelta           = applyInstructions source instructions
         -- The resulting ByteString can be parsed to yield an object.
@@ -35,7 +35,7 @@ resolveDelta' combinedMap index = case (Map.!) (getOffsetMap combinedMap) index 
         in PackedObject t resultingHash resolvedDelta
     PackedDelta (RefDelta r (Delta _ _ instructions)) -> let
         refIndex                 = (Map.!) (getRefIndex combinedMap) r
-        PackedObject t' _ source = resolveDelta' combinedMap refIndex
+        PackedObject t' _ source = resolveDelta combinedMap refIndex
         -- Resolve the delta against this source.
         resolvedDelta            = applyInstructions source instructions
         -- Compute the hash of this object.
