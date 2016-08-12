@@ -119,11 +119,10 @@ parseCopyInstruction byte = CopyInstruction
             else return 0
 
 parseDelta :: Parser Delta
-parseDelta = do
-    source <- littleEndian <$> parseVarInt
-    target <- littleEndian <$> parseVarInt
-    instrs <- many1 parseDeltaInstruction
-    return $ Delta source target instrs
+parseDelta = Delta
+    <$> (littleEndian <$> parseVarInt)
+    <*> (littleEndian <$> parseVarInt)
+    <*> many1 parseDeltaInstruction
 
 parseObjectContent :: PackObjectType -> Parser GitObject
 parseObjectContent t = case t of
@@ -142,25 +141,24 @@ parseFullObject objectType = do
     let ref = hashResolved objectType decompressed
     return $ PackedObject objectType ref decompressed
 
-parseOfsDelta :: Parser PackEntry
-parseOfsDelta = do
-    offset <- parseOffsetEncoded
-    instr  <- parseDecompressed
-    let delta = either error id (parseOnly parseDelta instr)
-    return $ PackedDelta (OfsDelta offset delta)
+parseOfsDelta :: Parser PackDelta
+parseOfsDelta = OfsDelta
+    <$> parseOffsetEncoded
+    <*> (parseOnlyDelta <$> parseDecompressed)
 
-parseRefDelta :: Parser PackEntry
-parseRefDelta = do
-    ref   <- parseBinRef
-    instr <- parseDecompressed
-    let delta = either error id (parseOnly parseDelta instr)
-    return $ PackedDelta (RefDelta ref delta)
+parseRefDelta :: Parser PackDelta
+parseRefDelta = RefDelta
+    <$> parseBinRef
+    <*> (parseOnlyDelta <$> parseDecompressed)
+
+parseOnlyDelta :: B.ByteString -> Delta
+parseOnlyDelta = either error id . parseOnly parseDelta
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
     (objectType, len) <- parseTypeLen :: Parser (PackObjectType, Int)
     case objectType of
         t | fullObject t -> parseFullObject objectType
-        OfsDeltaObject   -> parseOfsDelta
-        RefDeltaObject   -> parseRefDelta
+        OfsDeltaObject   -> PackedDelta <$> parseOfsDelta
+        RefDeltaObject   -> PackedDelta <$> parseRefDelta
         _                -> error $ "wrong object type: " ++ show objectType
