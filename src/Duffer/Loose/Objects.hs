@@ -29,6 +29,7 @@ data GitObject
         , tagger     :: PersonTime
         , annotation :: B.ByteString
         }
+    deriving (Eq)
 
 data TreeEntry = TreeEntry Int B.ByteString Ref deriving (Eq)
 data PersonTime = PersonTime
@@ -37,6 +38,7 @@ data PersonTime = PersonTime
     , personTime :: String
     , personTZ   :: String
     }
+    deriving (Eq)
 
 type Ref  = B.ByteString
 type Repo = FilePath
