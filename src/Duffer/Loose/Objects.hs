@@ -2,7 +2,7 @@
 
 module Duffer.Loose.Objects where
 
-import qualified Crypto.Hash.SHA1 as SHA1
+import qualified Crypto.Hash.SHA1 as SHA1 (hash)
 import qualified Data.ByteString  as B
 
 import Data.ByteString.UTF8   (fromString, toString)
