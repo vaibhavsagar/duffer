@@ -8,7 +8,6 @@ import Data.Bits
 
 import Codec.Compression.Zlib (decompress)
 import Control.Monad (zipWithM)
-import Data.ByteString.Base16 (encode)
 import GHC.Word               (Word8)
 
 import Prelude hiding (take)
@@ -152,7 +151,7 @@ parseOfsDelta = do
 
 parseRefDelta :: Parser PackEntry
 parseRefDelta = do
-    ref   <- encode <$> take 20
+    ref   <- parseBinRef
     instr <- parseDecompressed
     let delta = either error id (parseOnly parseDelta instr)
     return $ PackedDelta (RefDelta ref delta)
