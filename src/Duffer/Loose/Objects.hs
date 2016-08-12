@@ -15,25 +15,28 @@ import Text.Printf            (printf)
 data GitObject
     = Blob {content :: B.ByteString}
     | Tree {entries :: Set TreeEntry}
-    | Commit { treeRef       :: Ref
-             , parentRefs    :: [Ref]
-             , authorTime    :: PersonTime
-             , committerTime :: PersonTime
-             , message       :: B.ByteString
-             }
-    | Tag { objectRef  :: Ref
-          , objectType :: String
-          , tagName    :: String
-          , tagger     :: PersonTime
-          , annotation :: B.ByteString
-          }
+    | Commit
+        { treeRef       :: Ref
+        , parentRefs    :: [Ref]
+        , authorTime    :: PersonTime
+        , committerTime :: PersonTime
+        , message       :: B.ByteString
+        }
+    | Tag
+        { objectRef  :: Ref
+        , objectType :: String
+        , tagName    :: String
+        , tagger     :: PersonTime
+        , annotation :: B.ByteString
+        }
 
 data TreeEntry = TreeEntry Int B.ByteString Ref deriving (Eq)
-data PersonTime = PersonTime { personName :: String
-                             , personMail :: String
-                             , personTime :: String
-                             , personTZ   :: String
-                             }
+data PersonTime = PersonTime
+    { personName :: String
+    , personMail :: String
+    , personTime :: String
+    , personTZ   :: String
+    }
 
 type Ref  = B.ByteString
 type Repo = FilePath
