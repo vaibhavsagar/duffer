@@ -25,25 +25,26 @@ data PackObjectType
 data PackDelta
     = OfsDelta Int Delta
     | RefDelta Ref Delta
-    deriving (Show)
+    deriving (Show, Eq)
 
 data PackEntry
     = PackedObject PackObjectType Ref B.ByteString
     | PackedDelta  PackDelta
-    deriving (Show)
+    deriving (Show, Eq)
 
 data DeltaInstruction
     = CopyInstruction   Int Int
     | InsertInstruction B.ByteString
-    deriving (Show)
+    deriving (Show, Eq)
 
-data Delta = Delta Int Int [DeltaInstruction] deriving (Show)
+data Delta = Delta Int Int [DeltaInstruction] deriving (Show, Eq)
 
 data CombinedMap
     = CombinedMap
         { getOffsetMap :: OffsetMap
         , getRefIndex  :: Map.Map Ref Int
         }
+        deriving (Show)
 
 type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
