@@ -36,7 +36,7 @@ data PersonTime = PersonTime { personName :: !String
                              }
 
 type Ref  = B.ByteString
-type Repo = String
+type Repo = FilePath
 
 instance Show GitObject where
     show = toString . showContent

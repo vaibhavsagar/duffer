@@ -46,10 +46,10 @@ writeObject object = let sha1 = hash object in do
         writeFile path $ (compress . showObject) object
     return sha1
 
-resolveRef :: String -> WithRepo GitObject
+resolveRef :: FilePath -> WithRepo GitObject
 resolveRef = (ask >>=) . (((readObject =<<) . liftIO .
     (init <$>) . readFile) .) . flip (</>)
 
-updateRef :: String -> GitObject -> WithRepo Ref
+updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
     flip writeFile (append sha1 "\n") where sha1 = hash object
