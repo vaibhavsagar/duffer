@@ -56,3 +56,18 @@ packObjectType header = toEnum . fromIntegral $ (header `shiftR` 4) .&. 7
 
 toAssoc :: PackIndexEntry -> (Int, Ref)
 toAssoc (PackIndexEntry o r) = (o, r)
+
+emptyCombinedMap :: CombinedMap
+emptyCombinedMap = CombinedMap Map.empty Map.empty
+
+insertObject :: Int -> PackEntry -> CombinedMap -> CombinedMap
+insertObject offset object@(PackedObject _ r _) combinedMap = let
+    getOffsetMap' = Map.insert offset object (getOffsetMap combinedMap)
+    getRefIndex'  = Map.insert r      offset (getRefIndex combinedMap)
+    in CombinedMap getOffsetMap' getRefIndex'
+insertObject _ PackedDelta{} _  = error "not inserting full object"
+
+separateObjectsDeltas :: OffsetMap -> (OffsetMap, OffsetMap)
+separateObjectsDeltas = Map.partition (\entry -> case entry of
+        PackedObject{} -> True
+        _              -> False)
