@@ -43,6 +43,9 @@ parsePackIndex = do
         else offsets
     return $ zipWith PackIndexEntry fixedOffsets refs
 
+parsedIndex :: B.ByteString -> [PackIndexEntry]
+parsedIndex = either error id . parseOnly parsePackIndex
+
 parseVarInt :: (Bits t, Integral t) => Parser [t]
 parseVarInt = do
     byte <- anyWord8
