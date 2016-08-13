@@ -70,7 +70,7 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> B.ByteString
-showObject object = B.concat [header, content]
+showObject object = header `B.append` content
     where content    = showContent object
           header     = B.concat [objectType, " ", len, "\NUL"]
           objectType = case object of
