@@ -48,7 +48,7 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
 unpackObject :: PackedObject -> GitObject
 unpackObject (PackedObject t _ content) = parseResolved t content
 
-makeRefIndex :: B.ByteString -> Map.Map Ref Int
+makeRefIndex :: B.ByteString -> RefIndex
 makeRefIndex content = let
     index = parsedIndex content
     in Map.fromList $ map (swap . toAssoc) index

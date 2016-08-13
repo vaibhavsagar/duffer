@@ -43,18 +43,19 @@ data Delta = Delta Int Int [DeltaInstruction] deriving (Show, Eq)
 data CombinedMap
     = CombinedMap
         { getOffsetMap :: OffsetMap
-        , getRefIndex  :: Map.Map Ref Int
+        , getRefIndex  :: RefIndex
         }
         deriving (Show)
 
 data ObjectMap
     = ObjectMap
     { getObjectMap   :: Map.Map Int PackedObject
-    , getObjectIndex :: Map.Map Ref Int
+    , getObjectIndex :: RefIndex
     }
 
 type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
+type RefIndex  = Map.Map Ref Int
 
 fullObject :: PackObjectType -> Bool
 fullObject t = t `elem` [CommitObject, TreeObject, BlobObject, TagObject]
