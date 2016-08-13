@@ -1,9 +1,4 @@
-module Duffer.Pack (
-    indexedEntryMap,
-    makeOffsetMap,
-    resolveAll,
-    resolveDelta
-) where
+module Duffer.Pack where
 
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
