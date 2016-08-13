@@ -59,8 +59,8 @@ littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
 littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
 bigEndian    = foldl (\a b -> (a `shiftL` 7) + b) 0
 
-parseOffsetEncoded :: (Bits t, Integral t) => Parser t
-parseOffsetEncoded = do
+parseOffset:: (Bits t, Integral t) => Parser t
+parseOffset= do
     values <- parseVarInt
     let len = length values - 1
     let concatenated = bigEndian values
@@ -142,18 +142,13 @@ parseFullObject objectType = do
     let ref = hashResolved objectType decompressed
     return $ PackedObject objectType ref decompressed
 
-parseOfsDelta :: Parser PackDelta
-parseOfsDelta = OfsDelta
-    <$> parseOffsetEncoded
-    <*> (parseOnlyDelta <$> parseDecompressed)
+parseOfsDelta, parseRefDelta :: Parser PackDelta
+parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
+parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
-parseRefDelta :: Parser PackDelta
-parseRefDelta = RefDelta
-    <$> parseBinRef
-    <*> (parseOnlyDelta <$> parseDecompressed)
-
-parseOnlyDelta :: B.ByteString -> Delta
-parseOnlyDelta = either error id . parseOnly parseDelta
+parseDecompressedDelta :: Parser Delta
+parseDecompressedDelta =
+    either error id . parseOnly parseDelta <$> parseDecompressed
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
