@@ -23,7 +23,7 @@ fifthOffsets bstr = fromPack (B.take 8 bstr):fifthOffsets (B.drop 8 bstr)
 
 fixOffsets :: [Int] -> Int -> Int
 fixOffsets fOffsets offset
-    | offset >= msb = fOffsets !! (offset-msb)
-    | otherwise     = offset
+    | offset < msb = offset
+    | otherwise    = fOffsets !! (offset-msb)
     where msb = bit 31
 
