@@ -57,5 +57,5 @@ resolveAll indexPath = do
 resolveAll' :: FilePath -> IO [GitObject]
 resolveAll' indexPath = do
     indexedMap <- indexedEntryMap indexPath
-    let combinedMap = resolveIter emptyCombinedMap indexedMap
-    return $ map unpackObject $ Map.elems $ getOffsetMap combinedMap
+    let objectMap = resolveIter emptyObjectMap indexedMap
+    return $ map unpackObject $ Map.elems $ getObjectMap objectMap

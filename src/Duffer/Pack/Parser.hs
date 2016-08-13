@@ -38,9 +38,7 @@ parsePackIndex = do
     offsets   <- total $ fromPack    <$> take 4
     remaining <- takeByteString
     let (fifth, checks) = B.splitAt (B.length remaining - 40) remaining
-    let fixedOffsets    = if fifth /= B.empty
-        then map (fixOffsets (fifthOffsets fifth)) offsets
-        else offsets
+    let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
     return $ zipWith PackIndexEntry fixedOffsets refs
 
 parsedIndex :: B.ByteString -> [PackIndexEntry]
@@ -138,7 +136,7 @@ parseObjectContent t = case t of
 parseDecompressed :: Parser B.ByteString
 parseDecompressed = L.toStrict . decompress <$> takeLazyByteString
 
-parseFullObject :: PackObjectType -> Parser PackEntry
+parseFullObject :: PackObjectType -> Parser PackedObject
 parseFullObject objectType = do
     decompressed <- parseDecompressed
     let ref = hashResolved objectType decompressed
@@ -161,7 +159,7 @@ parsePackRegion :: Parser PackEntry
 parsePackRegion = do
     (objectType, len) <- parseTypeLen :: Parser (PackObjectType, Int)
     case objectType of
-        t | fullObject t -> parseFullObject objectType
-        OfsDeltaObject   -> PackedDelta <$> parseOfsDelta
-        RefDeltaObject   -> PackedDelta <$> parseRefDelta
-        _                -> error $ "wrong object type: " ++ show objectType
+        t | fullObject t -> Left  <$> parseFullObject objectType
+        OfsDeltaObject   -> Right <$> parseOfsDelta
+        RefDeltaObject   -> Right <$> parseRefDelta
+        _                -> error "unrecognised type"

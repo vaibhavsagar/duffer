@@ -27,10 +27,11 @@ data PackDelta
     | RefDelta Ref Delta
     deriving (Show, Eq)
 
-data PackEntry
-    = PackedObject PackObjectType Ref B.ByteString
-    | PackedDelta  PackDelta
+data PackedObject =
+    PackedObject PackObjectType Ref B.ByteString
     deriving (Show, Eq)
+
+type PackEntry = Either PackedObject PackDelta
 
 data DeltaInstruction
     = CopyInstruction   Int Int
@@ -45,6 +46,12 @@ data CombinedMap
         , getRefIndex  :: Map.Map Ref Int
         }
         deriving (Show)
+
+data ObjectMap
+    = ObjectMap
+    { getObjectMap   :: Map.Map Int PackedObject
+    , getObjectIndex :: Map.Map Ref Int
+    }
 
 type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
@@ -61,14 +68,11 @@ toAssoc (PackIndexEntry o r) = (o, r)
 emptyCombinedMap :: CombinedMap
 emptyCombinedMap = CombinedMap Map.empty Map.empty
 
-insertObject :: Int -> PackEntry -> CombinedMap -> CombinedMap
-insertObject offset object@(PackedObject _ r _) combinedMap = let
-    getOffsetMap' = Map.insert offset object (getOffsetMap combinedMap)
-    getRefIndex'  = Map.insert r      offset (getRefIndex combinedMap)
-    in CombinedMap getOffsetMap' getRefIndex'
-insertObject _ PackedDelta{} _  = error "not inserting full object"
+emptyObjectMap :: ObjectMap
+emptyObjectMap = ObjectMap Map.empty Map.empty
 
-separateObjectsDeltas :: OffsetMap -> (OffsetMap, OffsetMap)
-separateObjectsDeltas = Map.partition (\entry -> case entry of
-        PackedObject{} -> True
-        _              -> False)
+insertObject :: Int -> PackedObject -> ObjectMap -> ObjectMap
+insertObject offset object@(PackedObject _ r _) objectMap = let
+    getObjectMap'   = Map.insert offset object (getObjectMap   objectMap)
+    getObjectIndex' = Map.insert r      offset (getObjectIndex objectMap)
+    in ObjectMap getObjectMap' getObjectIndex'
