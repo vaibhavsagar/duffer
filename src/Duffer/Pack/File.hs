@@ -3,7 +3,9 @@ module Duffer.Pack.File where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
-import Duffer.Pack.Parser   (hashResolved)
+import Data.Tuple           (swap)
+import Duffer.Loose.Objects (Ref)
+import Duffer.Pack.Parser   (hashResolved, parsedIndex)
 import Duffer.Pack.Entries
 
 applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
@@ -41,3 +43,13 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         -- Compute the hash of this object.
         resultingHash            = hashResolved t' resolvedDelta
         in PackedObject t' resultingHash resolvedDelta
+
+makeRefIndex :: B.ByteString -> Map.Map Ref Int
+makeRefIndex content = let
+    index = parsedIndex content
+    in Map.fromList $ map (swap . toAssoc) index
+
+makeOffsetMap :: B.ByteString -> Map.Map Int Ref
+makeOffsetMap content = let
+    index = parsedIndex content
+    in Map.fromList $ map toAssoc index

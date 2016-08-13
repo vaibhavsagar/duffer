@@ -9,12 +9,11 @@ import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
 import Data.Attoparsec.ByteString (parseOnly)
-import Data.Tuple (swap)
 import GHC.Int (Int64)
 import System.IO.MMap (mmapFileByteString)
 import System.FilePath ((-<.>))
 
-import Duffer.Loose.Objects (Ref, GitObject)
+import Duffer.Loose.Objects (GitObject)
 import Duffer.Pack.Entries
 import Duffer.Pack.Parser
 import Duffer.Pack.File
@@ -28,16 +27,6 @@ region offsetMap offset = let
     (Just nextOffset) = Map.lookupGT offset offsetMap
     len               = fst nextOffset - offset
     in Just (fromIntegral offset, len)
-
-makeOffsetMap :: B.ByteString -> Map.Map Int B.ByteString
-makeOffsetMap content = let
-    parsedIndex = either error id (parseOnly parsePackIndex content)
-    in Map.fromList $ map toAssoc parsedIndex
-
-makeRefIndex :: B.ByteString -> Map.Map Ref Int
-makeRefIndex content = let
-    parsedIndex = either error id (parseOnly parsePackIndex content)
-    in Map.fromList $ map (swap . toAssoc) parsedIndex
 
 packFileRegion :: FilePath -> Maybe (Int64, Int) -> IO B.ByteString
 packFileRegion = mmapFileByteString
