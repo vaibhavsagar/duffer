@@ -4,8 +4,8 @@ import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
 import Data.Tuple           (swap)
-import Duffer.Loose.Objects (Ref)
-import Duffer.Pack.Parser   (hashResolved, parsedIndex)
+import Duffer.Loose.Objects (Ref, GitObject)
+import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
 import Duffer.Pack.Entries
 
 applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
@@ -44,6 +44,11 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         resultingHash            = hashResolved t' resolvedDelta
         in PackedObject t' resultingHash resolvedDelta
 
+unpackObject :: PackEntry -> GitObject
+unpackObject packEntry = case packEntry of
+            (PackedObject t _ content) -> parseResolved t content
+            (PackedDelta _)            -> error "delta not resolved"
+
 makeRefIndex :: B.ByteString -> Map.Map Ref Int
 makeRefIndex content = let
     index = parsedIndex content
@@ -53,3 +58,35 @@ makeOffsetMap :: B.ByteString -> Map.Map Int Ref
 makeOffsetMap content = let
     index = parsedIndex content
     in Map.fromList $ map toAssoc index
+
+separateResolved :: CombinedMap -> OffsetMap -> (CombinedMap, OffsetMap)
+separateResolved combinedMap offsetMap = let
+    (objects, deltas) = separateObjectsDeltas offsetMap
+    combinedMap'      = Map.foldrWithKey insertObject combinedMap objects
+    in (combinedMap', deltas)
+
+resolveIfPossible :: CombinedMap -> Int -> PackEntry -> PackEntry
+resolveIfPossible combinedMap offset entry = case entry of
+    PackedDelta (OfsDelta o (Delta _ _ instructions))
+        | (offset-o) `elem` Map.elems (getRefIndex combinedMap) -> let
+            PackedObject t _ source = getOffsetMap combinedMap Map.! (offset-o)
+            resolved = applyInstructions source instructions
+            r        = hashResolved t resolved
+            in PackedObject t r resolved
+    PackedDelta (RefDelta r (Delta _ _ instructions))
+        | Map.member r (getRefIndex combinedMap) -> let
+            index                   = getRefIndex combinedMap Map.! r
+            PackedObject t _ source = getOffsetMap combinedMap Map.! index
+            resolved = applyInstructions source instructions
+            r'       = hashResolved t resolved
+            in PackedObject t r' resolved
+    _ -> entry
+
+resolveIter :: CombinedMap -> OffsetMap -> CombinedMap
+resolveIter combinedMap offsetMap | Map.null offsetMap = combinedMap
+resolveIter combinedMap offsetMap = let
+    (combinedMap', offsetMap') = separateResolved combinedMap offsetMap
+    offsetMap''                = Map.mapWithKey (resolveIfPossible combinedMap') offsetMap'
+    in if Map.size offsetMap' < Map.size offsetMap
+        then resolveIter combinedMap' offsetMap''
+        else error "cannot progress"

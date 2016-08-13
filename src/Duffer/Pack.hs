@@ -51,8 +51,11 @@ combinedEntryMap indexPath = do
 resolveAll :: FilePath -> IO [GitObject]
 resolveAll indexPath = do
     combined <- combinedEntryMap indexPath
-    let reconstitute = makeObject . resolveDelta combined
+    let reconstitute = unpackObject . resolveDelta combined
     return $ map reconstitute $ Map.elems (getRefIndex combined)
-    where makeObject packEntry = case packEntry of
-            (PackedObject t _ content) -> parseResolved t content
-            (PackedDelta _)            -> error "delta not resolved"
+
+resolveAll' :: FilePath -> IO [GitObject]
+resolveAll' indexPath = do
+    indexedMap <- indexedEntryMap indexPath
+    let combinedMap = resolveIter emptyCombinedMap indexedMap
+    return $ map unpackObject $ Map.elems $ getOffsetMap combinedMap

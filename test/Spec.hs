@@ -34,7 +34,9 @@ main = do
             content <- B.readFile indexPath
             let entries = either error id (parseOnly parsePackIndex content)
             let refs = map (snd . toAssoc) entries
-            objects <- resolveAll indexPath
+            objects  <- resolveAll  indexPath
+            objects' <- resolveAll' indexPath
+            objects `shouldMatchList` objects'
             let writeLoose = flip runReaderT ".git" . writeObject
             resolvedRefs <- mapM writeLoose objects
             resolvedRefs `shouldMatchList` refs
