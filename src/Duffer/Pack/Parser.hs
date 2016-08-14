@@ -45,15 +45,10 @@ parsedIndex :: B.ByteString -> [PackIndexEntry]
 parsedIndex = either error id . parseOnly parsePackIndex
 
 parseVarInt :: (Bits t, Integral t) => Parser [t]
-parseVarInt = do
-    byte <- anyWord8
+parseVarInt = anyWord8 >>= \byte ->
     let value = fromIntegral $ byte .&. 127
-    if byte `testBit` 7
-        then do
-            rest <- parseVarInt
-            return (value:rest)
-        else
-            return [value]
+        more  = testBit byte 7
+    in (value:) <$> if more then parseVarInt else return []
 
 littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
 littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
@@ -113,17 +108,15 @@ parseCopyInstruction byte = CopyInstruction
     <*> getVarInt [4..6] [0,8..16]
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
-          readShift cond shift = if cond
+          readShift more shift = if more
             then do
                 nextByte <- fromIntegral <$> anyWord8
                 return $ nextByte `shiftL` shift
             else return 0
 
 parseDelta :: Parser Delta
-parseDelta = Delta
-    <$> (littleEndian <$> parseVarInt)
-    <*> (littleEndian <$> parseVarInt)
-    <*> many1 parseDeltaInstruction
+parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction
+    where len = littleEndian <$> parseVarInt
 
 parseObjectContent :: PackObjectType -> Parser GitObject
 parseObjectContent t = case t of
@@ -152,9 +145,12 @@ parseDecompressedDelta =
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
-    (objectType, len) <- parseTypeLen :: Parser (PackObjectType, Int)
+    (objectType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
     case objectType of
         t | fullObject t -> Left  <$> parseFullObject objectType
         OfsDeltaObject   -> Right <$> parseOfsDelta
         RefDeltaObject   -> Right <$> parseRefDelta
         _                -> error "unrecognised type"
+
+getPackRegion :: B.ByteString -> PackEntry
+getPackRegion = either error id . parseOnly parsePackRegion
