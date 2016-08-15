@@ -3,7 +3,6 @@ module Duffer.Pack where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
-import Data.Attoparsec.ByteString (parseOnly)
 import GHC.Int (Int64)
 import System.IO.MMap (mmapFileByteString)
 import System.FilePath ((-<.>))
@@ -27,9 +26,8 @@ packFileRegion :: FilePath -> Maybe (Int64, Int) -> IO B.ByteString
 packFileRegion = mmapFileByteString
 
 getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
-getPackFileEntry packFilePath rangeMap index = do
-    content <- packFileRegion packFilePath (region rangeMap index)
-    return $ either error id (parseOnly parsePackRegion content)
+getPackFileEntry packFilePath rangeMap index =
+    getPackRegion <$> packFileRegion packFilePath (region rangeMap index)
 
 indexedEntryMap :: FilePath -> IO OffsetMap
 indexedEntryMap indexPath = do
