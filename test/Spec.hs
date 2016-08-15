@@ -15,6 +15,7 @@ import Prelude hiding (lines)
 
 import Duffer
 import Duffer.Pack
+import Duffer.Pack.File (resolveAll')
 import Duffer.Pack.Parser
 import Duffer.Pack.Entries
 
@@ -35,7 +36,7 @@ main = do
             let entries = either error id (parseOnly parsePackIndex content)
             let refs = map (snd . toAssoc) entries
             objects  <- resolveAll  indexPath
-            objects' <- resolveAll' indexPath
+            objects' <- resolveAll' <$> indexedEntryMap indexPath
             objects `shouldMatchList` objects'
             let writeLoose = flip runReaderT ".git" . writeObject
             resolvedRefs <- mapM writeLoose objects

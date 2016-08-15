@@ -58,6 +58,20 @@ makeOffsetMap content = let
     index = parsedIndex content
     in Map.fromList $ map toAssoc index
 
+resolveAll' :: OffsetMap -> [GitObject]
+resolveAll' =
+    map unpackObject . Map.elems . getObjectMap . resolveIter emptyObjectMap
+
+resolveIter :: ObjectMap -> OffsetMap -> ObjectMap
+resolveIter objectMap offsetMap | Map.null offsetMap = objectMap
+resolveIter objectMap offsetMap = let
+    (objectMap', offsetMap') = separateResolved objectMap offsetMap
+    resolve                  = resolveIfPossible objectMap'
+    offsetMap''              = Map.mapWithKey resolve offsetMap'
+    in if Map.size offsetMap' < Map.size offsetMap
+        then resolveIter objectMap' offsetMap''
+        else error "cannot progress"
+
 separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
 separateResolved objectMap offsetMap = let
     (objects, deltas) = Map.partition isLeft offsetMap
@@ -66,27 +80,15 @@ separateResolved objectMap offsetMap = let
     in (objectMap', deltas)
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry
-resolveIfPossible objectMap offset entry = case entry of
-    Right (OfsDelta o (Delta _ _ instructions))
-        | (offset-o) `elem` Map.elems (getObjectIndex objectMap) -> let
-            PackedObject t _ source = getObjectMap objectMap Map.! (offset-o)
-            resolved = applyInstructions source instructions
+resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
+    Right (OfsDelta o' delta) | Map.member (o-o') oMap -> let
+        base = oMap Map.! (o-o')
+        in resolve base delta
+    Right (RefDelta r' delta) | Map.member r' oIndex -> let
+        base = oMap Map.! (oIndex Map.! r')
+        in resolve base delta
+    _ -> entry
+    where resolve (PackedObject t _ source) (Delta _ _ is) = let
+            resolved = applyInstructions source is
             r        = hashResolved t resolved
             in Left $ PackedObject t r resolved
-    Right (RefDelta r (Delta _ _ instructions))
-        | Map.member r (getObjectIndex objectMap) -> let
-            index                   = getObjectIndex objectMap Map.! r
-            PackedObject t _ source = getObjectMap   objectMap Map.! index
-            resolved = applyInstructions source instructions
-            r'       = hashResolved t resolved
-            in Left $ PackedObject t r' resolved
-    _ -> entry
-
-resolveIter :: ObjectMap -> OffsetMap -> ObjectMap
-resolveIter objectMap offsetMap | Map.null offsetMap = objectMap
-resolveIter objectMap offsetMap = let
-    (objectMap', offsetMap') = separateResolved objectMap offsetMap
-    offsetMap''                = Map.mapWithKey (resolveIfPossible objectMap') offsetMap'
-    in if Map.size offsetMap' < Map.size offsetMap
-        then resolveIter objectMap' offsetMap''
-        else error "cannot progress"

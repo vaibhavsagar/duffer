@@ -51,9 +51,3 @@ resolveAll indexPath = do
     combined <- combinedEntryMap indexPath
     let reconstitute = unpackObject . resolveDelta combined
     return $ map reconstitute $ Map.elems (getRefIndex combined)
-
-resolveAll' :: FilePath -> IO [GitObject]
-resolveAll' indexPath = do
-    indexedMap <- indexedEntryMap indexPath
-    let objectMap = resolveIter emptyObjectMap indexedMap
-    return $ map unpackObject $ Map.elems $ getObjectMap objectMap
