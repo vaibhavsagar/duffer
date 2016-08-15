@@ -41,10 +41,9 @@ indexedEntryMap indexPath = do
     return $ Map.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
-combinedEntryMap indexPath = do
-    indexedMap <- indexedEntryMap indexPath
-    refIndex   <- makeRefIndex <$> B.readFile indexPath
-    return $ CombinedMap indexedMap refIndex
+combinedEntryMap indexPath = CombinedMap
+    <$> indexedEntryMap indexPath
+    <*> (makeRefIndex <$> B.readFile indexPath)
 
 resolveAll :: FilePath -> IO [GitObject]
 resolveAll indexPath = do
