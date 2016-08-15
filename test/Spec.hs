@@ -1,17 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import qualified Data.ByteString as B
-
-import Data.Attoparsec.ByteString
+import Data.ByteString (readFile, hGetContents)
 import Test.Hspec
-import Control.Monad (forM_)
+import Control.Monad (zipWithM_)
 import System.Process
 import System.FilePath
 import System.Directory
 import Control.Monad.Trans.Reader (runReaderT)
-import Data.ByteString (hGetContents)
 import Data.ByteString.UTF8 (lines)
-import Prelude hiding (lines)
+import GHC.IO.Handle (Handle)
+import Prelude hiding (lines, readFile)
 
 import Duffer
 import Duffer.Pack
@@ -21,49 +19,48 @@ import Duffer.Pack.Entries
 
 main :: IO ()
 main = do
+    filenames <- getPackIndexes ".git"
+    hspec . parallel $ describe "unpacking packfiles" $
+        mapM_ testUnpacked filenames
 
-    blobs   <- objectsOfType "blob"
-    trees   <- objectsOfType "tree"
-    commits <- objectsOfType "commit"
-    tags    <- objectsOfType "tag"
+    let objectTypes    =  ["blob", "tree", "commit", "tag"]
+    partitionedObjects <- mapM objectsOfType objectTypes
+    hspec . parallel $ describe "reading loose objects" $
+        zipWithM_ describeReadingAll objectTypes partitionedObjects
 
-    let readCurrent = readHashObject ".git"
+describeReadingAll :: String -> [Ref] -> SpecWith ()
+describeReadingAll oType objects = describe oType $
+    readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
+    where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
 
-    hspec . parallel $ describe "reading pack indexes" $ do
-        filenames <- runIO $ getPackIndexes ".git"
-        forM_ filenames $ \indexPath -> it (show indexPath) $ do
-            content <- B.readFile indexPath
-            let entries = either error id (parseOnly parsePackIndex content)
-            let refs = map (snd . toAssoc) entries
-            objects  <- resolveAll  indexPath
-            objects' <- resolveAll' <$> indexedEntryMap indexPath
-            objects `shouldMatchList` objects'
-            let writeLoose = flip runReaderT ".git" . writeObject
-            resolvedRefs <- mapM writeLoose objects
-            resolvedRefs `shouldMatchList` refs
-
-    hspec . parallel $
-        describe "reading" $ do
-            describe "blob" $
-                it "correctly parses and hashes all blobs" $
-                    mapM_ readCurrent blobs
-            describe "tree" $
-                it "correctly parses and hashes all trees" $
-                    mapM_ readCurrent trees
-            describe "commit" $
-                it "correctly parses and hashes all commits" $
-                    mapM_ readCurrent commits
-            describe "tag" $
-                it "correctly parses and hashes all tags" $
-                    mapM_ readCurrent tags
+testUnpacked :: FilePath -> SpecWith ()
+testUnpacked indexPath = it (show indexPath) $ do
+    index     <- parsedIndex <$> readFile        indexPath
+    let refs  =  map (snd . toAssoc)             index
+    objects   <- resolveAll                      indexPath
+    objects'  <- resolveAll' <$> indexedEntryMap indexPath
+    let write =  flip runReaderT ".git" . writeObject
+    shouldMatchList objects'            objects
+    shouldMatchList refs (map hash      objects)
+    shouldMatchList refs =<< mapM write objects
 
 objectsOfType :: String -> IO [Ref]
-objectsOfType objectType = do
-    (_, Just h1, _, _) <- createProcess (shell "git rev-list --objects --all") {std_out = CreatePipe}
-    (_, Just h2, _, _) <- createProcess (shell "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'") {std_out = CreatePipe, std_in = UseHandle h1}
-    (_, Just h3, _, _) <- createProcess (shell $ "grep '^[^ ]* " ++ objectType ++ "'") {std_out = CreatePipe, std_in = UseHandle h2}
-    (_, Just h4, _, _) <- createProcess (shell "cut -d' ' -f1") {std_out = CreatePipe, std_in = UseHandle h3}
-    Data.ByteString.UTF8.lines  <$> hGetContents h4
+objectsOfType objectType = fmap lines $
+    cmd "git rev-list --objects --all"
+    >|> "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'"
+    >|> ("grep '^[^ ]* " ++ objectType ++ "'")
+    >|> "cut -d' ' -f1"
+    >>= hGetContents
+
+cmd :: String -> IO Handle
+cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
+    \(_, Just handle, _, _) -> return handle
+
+(>|>) :: IO Handle -> String -> IO Handle
+(>|>) handle cmd = withPipe cmd =<< handle
+    where withPipe cmd pipe = createProcess (shell cmd)
+            {std_out = CreatePipe, std_in = UseHandle pipe} >>=
+            \(_, Just handle, _, _) -> return handle
 
 getPackIndexes :: String -> IO [FilePath]
 getPackIndexes path = let packFilePath = path ++ "/objects/pack" in
