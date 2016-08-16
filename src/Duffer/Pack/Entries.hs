@@ -3,7 +3,7 @@ module Duffer.Pack.Entries where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
-import Data.Bits (Bits, shiftR, (.&.))
+import Data.Bits
 import Data.Word (Word32)
 
 import Duffer.Loose.Objects (Ref)
@@ -78,3 +78,21 @@ insertObject offset object@(PackedObject _ r _) objectMap = let
     getObjectMap'   = Map.insert offset object (getObjectMap   objectMap)
     getObjectIndex' = Map.insert r      offset (getObjectIndex objectMap)
     in ObjectMap getObjectMap' getObjectIndex'
+
+fromBytes :: (Bits t, Integral t) => B.ByteString -> t
+fromBytes = B.foldl (\a b -> (a `shiftL` 8) + fromIntegral b) 0
+
+toByteList :: (Bits t, Integral t) => t -> [t]
+toByteList n = case divMod n (bit 8) of
+    (0, i) -> [i]
+    (x, y) -> toByteList x ++ toByteList y
+
+fifthOffsets :: B.ByteString -> [Int]
+fifthOffsets ""   = []
+fifthOffsets bstr = fromBytes (B.take 8 bstr):fifthOffsets (B.drop 8 bstr)
+
+fixOffsets :: [Int] -> Int -> Int
+fixOffsets fOffsets offset
+    | offset < msb = offset
+    | otherwise    = fOffsets !! (offset-msb)
+    where msb = bit 31

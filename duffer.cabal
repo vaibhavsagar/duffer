@@ -20,7 +20,6 @@ library
                        Duffer.Loose.Objects
                        Duffer.Loose.Parser
                        Duffer.Pack
-                       Duffer.Pack.Index
                        Duffer.Pack.File
                        Duffer.Pack.Parser
                        Duffer.Pack.Entries

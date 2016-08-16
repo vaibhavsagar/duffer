@@ -15,7 +15,6 @@ import Prelude hiding (take)
 import Duffer.Loose.Objects
 import Duffer.Loose.Parser
     (parseBinRef, parseBlob, parseTree, parseCommit, parseTag)
-import Duffer.Pack.Index
 import Duffer.Pack.Entries
 
 hashResolved :: PackObjectType -> B.ByteString -> Ref
