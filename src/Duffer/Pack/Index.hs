@@ -7,7 +7,7 @@ import Prelude hiding (take)
 import Data.Bits (Bits, bit, shiftL)
 
 fromBytes :: (Bits t, Integral t) => B.ByteString -> t
-fromBytes = B.foldl (\a b -> (fromIntegral a `shiftL` 8) + fromIntegral b) 0
+fromBytes = B.foldl (\a b -> (a `shiftL` 8) + fromIntegral b) 0
 
 toBytes :: (Bits t, Integral t) => t -> [t]
 toBytes n = case divMod n (bit 8) of
@@ -23,4 +23,3 @@ fixOffsets fOffsets offset
     | offset < msb = offset
     | otherwise    = fOffsets !! (offset-msb)
     where msb = bit 31
-
