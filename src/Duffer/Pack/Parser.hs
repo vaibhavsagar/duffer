@@ -31,15 +31,18 @@ parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
     header    <- word8s [255, 116, 79, 99]
     version   <- word8s [0, 0, 0, 2]
-    totals    <- count 256 (fromPack <$> take 4)
+    totals    <- count 256 parse4Bytes
     let total =  count (last totals)
-    refs      <- total   parseBinRef
-    checks    <- total $ take 4
-    offsets   <- total $ fromPack    <$> take 4
+    refs      <- total parseBinRef
+    crc32s    <- total parse4Bytes
+    offsets   <- total parse4Bytes
     remaining <- takeByteString
     let (fifth, checks) = B.splitAt (B.length remaining - 40) remaining
     let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
-    return $ zipWith PackIndexEntry fixedOffsets refs
+    return $ zipWith ($) (zipWith PackIndexEntry fixedOffsets refs) crc32s
+
+parse4Bytes :: (Bits t, Integral t) => Parser t
+parse4Bytes = fromBytes <$> take 4
 
 parsedIndex :: B.ByteString -> [PackIndexEntry]
 parsedIndex = either error id . parseOnly parsePackIndex

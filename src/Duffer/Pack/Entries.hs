@@ -4,11 +4,12 @@ import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
 import Data.Bits (Bits, shiftR, (.&.))
+import Data.Word (Word32)
 
 import Duffer.Loose.Objects (Ref)
 
 data PackIndexEntry
-    = PackIndexEntry Int Ref
+    = PackIndexEntry Int Ref Word32
     deriving (Show)
 
 data PackObjectType
@@ -64,7 +65,7 @@ packObjectType :: (Bits t, Integral t) => t -> PackObjectType
 packObjectType header = toEnum . fromIntegral $ (header `shiftR` 4) .&. 7
 
 toAssoc :: PackIndexEntry -> (Int, Ref)
-toAssoc (PackIndexEntry o r) = (o, r)
+toAssoc (PackIndexEntry o r _) = (o, r)
 
 emptyCombinedMap :: CombinedMap
 emptyCombinedMap = CombinedMap Map.empty Map.empty
