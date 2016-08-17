@@ -24,9 +24,11 @@ library
                        Duffer.Pack.Parser
                        Duffer.Pack.Entries
   build-depends:       base >= 4.7 && < 5
+                     , byteable
                      , bytestring
                      , containers
                      , cryptohash
+                     , digest
                      , filepath
                      , mmap
                      , utf8-string
