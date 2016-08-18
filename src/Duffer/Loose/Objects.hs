@@ -5,6 +5,7 @@ module Duffer.Loose.Objects where
 import qualified Crypto.Hash.SHA1 as SHA1 (hash)
 import qualified Data.ByteString  as B
 
+import Data.Byteable
 import Data.ByteString.UTF8   (fromString, toString)
 import Data.ByteString.Base16 (encode, decode)
 import Data.List              (intercalate)
@@ -64,6 +65,15 @@ instance Ord TreeEntry where
         where sortableName (TreeEntry mode name _) = name `B.append`
                 if mode == 0o040000 || mode == 0o160000 then "/" else ""
 
+instance Byteable GitObject where
+    toBytes = showObject
+
+instance Byteable TreeEntry where
+    toBytes (TreeEntry mode name sha1) = let
+        mode' = fromString $ printf "%o" mode
+        sha1' = fst $ decode sha1
+        in B.concat [mode', " ", name, "\NUL", sha1']
+
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
     flip (foldl (</>)) ["objects", [sa, sb], suffix]
@@ -83,7 +93,7 @@ showObject object = header `B.append` content
 showContent :: GitObject -> B.ByteString
 showContent object = case object of
     Blob content -> content
-    Tree entries -> B.concat $ map showEntry $ toAscList entries
+    Tree entries -> B.concat $ map toBytes $ toAscList entries
     Commit {..}  -> B.concat
         [                 "tree"      ?  treeRef
         , B.concat $ map ("parent"    ?) parentRefs
@@ -99,10 +109,6 @@ showContent object = case object of
         , "\n"     , annotation, "\n"
         ]
     where (?) prefix value = B.concat [prefix, " ", value, "\n"]
-          showEntry (TreeEntry mode name sha1) =
-            let mode' = fromString $ printf "%o" mode
-                sha1' = fst $ decode sha1
-            in B.concat [mode', " ", name, "\NUL", sha1']
 
 hash :: GitObject -> Ref
 hash = encode . SHA1.hash . showObject
