@@ -66,6 +66,15 @@ isResolved :: PackEntry -> Bool
 isResolved (Resolved _)   = True
 isResolved (UnResolved _) = False
 
+instance Byteable PackEntry where
+    toBytes (Resolved  packedObject)         = toBytes packedObject
+    toBytes (UnResolved ofsD@(OfsDelta _ d)) = let
+        header = encodeTypeLen OfsDeltaObject $ B.length (toBytes d)
+        in header `B.append` toBytes ofsD
+    toBytes (UnResolved refD@(RefDelta _ d)) = let
+        header = encodeTypeLen RefDeltaObject $ B.length (toBytes d)
+        in header `B.append` toBytes refD
+
 instance Byteable PackedObject where
     toBytes (PackedObject t _ content) = let
         header     = encodeTypeLen t $ B.length content
