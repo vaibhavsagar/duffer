@@ -61,6 +61,32 @@ type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
 type RefIndex  = Map.Map Ref Int
 
+instance Byteable PackedObject where
+    toBytes (PackedObject t _ content) = let
+        header     = encodeTypeLen t $ B.length content
+        compressed = compress content
+        in header `B.append` compressed
+
+encodeTypeLen :: PackObjectType -> Int -> B.ByteString
+encodeTypeLen packObjectType len = let
+    (last4, rest) = packEntryLenList len
+    firstByte     = (fromEnum packObjectType `shiftL` 4) .|. last4
+    firstByte'    = if rest /= B.empty then setBit firstByte 7 else firstByte
+    in B.cons (fromIntegral firstByte') rest
+
+packEntryLenList :: Int -> (Int, B.ByteString)
+packEntryLenList n = let
+    last4  = fromIntegral n .&. 15
+    rest   = fromIntegral n `shiftR` 4 :: Int
+    last4' = if rest > 0
+        then setBit last4 7
+        else last4
+    restL  = to7BitList rest
+    restL' = if not (null restL)
+        then map fromIntegral $ head restL:map (`setBit` 7) (tail restL)
+        else []
+    in (last4, B.pack $ reverse restL')
+
 instance Byteable PackDelta where
     toBytes (RefDelta ref delta) = let
         encodedRef = fst $ decode ref
@@ -74,11 +100,15 @@ instance Byteable PackDelta where
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
     -- This is the number of terms of 2^7+2^14+..+2^(7i) that we need to
-    -- subtract from our number before encoding it
+    -- subtract from our number before encoding it.
     noTerms = floor $ recip $ logBase (fromIntegral n) (2^7) :: Int
+    -- This is the number we need to subtract from n.
     remove  = sum $ map (\i -> 2^(7*i)) [1..noTerms]
+    -- Split the number into 7-bit numbers.
     bytes   = to7BitList $ n - remove
+    -- If 2^7 < n < 2^8 cons a 0 on to the number.
     bytes'  = if noTerms == 1 && length bytes == 1 then 0:bytes else bytes
+    -- Set the MSBs of each byte except the last one.
     bytes'' = map (`setBit` 7) (init bytes') ++ [last bytes']
     in B.pack $ map fromIntegral bytes''
 
