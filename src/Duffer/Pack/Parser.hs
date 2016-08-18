@@ -149,9 +149,9 @@ parsePackRegion :: Parser PackEntry
 parsePackRegion = do
     (objectType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
     case objectType of
-        t | fullObject t -> Left  <$> parseFullObject objectType
-        OfsDeltaObject   -> Right <$> parseOfsDelta
-        RefDeltaObject   -> Right <$> parseRefDelta
+        t | fullObject t -> Resolved   <$> parseFullObject objectType
+        OfsDeltaObject   -> UnResolved <$> parseOfsDelta
+        RefDeltaObject   -> UnResolved <$> parseRefDelta
         _                -> error "unrecognised type"
 
 getPackRegion :: B.ByteString -> PackEntry

@@ -35,7 +35,8 @@ data PackedObject =
     PackedObject PackObjectType Ref B.ByteString
     deriving (Show, Eq)
 
-type PackEntry = Either PackedObject PackDelta
+data PackEntry = Resolved PackedObject | UnResolved PackDelta
+    deriving (Show, Eq)
 
 data DeltaInstruction
     = CopyInstruction   Int Int
@@ -60,6 +61,10 @@ data ObjectMap
 type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
 type RefIndex  = Map.Map Ref Int
+
+isResolved :: PackEntry -> Bool
+isResolved (Resolved _)   = True
+isResolved (UnResolved _) = False
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ content) = let

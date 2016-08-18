@@ -3,7 +3,6 @@ module Duffer.Pack.File where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
-import Data.Either          (isLeft)
 import Data.Tuple           (swap)
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
@@ -22,12 +21,12 @@ applyInstruction instruction = case instruction of
 
 resolveDelta :: CombinedMap -> Int -> PackedObject
 resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index of
-    Left object@(PackedObject t _ _)
+    Resolved object@(PackedObject t _ _)
         -- If we find a commit, tree, blob, or tag, our work is done.
         | fullObject t -> object
         | otherwise    -> error "PackedObject cannot contain deltas"
     -- An OfsDelta needs to be resolved against a base object
-    Right (OfsDelta o (Delta _ _ instructions)) -> let
+    UnResolved (OfsDelta o (Delta _ _ instructions)) -> let
         -- Find base object type and source.
         PackedObject t _ source = resolveDelta combinedMap (index-o)
         -- Interpret the delta instructions with the provided source.
@@ -36,7 +35,7 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         resultingHash           = hashResolved t resolvedDelta
         -- We now have an object of type t with a hash and a ByteString.
         in PackedObject t resultingHash resolvedDelta
-    Right (RefDelta r (Delta _ _ instructions)) -> let
+    UnResolved (RefDelta r (Delta _ _ instructions)) -> let
         refIndex                 = (Map.!) (getRefIndex combinedMap) r
         PackedObject t' _ source = resolveDelta combinedMap refIndex
         -- Resolve the delta against this source.
@@ -74,21 +73,21 @@ resolveIter objectMap offsetMap = let
 
 separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
 separateResolved objectMap offsetMap = let
-    (objects, deltas) = Map.partition isLeft offsetMap
-    objects'          = Map.map (\(Left o) -> o) objects
+    (objects, deltas) = Map.partition isResolved offsetMap
+    objects'          = Map.map (\(Resolved o) -> o) objects
     objectMap'      = Map.foldrWithKey insertObject objectMap objects'
     in (objectMap', deltas)
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry
 resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
-    Right (OfsDelta o' delta) | Map.member (o-o') oMap -> let
+    UnResolved (OfsDelta o' delta) | Map.member (o-o') oMap -> let
         base = oMap Map.! (o-o')
         in resolve base delta
-    Right (RefDelta r' delta) | Map.member r' oIndex -> let
+    UnResolved (RefDelta r' delta) | Map.member r' oIndex -> let
         base = oMap Map.! (oIndex Map.! r')
         in resolve base delta
     _ -> entry
     where resolve (PackedObject t _ source) (Delta _ _ is) = let
             resolved = applyInstructions source is
             r        = hashResolved t resolved
-            in Left $ PackedObject t r resolved
+            in Resolved $ PackedObject t r resolved
