@@ -56,8 +56,8 @@ littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
 littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
 bigEndian    = foldl (\a b -> (a `shiftL` 7) + b) 0
 
-parseOffset:: (Bits t, Integral t) => Parser t
-parseOffset= do
+parseOffset :: (Bits t, Integral t) => Parser t
+parseOffset = do
     values <- parseVarInt
     let len = length values - 1
     let concatenated = bigEndian values
@@ -111,9 +111,7 @@ parseCopyInstruction byte = CopyInstruction
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
           readShift more shift = if more
-            then do
-                nextByte <- fromIntegral <$> anyWord8
-                return $ nextByte `shiftL` shift
+            then (`shiftL` shift) <$> (fromIntegral <$> anyWord8)
             else return 0
 
 parseDelta :: Parser Delta
@@ -154,5 +152,5 @@ parsePackRegion = do
         RefDeltaObject   -> UnResolved <$> parseRefDelta
         _                -> error "unrecognised type"
 
-getPackRegion :: B.ByteString -> PackEntry
-getPackRegion = either error id . parseOnly parsePackRegion
+parsedPackRegion :: B.ByteString -> PackEntry
+parsedPackRegion = either error id . parseOnly parsePackRegion
