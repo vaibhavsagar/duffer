@@ -22,27 +22,33 @@ region offsetMap offset = let
     len               = fst nextOffset - offset
     in Just (fromIntegral offset, len)
 
+getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
+getPackFileEntry packFilePath rangeMap index =
+    parsedPackRegion <$> getPackRegion packFilePath rangeMap index
+
+getPackRegion :: FilePath -> Map.Map Int B.ByteString -> Int -> IO B.ByteString
+getPackRegion packFilePath rangeMap index =
+    packFileRegion packFilePath (region rangeMap index)
+
 packFileRegion :: FilePath -> Maybe (Int64, Int) -> IO B.ByteString
 packFileRegion = mmapFileByteString
 
-getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
-getPackFileEntry packFilePath rangeMap index =
-    getPackRegion <$> packFileRegion packFilePath (region rangeMap index)
-
 indexedEntryMap :: FilePath -> IO OffsetMap
-indexedEntryMap indexPath = do
-    indexContent <- B.readFile indexPath
-    let offsetMap = makeOffsetMap indexContent
-    let indices   = Map.keys offsetMap
+indexedEntryMap = fmap (Map.map parsedPackRegion) . indexedByteStringMap
+
+indexedByteStringMap :: FilePath -> IO (Map.Map Int B.ByteString)
+indexedByteStringMap indexPath = do
+    offsetMap  <- makeOffsetMap <$> B.readFile indexPath
     let filePath  = packFile indexPath
     contentEnd <- B.length <$> B.readFile filePath
+    let indices   = Map.keys offsetMap
     let rangeMap  = Map.insert (contentEnd - 20) "" offsetMap
-    entries <- mapM (getPackFileEntry filePath rangeMap) indices
+    entries    <- mapM (getPackRegion filePath rangeMap) indices
     return $ Map.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
 combinedEntryMap indexPath = CombinedMap
-    <$> indexedEntryMap indexPath
+    <$> indexedEntryMap              indexPath
     <*> (makeRefIndex <$> B.readFile indexPath)
 
 resolveAll :: FilePath -> IO [GitObject]
