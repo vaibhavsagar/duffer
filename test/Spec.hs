@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import qualified Data.Map.Strict as Map
+
+import Data.Byteable
 import Data.ByteString (readFile, hGetContents)
 import Test.Hspec
 import Control.Monad (zipWithM_)
@@ -36,10 +39,16 @@ describeReadingAll oType objects = describe oType $
 testUnpacked :: FilePath -> SpecWith ()
 testUnpacked indexPath = it (show indexPath) $ do
     index     <- parsedIndex <$> readFile        indexPath
-    let refs  =  map (snd . toAssoc)             index
+    let refs     =  map (snd . toAssoc)          index
+    iEMap     <-                 indexedEntryMap indexPath
+    iBSMap    <-            indexedByteStringMap indexPath
+    let iEnMap   = Map.map toBytes iEMap
+    let iDecMap  = Map.map parsedPackRegion iEnMap
+    -- shouldBe iEnMap iBSMap
+    shouldBe iDecMap iEMap
     objects   <- resolveAll                      indexPath
-    objects'  <- resolveAll' <$> indexedEntryMap indexPath
-    let write =  flip runReaderT ".git" . writeObject
+    let objects' =  resolveAll' iEMap
+    let write    =  flip runReaderT ".git" . writeObject
     shouldMatchList objects'            objects
     shouldMatchList refs (map hash      objects)
     shouldMatchList refs =<< mapM write objects

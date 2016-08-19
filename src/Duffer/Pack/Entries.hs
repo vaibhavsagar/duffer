@@ -1,10 +1,12 @@
 module Duffer.Pack.Entries where
 
-import qualified Data.ByteString as B
-import qualified Data.Map.Strict as Map
+import qualified Codec.Compression.Zlib as Z
+import qualified Data.ByteString        as B
+import qualified Data.Map.Strict        as Map
 
 import Data.Byteable
 import Data.ByteString.Base16 (decode)
+import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
 import Data.Word (Word32)
 
@@ -113,17 +115,24 @@ instance Byteable PackDelta where
 
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
-    (remainder, noTerms) = remove128s n 1
-    varInt               = to7BitList remainder
-    encodedInts = setMSBs $ leftPadZeros varInt noTerms
+    {- we know that a == r
+     - we know r is 2^7 or 128
+     - x           = a((1 - r^n)/(1-r))
+     - x - xr      = a - ar^n
+     - x + ar^n    = a + xr
+     - x + r^(n+1) = r + xr
+     - r^(n+1)     = r + xr -x
+     - r^(n+1)     = x(r-1) + r
+     - n+1         = log128 x(r-1) + r
+     - n           = floor ((log128 x(2^7-1) + 2^7) - 1)
+     -}
+    noTerms     = floor $
+        (logBase (fromIntegral 2^7) (fromIntegral n * (2^7 - 1) + 2^7)) - 1
+    remove      = sum $ take noTerms $ map (\i -> 2^(7*i)) [1..]
+    remainder   = n - remove
+    varInt      = to7BitList remainder
+    encodedInts = setMSBs $ leftPadZeros varInt (noTerms + 1)
     in B.pack $ map fromIntegral encodedInts
-
-remove128s :: Int -> Int -> (Int, Int)
-remove128s value n
-    | value < 2^(7*n) = (value, n)
-    | otherwise       = let
-        value' = value - (2^(7*n))
-        in remove128s value' (n+1)
 
 leftPadZeros :: [Int] -> Int -> [Int]
 leftPadZeros ints n
@@ -133,7 +142,7 @@ leftPadZeros ints n
 setMSBs :: [Int] -> [Int]
 setMSBs ints = let
     ints'  = reverse ints
-    ints'' = (head ints') : (map (`setBit` 7) $ tail ints')
+    ints'' = head ints' : map (`setBit` 7) ( tail ints')
     in reverse ints''
 
 instance Byteable Delta where
@@ -218,3 +227,9 @@ fixOffsets fOffsets offset
     | offset < msb = offset
     | otherwise    = fOffsets !! (offset-msb)
     where msb = bit 31
+
+{-
+packCompress :: B.ByteString -> B.ByteString
+packCompress content = toStrict $
+    Z.compressWith Z.defaultCompressParams { Z.compressLevel = Z.CompressionLevel 1 } $ fromStrict content
+-}
