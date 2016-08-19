@@ -113,18 +113,28 @@ instance Byteable PackDelta where
 
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
-    -- This is the number of terms of 2^7+2^14+..+2^(7i) that we need to
-    -- subtract from our number before encoding it.
-    noTerms = floor $ recip $ logBase (fromIntegral n) (2^7) :: Int
-    -- This is the number we need to subtract from n.
-    remove  = sum $ map (\i -> 2^(7*i)) [1..noTerms]
-    -- Split the number into 7-bit numbers.
-    bytes   = to7BitList $ n - remove
-    -- If 2^7 < n < 2^8 cons a 0 on to the number.
-    bytes'  = if noTerms == 1 && length bytes == 1 then 0:bytes else bytes
-    -- Set the MSBs of each byte except the last one.
-    bytes'' = map (`setBit` 7) (init bytes') ++ [last bytes']
-    in B.pack $ map fromIntegral bytes''
+    (remainder, noTerms) = remove128s n 1
+    varInt               = to7BitList remainder
+    encodedInts = setMSBs $ leftPadZeros varInt noTerms
+    in B.pack $ map fromIntegral encodedInts
+
+remove128s :: Int -> Int -> (Int, Int)
+remove128s value n
+    | value < 2^(7*n) = (value, n)
+    | otherwise       = let
+        value' = value - (2^(7*n))
+        in remove128s value' (n+1)
+
+leftPadZeros :: [Int] -> Int -> [Int]
+leftPadZeros ints n
+    | length ints >= n = ints
+    | otherwise        = leftPadZeros (0:ints) n
+
+setMSBs :: [Int] -> [Int]
+setMSBs ints = let
+    ints'  = reverse ints
+    ints'' = (head ints') : (map (`setBit` 7) $ tail ints')
+    in reverse ints''
 
 instance Byteable Delta where
     toBytes (Delta source dest instructions) = let
