@@ -9,9 +9,9 @@ import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
 import Data.Word (Word32)
+import Debug.Trace
 
 import Duffer.Loose.Objects (Ref)
-import Duffer.Loose (compress)
 
 data PackIndexEntry
     = PackIndexEntry Int Ref Word32
@@ -29,16 +29,21 @@ data PackObjectType
     deriving (Enum, Eq, Show)
 
 data PackDelta
-    = OfsDelta Int Delta
-    | RefDelta Ref Delta
+    = OfsDelta Int (PackCompressed Delta)
+    | RefDelta Ref (PackCompressed Delta)
     deriving (Show, Eq)
 
 data PackedObject =
-    PackedObject PackObjectType Ref B.ByteString
+    PackedObject PackObjectType Ref (PackCompressed B.ByteString)
     deriving (Show, Eq)
 
 data PackEntry = Resolved PackedObject | UnResolved PackDelta
     deriving (Show, Eq)
+
+data PackCompressed a = PackCompressed
+    { packCLevel   :: Z.CompressionLevel
+    , packCContent :: a
+    } deriving (Show, Eq)
 
 data DeltaInstruction
     = CopyInstruction   Int Int
@@ -78,10 +83,31 @@ instance Byteable PackEntry where
         in header `B.append` toBytes refD
 
 instance Byteable PackedObject where
-    toBytes (PackedObject t _ content) = let
-        header     = encodeTypeLen t $ B.length content
-        compressed = compress content
+    toBytes (PackedObject t _ packed) = let
+        header     = encodeTypeLen t $ B.length $ packCContent packed
+        compressed = toBytes packed
         in header `B.append` compressed
+
+instance (Byteable a) => Byteable (PackCompressed a) where
+    toBytes (PackCompressed level content) =
+        compressToLevel level $ toBytes content
+
+compressToLevel :: Z.CompressionLevel -> B.ByteString -> B.ByteString
+compressToLevel level content = toStrict $
+    Z.compressWith Z.defaultCompressParams
+      { Z.compressLevel = level }
+      $ fromStrict content
+
+getCompressionLevel :: B.ByteString -> Z.CompressionLevel
+getCompressionLevel bytes = let
+    levelByte = fromIntegral $ B.head $ B.tail bytes
+    in case levelByte of
+        1   -> Z.bestSpeed
+        156 -> Z.defaultCompression
+
+instance Functor PackCompressed where
+    fmap f (PackCompressed level content) =
+        PackCompressed level (f content)
 
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjectType len = let
@@ -106,17 +132,16 @@ packEntryLenList n = let
 instance Byteable PackDelta where
     toBytes (RefDelta ref delta) = let
         encodedRef = fst $ decode ref
-        compressed = compress (toBytes delta)
+        compressed = toBytes delta
         in B.append encodedRef compressed
     toBytes (OfsDelta offset delta) = let
         encodedOffset = encodeOffset offset
-        compressed = compress (toBytes delta)
+        compressed = toBytes delta
         in B.append encodedOffset compressed
 
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
-    {- we know that a == r
-     - we know r is 2^7 or 128
+    {- Given a = r = 2^7:
      - x           = a((1 - r^n)/(1-r))
      - x - xr      = a - ar^n
      - x + ar^n    = a + xr
@@ -227,8 +252,3 @@ fixOffsets fOffsets offset
     | otherwise    = fOffsets !! (offset-msb)
     where msb = bit 31
 
-{-
-packCompress :: B.ByteString -> B.ByteString
-packCompress content = toStrict $
-    Z.compressWith Z.defaultCompressParams { Z.compressLevel = Z.CompressionLevel 1 } $ fromStrict content
--}

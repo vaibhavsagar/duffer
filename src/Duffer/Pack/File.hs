@@ -26,23 +26,23 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         | fullObject t -> object
         | otherwise    -> error "PackedObject cannot contain deltas"
     -- An OfsDelta needs to be resolved against a base object
-    UnResolved (OfsDelta o (Delta _ _ instructions)) -> let
+    UnResolved (OfsDelta o (PackCompressed l (Delta _ _ instructions))) -> let
         -- Find base object type and source.
         PackedObject t _ source = resolveDelta combinedMap (index-o)
         -- Interpret the delta instructions with the provided source.
-        resolvedDelta           = applyInstructions source instructions
+        resolvedDelta           = (`applyInstructions` instructions) <$> source
         -- The resulting ByteString can be parsed to yield an object.
         resultingHash           = hashResolved t resolvedDelta
         -- We now have an object of type t with a hash and a ByteString.
-        in PackedObject t resultingHash resolvedDelta
-    UnResolved (RefDelta r (Delta _ _ instructions)) -> let
-        refIndex                 = (Map.!) (getRefIndex combinedMap) r
-        PackedObject t' _ source = resolveDelta combinedMap refIndex
+        in PackedObject t resultingHash (resolvedDelta {packCLevel = l})
+    UnResolved (RefDelta r (PackCompressed l (Delta _ _ instructions))) -> let
+        refIndex                = (Map.!) (getRefIndex combinedMap) r
+        PackedObject t _ source = resolveDelta combinedMap refIndex
         -- Resolve the delta against this source.
-        resolvedDelta            = applyInstructions source instructions
+        resolvedDelta           = (`applyInstructions` instructions) <$> source
         -- Compute the hash of this object.
-        resultingHash            = hashResolved t' resolvedDelta
-        in PackedObject t' resultingHash resolvedDelta
+        resultingHash           = hashResolved t resolvedDelta
+        in PackedObject t resultingHash (resolvedDelta {packCLevel = l})
 
 unpackObject :: PackedObject -> GitObject
 unpackObject (PackedObject t _ content) = parseResolved t content
@@ -87,7 +87,7 @@ resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
         base = oMap Map.! (oIndex Map.! r')
         in resolve base delta
     _ -> entry
-    where resolve (PackedObject t _ source) (Delta _ _ is) = let
-            resolved = applyInstructions source is
+    where resolve (PackedObject t _ source) (PackCompressed l (Delta _ _ is)) = let
+            resolved = (`applyInstructions` is) <$> source
             r        = hashResolved t resolved
-            in Resolved $ PackedObject t r resolved
+            in Resolved $ PackedObject t r (resolved {packCLevel = l})

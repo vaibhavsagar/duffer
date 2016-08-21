@@ -17,11 +17,12 @@ import Duffer.Loose.Parser
     (parseBinRef, parseBlob, parseTree, parseCommit, parseTag)
 import Duffer.Pack.Entries
 
-hashResolved :: PackObjectType -> B.ByteString -> Ref
+hashResolved :: PackObjectType -> PackCompressed B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
-parseResolved :: PackObjectType -> B.ByteString -> GitObject
-parseResolved t = either error id . parseOnly (parseObjectContent t)
+parseResolved :: PackObjectType -> PackCompressed B.ByteString -> GitObject
+parseResolved t (PackCompressed _ source) =
+    either error id $ parseOnly (parseObjectContent t) source
 
 word8s :: [Word8] -> Parser [Word8]
 word8s = mapM word8
@@ -126,8 +127,12 @@ parseObjectContent t = case t of
     TagObject    -> parseTag
     _            -> error "deltas must be resolved first"
 
-parseDecompressed :: Parser B.ByteString
-parseDecompressed = L.toStrict . decompress <$> takeLazyByteString
+parseDecompressed :: Parser (PackCompressed B.ByteString)
+parseDecompressed = do
+    compressed       <- takeLazyByteString
+    let level        =  getCompressionLevel $ L.toStrict $ L.take 2 compressed
+    let decompressed =  L.toStrict $ decompress compressed
+    return $ PackCompressed level decompressed
 
 parseFullObject :: PackObjectType -> Parser PackedObject
 parseFullObject objectType = do
@@ -139,9 +144,10 @@ parseOfsDelta, parseRefDelta :: Parser PackDelta
 parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
 parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
-parseDecompressedDelta :: Parser Delta
-parseDecompressedDelta =
-    either error id . parseOnly parseDelta <$> parseDecompressed
+parseDecompressedDelta :: Parser (PackCompressed Delta)
+parseDecompressedDelta = do
+    packCompressed <- parseDecompressed
+    return $ (either error id . parseOnly parseDelta) <$> packCompressed
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
