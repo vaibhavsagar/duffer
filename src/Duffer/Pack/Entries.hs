@@ -126,8 +126,7 @@ encodeOffset n = let
      - n+1         = log128 x(r-1) + r
      - n           = floor ((log128 x(2^7-1) + 2^7) - 1)
      -}
-    noTerms     = floor $
-        (logBase (fromIntegral 2^7) (fromIntegral n * (2^7 - 1) + 2^7)) - 1
+    noTerms     = floor $ logBase (2^7) (fromIntegral n * (2^7 - 1) + 2^7) - 1
     remove      = sum $ take noTerms $ map (\i -> 2^(7*i)) [1..]
     remainder   = n - remove
     varInt      = to7BitList remainder
