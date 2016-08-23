@@ -52,6 +52,7 @@ testUnpacked indexPath = it (show indexPath) $ do
     shouldMatchList objects'            objects
     shouldMatchList refs (map hash      objects)
     shouldMatchList refs =<< mapM write objects
+    shouldMatchList (Map.elems iDecMap) (Map.elems iEMap)
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $

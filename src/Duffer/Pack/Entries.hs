@@ -75,10 +75,10 @@ isResolved (UnResolved _) = False
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject)         = toBytes packedObject
-    toBytes (UnResolved ofsD@(OfsDelta _ d)) = let
+    toBytes (UnResolved ofsD@(OfsDelta _ delta@(PackCompressed l d))) = let
         header = encodeTypeLen OfsDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes ofsD
-    toBytes (UnResolved refD@(RefDelta _ d)) = let
+    toBytes (UnResolved refD@(RefDelta _ delta@(PackCompressed l d))) = let
         header = encodeTypeLen RefDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes refD
 
@@ -113,7 +113,7 @@ encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjectType len = let
     (last4, rest) = packEntryLenList len
     firstByte     = (fromEnum packObjectType `shiftL` 4) .|. last4
-    firstByte'    = if rest /= B.empty then setBit firstByte 7 else firstByte
+    firstByte'    = if rest /= "" then setBit firstByte 7 else firstByte
     in B.cons (fromIntegral firstByte') rest
 
 packEntryLenList :: Int -> (Int, B.ByteString)
@@ -124,10 +124,10 @@ packEntryLenList n = let
         then setBit last4 7
         else last4
     restL  = to7BitList rest
-    restL' = if not (null restL)
+    restL' = if restL /= [0]
         then map fromIntegral $ head restL:map (`setBit` 7) (tail restL)
         else []
-    in (last4, B.pack $ reverse restL')
+    in (last4', B.pack $ reverse restL')
 
 instance Byteable PackDelta where
     toBytes (RefDelta ref delta) = let
