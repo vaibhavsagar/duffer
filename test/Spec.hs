@@ -2,9 +2,11 @@
 
 import qualified Data.Map.Strict as Map
 
+import Data.Attoparsec.ByteString (parseOnly)
 import Data.Byteable
 import Data.ByteString (readFile, hGetContents)
 import Test.Hspec
+import Test.QuickCheck
 import Control.Monad (zipWithM_)
 import System.Process
 import System.FilePath
@@ -23,6 +25,19 @@ import Duffer.Pack.Entries
 main :: IO ()
 main = do
     filenames <- getPackIndexes ".git"
+
+    hspec . parallel $ describe "integer encodings" $ do
+        it "encodes and decodes offsets" $ property $
+            \x -> x >= 0 ==> let
+                encoded = encodeOffset x
+                decoded = either error id $ parseOnly parseOffset encoded
+                in decoded == (x :: Int)
+        it "encodes and decodes object types and lengths" $ property $
+            \x -> x >= 0 ==> let
+                encoded = encodeTypeLen OfsDeltaObject x
+                decoded = either error id $ parseOnly parseTypeLen encoded
+                in decoded == (OfsDeltaObject, x :: Int)
+
     hspec . parallel $ describe "unpacking packfiles" $
         mapM_ testUnpacked filenames
 
@@ -44,7 +59,7 @@ testUnpacked indexPath = it (show indexPath) $ do
     iBSMap    <-            indexedByteStringMap indexPath
     let iEnMap   = Map.map toBytes iEMap
     let iDecMap  = Map.map parsedPackRegion iEnMap
-    -- shouldBe iEnMap iBSMap
+    shouldBe iEnMap iBSMap
     shouldBe iDecMap iEMap
     objects   <- resolveAll                      indexPath
     let objects' =  resolveAll' iEMap
