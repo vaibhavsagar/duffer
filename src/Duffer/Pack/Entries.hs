@@ -9,7 +9,6 @@ import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
 import Data.Word (Word32)
-import Debug.Trace
 
 import Duffer.Loose.Objects (Ref)
 
