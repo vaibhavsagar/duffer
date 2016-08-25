@@ -24,46 +24,65 @@ import Duffer.Pack.Entries
 
 main :: IO ()
 main = do
-    filenames <- getPackIndexes ".git"
+    testEncodingAndParsing
+    testUnpackingAndWriting =<< getPackIndices ".git"
+    let objectTypes = ["blob", "tree", "commit", "tag"]
+    testReadingLoose objectTypes =<< mapM objectsOfType objectTypes
 
-    hspec . parallel $ describe "integer encodings" $ do
-        it "encodes and decodes offsets" $ property $
-            \x -> x >= 0 ==> let
-                encoded = encodeOffset x
-                decoded = either error id $ parseOnly parseOffset encoded
-                in decoded == (x :: Int)
-        it "encodes and decodes object types and lengths" $ property $
-            \x -> x >= 0 ==> let
-                encoded = encodeTypeLen OfsDeltaObject x
-                decoded = either error id $ parseOnly parseTypeLen encoded
-                in decoded == (OfsDeltaObject, x :: Int)
+instance Arbitrary PackObjectType where
+    arbitrary = oneof $ map return
+        [ CommitObject
+        , TreeObject
+        , BlobObject
+        , TagObject
+        , OfsDeltaObject
+        , RefDeltaObject
+        ]
 
+testEncodingAndParsing :: IO ()
+testEncodingAndParsing = hspec . parallel $ describe "integer encodings" $ do
+    it "encodes and decodes offsets" $ property $
+        \offset -> offset >= 0 ==> let
+            encoded = encodeOffset offset
+            decoded = either error id $ parseOnly parseOffset encoded
+            in decoded == (offset :: Int)
+    it "encodes and decodes object types and lengths" $ property $
+        \len oType -> len >= 0 ==> let
+            encoded = encodeTypeLen oType len
+            decoded = either error id $ parseOnly parseTypeLen encoded
+            in decoded == (oType, len :: Int)
+
+testUnpackingAndWriting :: [FilePath] -> IO ()
+testUnpackingAndWriting indices =
     hspec . parallel $ describe "unpacking packfiles" $
-        mapM_ testUnpacked filenames
+        mapM_ testAndWriteUnpacked indices
 
-    let objectTypes    =  ["blob", "tree", "commit", "tag"]
-    partitionedObjects <- mapM objectsOfType objectTypes
+testReadingLoose :: [String] -> [[Ref]] -> IO ()
+testReadingLoose types partitionedObjects =
     hspec . parallel $ describe "reading loose objects" $
-        zipWithM_ describeReadingAll objectTypes partitionedObjects
+        zipWithM_ describeReadingAll types partitionedObjects
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects = describe oType $
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
     where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
 
-testUnpacked :: FilePath -> SpecWith ()
-testUnpacked indexPath = it (show indexPath) $ do
+testAndWriteUnpacked :: FilePath -> SpecWith ()
+testAndWriteUnpacked indexPath = it (show indexPath) $ do
     index     <- parsedIndex <$> readFile        indexPath
     let refs     =  map (snd . toAssoc)          index
     iEMap     <-                 indexedEntryMap indexPath
     iBSMap    <-            indexedByteStringMap indexPath
     let iEnMap   = Map.map toBytes iEMap
     let iDecMap  = Map.map parsedPackRegion iEnMap
+
     shouldBe iEnMap iBSMap
     shouldBe iDecMap iEMap
+
     objects   <- resolveAll                      indexPath
     let objects' =  resolveAll' iEMap
     let write    =  flip runReaderT ".git" . writeObject
+
     shouldMatchList objects'            objects
     shouldMatchList refs (map hash      objects)
     shouldMatchList refs =<< mapM write objects
@@ -87,8 +106,8 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
             {std_out = CreatePipe, std_in = UseHandle pipe} >>=
             \(_, Just handle, _, _) -> return handle
 
-getPackIndexes :: String -> IO [FilePath]
-getPackIndexes path = let packFilePath = path ++ "/objects/pack" in
+getPackIndices :: String -> IO [FilePath]
+getPackIndices path = let packFilePath = path ++ "/objects/pack" in
     map (combine packFilePath) .  filter (\f -> takeExtension f == ".idx") <$>
     getDirectoryContents packFilePath
 
