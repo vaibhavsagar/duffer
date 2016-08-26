@@ -1,5 +1,6 @@
 duffer.hs
 =========
+[![Build Status](https://travis-ci.org/vaibhavsagar/duffer.hs.svg?branch=master)](https://travis-ci.org/vaibhavsagar/duffer.hs)
 
 This is a learning exercise and an API for `git`, in that order. Please do not
 use this code in production. Instead I would recommend Vincent Hanquez's
