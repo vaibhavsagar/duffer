@@ -103,6 +103,7 @@ getCompressionLevel bytes = let
     in case levelByte of
         1   -> Z.bestSpeed
         156 -> Z.defaultCompression
+        _   -> error "I can't make sense of this compression level"
 
 instance Functor PackCompressed where
     fmap f (PackCompressed level content) =
