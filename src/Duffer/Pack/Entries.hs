@@ -216,6 +216,9 @@ packObjectType header = toEnum . fromIntegral $ (header `shiftR` 4) .&. 7
 toAssoc :: PackIndexEntry -> (Int, Ref)
 toAssoc (PackIndexEntry o r _) = (o, r)
 
+getCRC :: PackIndexEntry -> Word32
+getCRC (PackIndexEntry _ _ c) = c
+
 emptyCombinedMap :: CombinedMap
 emptyCombinedMap = CombinedMap Map.empty Map.empty
 

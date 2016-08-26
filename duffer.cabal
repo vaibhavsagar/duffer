@@ -28,7 +28,6 @@ library
                      , bytestring
                      , containers
                      , cryptohash
-                     , digest
                      , filepath
                      , mmap
                      , utf8-string
@@ -51,6 +50,7 @@ test-suite duffer-test
   build-depends:       base
                      , byteable
                      , containers
+                     , digest
                      , duffer
                      , attoparsec
                      , directory

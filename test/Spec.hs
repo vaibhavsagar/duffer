@@ -5,6 +5,7 @@ import qualified Data.Map.Strict as Map
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Byteable
 import Data.ByteString (readFile, hGetContents)
+import Data.Digest.CRC32
 import Test.Hspec
 import Test.QuickCheck
 import Control.Monad (zipWithM_)
@@ -70,16 +71,19 @@ describeReadingAll oType objects = describe oType $
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = it (show indexPath) $ do
     index     <- parsedIndex <$> readFile        indexPath
-    let refs     =  map (snd . toAssoc)          index
+    let refs   =  map (snd . toAssoc)          index
+    let crcs   =  map getCRC index
     iEMap     <-                 indexedEntryMap indexPath
     iBSMap    <-            indexedByteStringMap indexPath
-    let iEnMap   = Map.map toBytes iEMap
-    let iDecMap  = Map.map parsedPackRegion iEnMap
+    let iEnMap  = Map.map toBytes iEMap
+    let iDecMap = Map.map parsedPackRegion iEnMap
+    let crcMap  = Map.map crc32 iEnMap
 
     shouldBe iEnMap iBSMap
     shouldBe iDecMap iEMap
+    shouldMatchList (Map.elems crcMap) crcs
 
-    objects   <- resolveAll                      indexPath
+    objects      <- resolveAll indexPath
     let objects' =  resolveAll' iEMap
     let write    =  flip runReaderT ".git" . writeObject
 
