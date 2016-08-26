@@ -7,7 +7,7 @@ import Data.Attoparsec.ByteString
 import Data.Bits
 
 import Codec.Compression.Zlib (decompress)
-import Control.Monad (zipWithM)
+import Control.Monad          (zipWithM)
 import GHC.Word               (Word8)
 
 import Prelude hiding (take)
@@ -107,8 +107,9 @@ parseCopyInstruction byte = CopyInstruction
     let offset = o0 .|. o1 .|. o2 .|. o3
     let length = l0 .|. l1 .|. l2
     -}
-    <$> getVarInt [0..3] [0,8..24]
-    <*> getVarInt [4..6] [0,8..16]
+    <$>  getVarInt [0..3] [0,8..24]
+    <*> (getVarInt [4..6] [0,8..16] >>= \len ->
+        return $ if len == 0 then 0x10000 else len)
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
           readShift more shift = if more
