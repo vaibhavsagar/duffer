@@ -8,13 +8,14 @@ import Data.Byteable
 import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
+import Data.Digest.CRC32
 import Data.Word (Word32)
 
 import Duffer.Loose.Objects (Ref)
 
 data PackIndexEntry
     = PackIndexEntry Int Ref Word32
-    deriving (Show)
+    deriving (Show, Eq)
 
 data PackObjectType
     = UnusedPackObjectType0
@@ -255,3 +256,9 @@ fixOffsets fOffsets offset
     | otherwise    = fOffsets !! (offset-msb)
     where msb = bit 31
 
+packIndexEntries :: CombinedMap -> [PackIndexEntry]
+packIndexEntries objects = let
+    crc32s     = Map.map (crc32 . toBytes) $ getOffsetMap objects
+    offsetRefs = Map.toList $ getRefIndex objects
+    entries = map (\(r, o) -> PackIndexEntry o r (crc32s Map.! o)) offsetRefs
+    in entries

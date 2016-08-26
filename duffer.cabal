@@ -28,6 +28,7 @@ library
                      , bytestring
                      , containers
                      , cryptohash
+                     , digest
                      , filepath
                      , mmap
                      , utf8-string

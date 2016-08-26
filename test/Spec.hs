@@ -73,8 +73,9 @@ testAndWriteUnpacked indexPath = it (show indexPath) $ do
     index     <- parsedIndex <$> readFile        indexPath
     let refs   =  map (snd . toAssoc)          index
     let crcs   =  map getCRC index
-    iEMap     <-                 indexedEntryMap indexPath
-    iBSMap    <-            indexedByteStringMap indexPath
+    iEMap     <-      indexedEntryMap indexPath
+    iBSMap    <- indexedByteStringMap indexPath
+    cEMap     <- combinedEntryMap     indexPath
     let iEnMap  = Map.map toBytes iEMap
     let iDecMap = Map.map parsedPackRegion iEnMap
     let crcMap  = Map.map crc32 iEnMap
@@ -83,14 +84,15 @@ testAndWriteUnpacked indexPath = it (show indexPath) $ do
     shouldBe iDecMap iEMap
     shouldMatchList (Map.elems crcMap) crcs
 
-    objects      <- resolveAll indexPath
-    let objects' =  resolveAll' iEMap
-    let write    =  flip runReaderT ".git" . writeObject
+    objects       <- resolveAll indexPath
+    let objects'  =  resolveAll' iEMap
+    let write     =  flip runReaderT ".git" . writeObject
 
     shouldMatchList objects'            objects
     shouldMatchList refs (map hash      objects)
     shouldMatchList refs =<< mapM write objects
     shouldMatchList (Map.elems iDecMap) (Map.elems iEMap)
+    shouldMatchList (packIndexEntries cEMap) index
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
