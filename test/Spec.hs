@@ -91,7 +91,6 @@ testAndWriteUnpacked indexPath = it (show indexPath) $ do
     shouldMatchList objects'            objects
     shouldMatchList refs (map hash      objects)
     shouldMatchList refs =<< mapM write objects
-    shouldMatchList (Map.elems iDecMap) (Map.elems iEMap)
     shouldMatchList (packIndexEntries cEMap) index
 
 objectsOfType :: String -> IO [Ref]
