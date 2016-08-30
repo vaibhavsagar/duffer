@@ -87,7 +87,8 @@ resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
         base = oMap Map.! (oIndex Map.! r')
         in resolve base delta
     _ -> entry
-    where resolve (PackedObject t _ source) (PackCompressed l (Delta _ _ is)) = let
-            resolved = (`applyInstructions` is) <$> source
-            r        = hashResolved t resolved
-            in Resolved $ PackedObject t r (resolved {packCLevel = l})
+    where resolve (PackedObject t _ source) (PackCompressed l (Delta _ _ is)) =
+            let
+                resolved = (`applyInstructions` is) <$> source
+                r        = hashResolved t resolved
+                in Resolved $ PackedObject t r (resolved {packCLevel = l})

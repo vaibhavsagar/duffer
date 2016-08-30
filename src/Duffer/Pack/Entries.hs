@@ -13,8 +13,7 @@ import Data.Word (Word32)
 
 import Duffer.Loose.Objects (Ref)
 
-data PackIndexEntry
-    = PackIndexEntry Int Ref Word32
+data PackIndexEntry = PackIndexEntry Int Ref Word32
     deriving (Show, Eq)
 
 data PackObjectType
@@ -52,15 +51,13 @@ data DeltaInstruction
 
 data Delta = Delta Int Int [DeltaInstruction] deriving (Show, Eq)
 
-data CombinedMap
-    = CombinedMap
-        { getOffsetMap :: OffsetMap
-        , getRefIndex  :: RefIndex
-        }
-        deriving (Show)
+data CombinedMap = CombinedMap
+    { getOffsetMap :: OffsetMap
+    , getRefIndex  :: RefIndex
+    }
+    deriving (Show)
 
-data ObjectMap
-    = ObjectMap
+data ObjectMap = ObjectMap
     { getObjectMap   :: Map.Map Int PackedObject
     , getObjectIndex :: RefIndex
     }
@@ -68,10 +65,6 @@ data ObjectMap
 type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
 type RefIndex  = Map.Map Ref Int
-
-isResolved :: PackEntry -> Bool
-isResolved (Resolved _)   = True
-isResolved (UnResolved _) = False
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject)         = toBytes packedObject
@@ -91,6 +84,10 @@ instance Byteable PackedObject where
 instance (Byteable a) => Byteable (PackCompressed a) where
     toBytes (PackCompressed level content) =
         compressToLevel level $ toBytes content
+
+isResolved :: PackEntry -> Bool
+isResolved (Resolved _)   = True
+isResolved (UnResolved _) = False
 
 compressToLevel :: Z.CompressionLevel -> B.ByteString -> B.ByteString
 compressToLevel level content = toStrict $
