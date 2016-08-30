@@ -182,9 +182,9 @@ toLittleEndian nums = case nums of
 instance Byteable DeltaInstruction where
     toBytes (InsertInstruction content) =
         B.singleton (fromIntegral $ B.length content) `B.append` content
-    toBytes (CopyInstruction offset length) = let
+    toBytes (CopyInstruction offset size) = let
         offsetBytes = toByteList offset
-        lenBytes    = toByteList length
+        lenBytes    = toByteList size
         offsetBits  = map (>0) offsetBytes
         lenBits     = map (>0) lenBytes
         encodedOff  = encode offsetBytes
@@ -195,7 +195,7 @@ instance Byteable DeltaInstruction where
         where encode = B.pack . map fromIntegral . reverse . filter (>0)
               padFalse :: [Bool] -> Int -> [Bool]
               padFalse bits len = let
-                pad = len - Prelude.length bits
+                pad = len - length bits
                 in if pad > 0
                     then replicate pad False ++ bits
                     else bits
