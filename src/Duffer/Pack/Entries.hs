@@ -180,31 +180,27 @@ toLittleEndian nums = case nums of
     []     -> ""
 
 instance Byteable DeltaInstruction where
-    toBytes instruction = case instruction of
-        InsertInstruction content     ->
-            B.singleton (fromIntegral $ B.length content) `B.append` content
-        CopyInstruction offset length -> let
-            offsetBytes = toByteList offset
-            lenBytes    = toByteList length
-            offsetBits  = map (>0) offsetBytes
-            lenBits     = map (>0) lenBytes
-            encodedOff  = encode offsetBytes
-            encodedLen  = encode lenBytes
-            bools       = True:padFalse lenBits 3 ++ padFalse offsetBits 4
-            firstByte   = boolsToByte bools 0
-            in B.concat [B.singleton firstByte, encodedOff, encodedLen]
+    toBytes (InsertInstruction content) =
+        B.singleton (fromIntegral $ B.length content) `B.append` content
+    toBytes (CopyInstruction offset length) = let
+        offsetBytes = toByteList offset
+        lenBytes    = toByteList length
+        offsetBits  = map (>0) offsetBytes
+        lenBits     = map (>0) lenBytes
+        encodedOff  = encode offsetBytes
+        encodedLen  = encode lenBytes
+        bools       = True:padFalse lenBits 3 ++ padFalse offsetBits 4
+        firstByte   = fromIntegral $ boolsToByte 0 bools
+        in B.concat [B.singleton firstByte, encodedOff, encodedLen]
         where encode = B.pack . map fromIntegral . reverse . filter (>0)
               padFalse :: [Bool] -> Int -> [Bool]
               padFalse bits len = let
-                  pad = len - length bits
-                  in if pad > 0
-                      then replicate pad False ++ bits
-                      else bits
-              boolsToByte :: (Bits a, Num a) => [Bool] -> a -> a
-              boolsToByte []     acc = acc
-              boolsToByte (x:xs) acc = let
-                  value = if x then bit (length xs) else 0
-                  in boolsToByte xs (value + acc)
+                pad = len - Prelude.length bits
+                in if pad > 0
+                    then replicate pad False ++ bits
+                    else bits
+              boolsToByte :: Int -> [Bool] -> Int
+              boolsToByte = foldl (\acc b -> shiftL acc 1 + fromEnum b)
 
 fullObject :: PackObjectType -> Bool
 fullObject t = t `elem` [CommitObject, TreeObject, BlobObject, TagObject]
