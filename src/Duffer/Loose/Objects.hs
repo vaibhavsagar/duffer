@@ -45,7 +45,8 @@ type Ref  = B.ByteString
 type Repo = FilePath
 
 instance Show GitObject where
-    show = toString . showContent
+    show (Tree entries) = unlines $ map show $ toAscList entries
+    show other          = toString $ showContent other
 
 instance Show PersonTime where
     show (PersonTime nm ml ti tz) = concat [nm, " <", ml, "> ", ti, " ", tz]
@@ -54,7 +55,7 @@ instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
         where components = [octMode, entryType, sha1', toString name]
               octMode    = printf "%06o" mode :: String
-              sha1'      = toString $ encode sha1
+              sha1'      = toString sha1
               entryType  = case mode of
                 0o040000 -> "tree"
                 0o160000 -> "commit"
