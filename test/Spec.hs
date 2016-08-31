@@ -69,29 +69,41 @@ describeReadingAll oType objects = describe oType $
     where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
-testAndWriteUnpacked indexPath = it (show indexPath) $ do
-    index     <- parsedIndex <$> readFile        indexPath
-    let refs   =  map (snd . toAssoc)          index
-    let crcs   =  map getCRC index
-    iEMap     <-      indexedEntryMap indexPath
-    iBSMap    <- indexedByteStringMap indexPath
-    cEMap     <- combinedEntryMap     indexPath
-    let iEnMap  = Map.map toBytes iEMap
-    let iDecMap = Map.map parsedPackRegion iEnMap
-    let crcMap  = Map.map crc32 iEnMap
+testAndWriteUnpacked indexPath = describe (show indexPath) $ do
+    it "decodes and encodes correctly" $ do
+        index     <- parsedIndex <$> readFile indexPath
+        iEMap     <- indexedEntryMap          indexPath
+        iBSMap    <- indexedByteStringMap     indexPath
+        let iEnMap  = Map.map toBytes iEMap
+        let iDecMap = Map.map parsedPackRegion iEnMap
+        let crcMap  = Map.map crc32 iEnMap
 
-    shouldBe iEnMap iBSMap
-    shouldBe iDecMap iEMap
-    shouldMatchList (Map.elems crcMap) crcs
+        shouldBe iEnMap iBSMap
+        shouldBe iDecMap iEMap
+        shouldMatchList (Map.elems crcMap) (map getCRC index)
 
-    objects       <- resolveAll indexPath
-    let objects'  =  resolveAll' iEMap
-    let write     =  flip runReaderT ".git" . writeObject
+    it "resolves objects correctly" $ do
+        index     <- parsedIndex <$> readFile indexPath
+        iEMap     <- indexedEntryMap          indexPath
+        objects   <- resolveAll               indexPath
+        let objects' = resolveAll' iEMap
+        let refs     = map (snd . toAssoc)    index
 
-    shouldMatchList objects'            objects
-    shouldMatchList refs (map hash      objects)
-    shouldMatchList refs =<< mapM write objects
-    shouldMatchList (packIndexEntries cEMap) index
+        shouldMatchList objects'       objects
+        shouldMatchList refs (map hash objects)
+
+    it "can reconstruct the pack index entries" $ do
+        index     <- parsedIndex <$> readFile indexPath
+        cEMap     <- combinedEntryMap         indexPath
+        shouldMatchList (packIndexEntries cEMap) index
+
+    it "writes resolved objects out" $ do
+        index     <- parsedIndex <$> readFile indexPath
+        objects   <- resolveAll               indexPath
+        let refs  =  map (snd . toAssoc)      index
+        let write =  flip runReaderT ".git" . writeObject
+        shouldMatchList refs =<< mapM write objects
+
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
