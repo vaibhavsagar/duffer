@@ -32,7 +32,14 @@ data GitObject
         }
     deriving (Eq)
 
-data TreeEntry = TreeEntry Int B.ByteString Ref deriving (Eq)
+-- A tree entry has permissions, a file/directory name, and a ref.
+data TreeEntry = TreeEntry
+    { entryPerms :: Int
+    , entryName  :: B.ByteString
+    , entryRef   :: Ref
+    }
+    deriving (Eq)
+
 data PersonTime = PersonTime
     { personName :: String
     , personMail :: String
