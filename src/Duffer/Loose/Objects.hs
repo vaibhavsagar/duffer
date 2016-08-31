@@ -119,4 +119,4 @@ showContent object = case object of
     where (?) prefix value = B.concat [prefix, " ", value, "\n"]
 
 hash :: GitObject -> Ref
-hash = encode . SHA1.hash . showObject
+hash = encode . SHA1.hash . toBytes
