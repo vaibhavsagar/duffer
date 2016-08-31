@@ -46,6 +46,11 @@ writeObject object = let sha1 = hash object in do
         writeFile path $ (compress . showObject) object
     return sha1
 
+hasObject :: Ref -> WithRepo Bool
+hasObject ref = do
+    path <- asks (sha1Path ref)
+    liftIO $ doesFileExist path
+
 resolveRef :: FilePath -> WithRepo GitObject
 resolveRef = (ask >>=) . (((readObject =<<) . liftIO .
     (init <$>) . readFile) .) . flip (</>)
