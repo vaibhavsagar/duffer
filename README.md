@@ -28,9 +28,10 @@ same time, there a couple of (I think) cool things I would like to do with this
 library:
 
 - Use `git` as a NoSQL store, i.e. using `git` data formats to persist data for
-  an application. [Irmin]() is exactly this for OCaml but I don't know of an
-  equivalent in Haskell. This means eventually supporting pluggable backends
-  like Irmin and `libgit2` so that you're not limited to a filesystem backend.
+  an application. [Irmin](https://github.com/mirage/irmin) is exactly this for
+  OCaml but I don't know of an equivalent in Haskell. This means eventually
+  supporting pluggable backends like Irmin and `libgit2` so that you're not
+  limited to a filesystem backend.
 - A GraphQL/other query language interface to a `git` repository's commits. If
   commits form a beautiful acyclic directed graph, surely there is a better way
   of querying them than `git log`.
