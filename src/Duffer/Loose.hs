@@ -5,7 +5,7 @@ import qualified Codec.Compression.Zlib as Z (compress, decompress)
 
 import Control.Monad              (unless)
 import Control.Monad.IO.Class     (liftIO)
-import Control.Monad.Trans.Reader (ReaderT, ask, asks)
+import Control.Monad.Trans.Reader (ReaderT, asks)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString
     (ByteString, append, readFile, writeFile, init)
@@ -20,21 +20,30 @@ import Duffer.Loose.Parser  (parseObject)
 
 type WithRepo = ReaderT Repo IO
 
-(~~) :: GitObject -> Int -> WithRepo GitObject
-(~~) object 0 = return object
-(~~) object n = readObject (head $ parentRefs object) >>= \p -> p ~~ (n-1)
+(~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
+(~~) object 0 = return (Just object)
+(~~) object n = do
+    parent <- readObject (head $ parentRefs object)
+    case parent of
+        Just p  -> p ~~ (n-1)
+        Nothing -> return Nothing
 
-(^^) :: GitObject -> Int -> WithRepo GitObject
+(^^) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (^^) object n = readObject $ parentRefs object !! (n-1)
 
 decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
-readObject :: Ref -> WithRepo GitObject
+readObject :: Ref -> WithRepo (Maybe GitObject)
 readObject ref = do
-    path    <- asks (sha1Path ref)
-    content <- liftIO $ decompress <$> readFile path
-    return  $ either error id $ parseOnly parseObject content
+    exists  <- hasObject ref
+    if exists
+        then do
+            path    <- asks (sha1Path ref)
+            content <- liftIO $ decompress <$> readFile path
+            let parsed = parseOnly parseObject content
+            return $ either (const Nothing) Just parsed
+        else return Nothing
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject object = let sha1 = hash object in do
@@ -50,9 +59,11 @@ hasObject ref = do
     path <- asks (sha1Path ref)
     liftIO $ doesFileExist path
 
-resolveRef :: FilePath -> WithRepo GitObject
-resolveRef = (ask >>=) . (((readObject =<<) . liftIO .
-    (init <$>) . readFile) .) . flip (</>)
+resolveRef :: FilePath -> WithRepo (Maybe GitObject)
+resolveRef refPath = do
+    path <- asks (</> refPath)
+    ref  <- liftIO $ init <$> readFile path
+    readObject ref
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .

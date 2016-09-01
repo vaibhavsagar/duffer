@@ -13,7 +13,7 @@ import System.Process
 import System.FilePath
 import System.Directory
 import Control.Monad.Trans.Reader (runReaderT)
-import Data.ByteString.UTF8 (lines)
+import Data.ByteString.UTF8 (lines, toString)
 import GHC.IO.Handle (Handle)
 import Prelude hiding (lines, readFile)
 
@@ -117,5 +117,10 @@ getPackIndices path = let packFilePath = path ++ "/objects/pack" in
     getDirectoryContents packFilePath
 
 readHashObject :: String -> Ref -> Expectation
-readHashObject path sha1 =
-    hash <$> runReaderT (readObject sha1) path `shouldReturn` sha1
+readHashObject path sha1 = do
+    maybeObject <- runReaderT (readObject sha1) path
+    case maybeObject of
+        (Just object) -> hash object `shouldBe` sha1
+        Nothing       -> let
+            sha1String = toString sha1
+            in expectationFailure $ sha1String ++ " not found"
