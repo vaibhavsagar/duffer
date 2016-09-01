@@ -2,8 +2,11 @@
 
 module Duffer.Loose.Objects where
 
-import qualified Crypto.Hash.SHA1 as SHA1 (hash)
-import qualified Data.ByteString  as B
+import qualified Crypto.Hash.SHA1          as SHA1 (hash)
+import qualified Data.ByteString           as B
+import qualified Data.ByteString.Builder   as BB
+import qualified Data.ByteString.Lazy      as L
+import qualified Data.ByteString.Lazy.UTF8 as UL (toString)
 
 import Data.Byteable
 import Data.ByteString.UTF8   (fromString, toString)
@@ -53,7 +56,7 @@ type Repo = FilePath
 
 instance Show GitObject where
     show (Tree entries) = unlines $ map show $ toAscList entries
-    show other          = toString $ showContent other
+    show other          = UL.toString $ BB.toLazyByteString $ showContent other
 
 instance Show PersonTime where
     show (PersonTime nm ml ti tz) = concat [nm, " <", ml, "> ", ti, " ", tz]
@@ -74,7 +77,7 @@ instance Ord TreeEntry where
                 if mode == 0o040000 || mode == 0o160000 then "/" else ""
 
 instance Byteable GitObject where
-    toBytes = showObject
+    toBytes = L.toStrict . showObject
 
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
@@ -87,36 +90,37 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
     flip (foldl (</>)) ["objects", [sa, sb], suffix]
 
 -- Generate a stored representation of a git object.
-showObject :: GitObject -> B.ByteString
-showObject object = header `B.append` content
-    where content    = showContent object
-          header     = B.concat [objectType, " ", len, "\NUL"]
+showObject :: GitObject -> L.ByteString
+showObject object = header `L.append` content
+    where content    = BB.toLazyByteString $ showContent object
+          header     = L.concat [objectType, " ", len, "\NUL"]
           objectType = case object of
             Blob{}   -> "blob"
             Tree{}   -> "tree"
             Commit{} -> "commit"
             Tag{}    -> "tag"
-          len        = fromString . show $ B.length content
+          len        = L.fromStrict $ fromString . show $ L.length content
 
-showContent :: GitObject -> B.ByteString
+showContent :: GitObject -> BB.Builder
 showContent object = case object of
-    Blob content -> content
-    Tree entries -> B.concat $ map toBytes $ toAscList entries
-    Commit {..}  -> B.concat
+    Blob content -> BB.byteString content
+    Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
+    Commit {..}  -> mconcat
         [                 "tree"      ?  treeRef
-        , B.concat $ map ("parent"    ?) parentRefs
+        , mconcat $ map ("parent"    ?) parentRefs
         ,                 "author"    ?  fromString (show authorTime)
         ,                 "committer" ?  fromString (show committerTime)
-        ,                 "\n"        ,  message, "\n"
+        ,                 "\n"        ,  BB.byteString message, "\n"
         ]
-    Tag {..} -> B.concat
+    Tag {..} -> mconcat
         [ "object" ?            objectRef
         , "type"   ? fromString objectType
         , "tag"    ? fromString tagName
         , "tagger" ? fromString (show tagger)
-        , "\n"     , annotation, "\n"
+        , "\n"     , BB.byteString annotation, "\n"
         ]
-    where (?) prefix value = B.concat [prefix, " ", value, "\n"]
+    where (?) prefix value =
+            mconcat $ map BB.byteString [prefix, " ", value, "\n"]
 
 hash :: GitObject -> Ref
 hash = encode . SHA1.hash . toBytes

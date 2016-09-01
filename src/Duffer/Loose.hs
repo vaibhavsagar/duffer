@@ -1,6 +1,6 @@
 module Duffer.Loose where
 
-import qualified Data.ByteString.Lazy   as L (toStrict, fromStrict)
+import qualified Data.ByteString.Lazy   as L
 import qualified Codec.Compression.Zlib as Z (compress, decompress)
 
 import Control.Monad              (unless)
@@ -27,8 +27,7 @@ type WithRepo = ReaderT Repo IO
 (^^) :: GitObject -> Int -> WithRepo GitObject
 (^^) object n = readObject $ parentRefs object !! (n-1)
 
-compress, decompress :: ByteString -> ByteString
-compress   = L.toStrict . Z.compress   . L.fromStrict
+decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
 readObject :: Ref -> WithRepo GitObject
@@ -43,7 +42,7 @@ writeObject object = let sha1 = hash object in do
     exists <- liftIO $ doesFileExist path
     liftIO $ unless exists $ do
         createDirectoryIfMissing True (takeDirectory path)
-        writeFile path $ (compress . showObject) object
+        L.writeFile path $ (Z.compress . showObject) object
     return sha1
 
 hasObject :: Ref -> WithRepo Bool
