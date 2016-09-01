@@ -35,3 +35,12 @@ library:
 - A GraphQL/other query language interface to a `git` repository's commits. If
   commits form a beautiful acyclic directed graph, surely there is a better way
   of querying them than `git log`.
+
+# Getting Started
+
+1. [Set up `stack`](https://docs.haskellstack.org/en/stable/README/) if you
+   haven't already.
+1. Clone this repository: `git clone git@github.com:vaibhavsagar/duffer.hs.git`
+1. `cd duffer.hs`
+1. `stack test`
+1. Tests should all pass. If they don't, please open an issue.
