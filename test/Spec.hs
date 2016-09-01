@@ -70,40 +70,28 @@ describeReadingAll oType objects = describe oType $
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
-    it "decodes and encodes correctly" $ do
-        index     <- parsedIndex <$> readFile indexPath
-        iEMap     <- indexedEntryMap          indexPath
-        iBSMap    <- indexedByteStringMap     indexPath
-        let iEnMap  = Map.map toBytes iEMap
-        let iDecMap = Map.map parsedPackRegion iEnMap
-        let crcMap  = Map.map crc32 iEnMap
-
-        shouldBe iEnMap iBSMap
-        shouldBe iDecMap iEMap
-        shouldMatchList (Map.elems crcMap) (map getCRC index)
-
-    it "resolves objects correctly" $ do
-        index     <- parsedIndex <$> readFile indexPath
-        iEMap     <- indexedEntryMap          indexPath
-        objects   <- resolveAll               indexPath
-        let objects' = resolveAll' iEMap
-        let refs     = map (snd . toAssoc)    index
-
-        shouldMatchList objects'       objects
-        shouldMatchList refs (map hash objects)
-
+    index <- runIO $ parsedIndex <$> readFile indexPath
     it "can reconstruct the pack index entries" $ do
-        index     <- parsedIndex <$> readFile indexPath
-        cEMap     <- combinedEntryMap         indexPath
-        shouldMatchList (packIndexEntries cEMap) index
-
+        cEMap <- combinedEntryMap indexPath
+        packIndexEntries cEMap `shouldMatchList` index
+    iEMap <- runIO $ indexedEntryMap indexPath
+    it "decodes and encodes correctly" $ do
+        iBSMap     <- indexedByteStringMap indexPath
+        let iEnMap =  Map.map toBytes iEMap
+        iEnMap `shouldBe` iBSMap
+        let iDecMap = Map.map parsedPackRegion iEnMap
+        iDecMap `shouldBe` iEMap
+        let crcMap = Map.map crc32 iEnMap
+        Map.elems crcMap `shouldMatchList` map getCRC index
+    objects <- runIO $ resolveAll  indexPath
+    let refs = map (snd . toAssoc) index
+    it "resolves objects correctly" $ do
+        let objects' = resolveAll' iEMap
+        objects' `shouldMatchList` objects
+        refs `shouldMatchList` map hash objects
     it "writes resolved objects out" $ do
-        index     <- parsedIndex <$> readFile indexPath
-        objects   <- resolveAll               indexPath
-        let refs  =  map (snd . toAssoc)      index
-        let write =  flip runReaderT ".git" . writeObject
-        shouldMatchList refs =<< mapM write objects
-
+        let write = flip runReaderT ".git" . writeObject
+        mapM write objects >>= shouldMatchList refs
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
