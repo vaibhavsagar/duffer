@@ -19,7 +19,7 @@ excellent and very educational [hs-git](https://github.com/vincenthz/hs-git/).
 - Support arbitrary backends besides file storage.
 - Read .git/index
 - Generate human readable diffs.
-- Provide Functor, Aplicative, or Monad instances for a repository.
+- Provide Functor, Applicative, or Monad instances for a repository.
 
 # Goals
 
