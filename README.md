@@ -12,7 +12,7 @@ excellent and very educational [hs-git](https://github.com/vincenthz/hs-git/).
 - Reads full indexed packfiles.
 - Reads and writes git refs.
 
-# Some things this library does not do
+# Some things this library does not do (yet)
 
 - Generate a packfile index from a packfile.
 - Read a streamed packfile.
