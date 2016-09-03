@@ -2,6 +2,7 @@
 
 module Duffer.Loose.Objects where
 
+import qualified Data.ByteArray.Encoding   as E
 import qualified Data.ByteString           as B
 import qualified Data.ByteString.Builder   as BB
 import qualified Data.ByteString.Lazy      as L
@@ -124,4 +125,4 @@ showContent object = case object of
             mconcat $ map BB.byteString [prefix, " ", value, "\n"]
 
 hash :: GitObject -> Ref
-hash = fromString . show . hashWith (undefined :: SHA1) . toBytes
+hash = E.convertToBase E.Base16 . hashWith (undefined :: SHA1) . toBytes

@@ -30,6 +30,7 @@ library
                      , cryptonite
                      , digest
                      , filepath
+                     , memory
                      , mmap
                      , utf8-string
                      , zlib
