@@ -112,14 +112,14 @@ showContent object = case object of
         , mconcat $ map ("parent"    ?) parentRefs
         ,                 "author"    ?  fromString (show authorTime)
         ,                 "committer" ?  fromString (show committerTime)
-        ,                 "\n"        ,  BB.byteString message, "\n"
+        ,                 "\n"        ,  BB.byteString message
         ]
     Tag {..} -> mconcat
         [ "object" ?            objectRef
         , "type"   ? fromString objectType
         , "tag"    ? fromString tagName
         , "tagger" ? fromString (show tagger)
-        , "\n"     , BB.byteString annotation, "\n"
+        , "\n"     , BB.byteString annotation
         ]
     where (?) prefix value =
             mconcat $ map BB.byteString [prefix, " ", value, "\n"]

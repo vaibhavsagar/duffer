@@ -23,7 +23,7 @@ parseRestOfLine :: Parser String
 parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
 
 parseMessage :: Parser B.ByteString
-parseMessage = endOfLine *> (B.init <$> takeByteString)
+parseMessage = endOfLine *> (takeByteString)
 
 parseHexRef :: Parser Ref
 parseHexRef = take 40
