@@ -27,7 +27,7 @@ library
                      , byteable
                      , bytestring
                      , containers
-                     , cryptohash
+                     , cryptonite
                      , digest
                      , filepath
                      , mmap

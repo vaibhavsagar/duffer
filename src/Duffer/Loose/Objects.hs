@@ -2,15 +2,16 @@
 
 module Duffer.Loose.Objects where
 
-import qualified Crypto.Hash.SHA1          as SHA1 (hash)
 import qualified Data.ByteString           as B
 import qualified Data.ByteString.Builder   as BB
 import qualified Data.ByteString.Lazy      as L
 import qualified Data.ByteString.Lazy.UTF8 as UL (toString)
 
+import Crypto.Hash            (hashWith)
+import Crypto.Hash.Algorithms (SHA1)
 import Data.Byteable
 import Data.ByteString.UTF8   (fromString, toString)
-import Data.ByteString.Base16 (encode, decode)
+import Data.ByteString.Base16 (decode)
 import Data.List              (intercalate)
 import Data.Set               (Set, toAscList)
 import System.FilePath        ((</>))
@@ -123,4 +124,4 @@ showContent object = case object of
             mconcat $ map BB.byteString [prefix, " ", value, "\n"]
 
 hash :: GitObject -> Ref
-hash = encode . SHA1.hash . toBytes
+hash = fromString . show . hashWith (undefined :: SHA1) . toBytes
