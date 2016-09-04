@@ -46,10 +46,10 @@ data TreeEntry = TreeEntry
     deriving (Eq)
 
 data PersonTime = PersonTime
-    { personName :: String
-    , personMail :: String
-    , personTime :: String
-    , personTZ   :: String
+    { personName :: B.ByteString
+    , personMail :: B.ByteString
+    , personTime :: B.ByteString
+    , personTZ   :: B.ByteString
     }
     deriving (Eq)
 
@@ -60,8 +60,9 @@ instance Show GitObject where
     show (Tree entries) = unlines $ map show $ toAscList entries
     show other          = UL.toString $ BB.toLazyByteString $ showContent other
 
-instance Show PersonTime where
-    show (PersonTime nm ml ti tz) = concat [nm, " <", ml, "> ", ti, " ", tz]
+instance Byteable PersonTime where
+    toBytes (PersonTime name mail time zone) =
+        B.concat [name, " <", mail, "> ", time, " ", zone]
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
@@ -109,16 +110,16 @@ showContent object = case object of
     Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
         [                 "tree"      ?  treeRef
-        , mconcat $ map ("parent"    ?) parentRefs
-        ,                 "author"    ?  fromString (show authorTime)
-        ,                 "committer" ?  fromString (show committerTime)
+        , mconcat $ map ("parent"     ?) parentRefs
+        ,                 "author"    ?  toBytes authorTime
+        ,                 "committer" ?  toBytes committerTime
         ,                 "\n"        ,  BB.byteString message
         ]
     Tag {..} -> mconcat
-        [ "object" ?            objectRef
-        , "type"   ? fromString objectType
-        , "tag"    ? fromString tagName
-        , "tagger" ? fromString (show tagger)
+        [ "object" ?               objectRef
+        , "type"   ?    fromString objectType
+        , "tag"    ?    fromString tagName
+        , "tagger" ?       toBytes tagger
         , "\n"     , BB.byteString annotation
         ]
     where (?) prefix value =

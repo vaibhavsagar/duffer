@@ -7,7 +7,7 @@ import Prelude                          hiding (take)
 
 import Data.Attoparsec.ByteString
 import Data.ByteString.Base16     (encode)
-import Data.ByteString.UTF8       (toString)
+import Data.ByteString.UTF8       (fromString, toString)
 import Data.Set                   (fromList)
 import Numeric                    (readOct)
 
@@ -44,10 +44,10 @@ parseTreeEntry = TreeEntry <$> parsePerms <*> parseName <*> parseBinRef
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
-    <$> (anyChar `manyTill` string " <")
-    <*> (anyChar `manyTill` string "> ")
-    <*> (digit   `manyTill` space)
-    <*> parseRestOfLine
+    <$> (B.pack     <$> anyWord8 `manyTill` string " <")
+    <*> (B.pack     <$> anyWord8 `manyTill` string "> ")
+    <*> (fromString <$> digit    `manyTill` space)
+    <*> (fromString <$> parseRestOfLine)
 
 parseCommit :: Parser GitObject
 parseCommit = Commit
