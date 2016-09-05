@@ -59,12 +59,12 @@ hasObject ref = do
     path <- asks (sha1Path ref)
     liftIO $ doesFileExist path
 
-resolveGitRef :: FilePath -> WithRepo (Maybe GitObject)
-resolveGitRef refPath = do
+resolveRef :: FilePath -> WithRepo (Maybe GitObject)
+resolveRef refPath = do
     path <- asks (</> refPath)
     ref  <- liftIO $ init <$> readFile path
     readObject ref
 
-updateGitRef :: FilePath -> GitObject -> WithRepo Ref
-updateGitRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
+updateRef :: FilePath -> GitObject -> WithRepo Ref
+updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
     flip writeFile (append sha1 "\n") where sha1 = hash object
