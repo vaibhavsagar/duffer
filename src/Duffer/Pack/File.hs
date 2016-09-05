@@ -44,8 +44,8 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         resultingHash           = hashResolved t resolvedDelta
         in PackedObject t resultingHash (resolvedDelta {packCLevel = l})
 
-resolveRef :: CombinedMap -> Ref -> Maybe GitObject
-resolveRef combinedMap ref = case Map.lookup ref (getRefIndex combinedMap) of
+resolveEntry :: CombinedMap -> Ref -> Maybe GitObject
+resolveEntry combinedMap ref = case Map.lookup ref (getRefIndex combinedMap) of
     Just offset -> Just $ unpackObject $ resolveDelta combinedMap offset
     Nothing     -> Nothing
 

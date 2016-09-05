@@ -19,7 +19,7 @@ import Prelude hiding (lines, readFile)
 
 import Duffer
 import Duffer.Pack
-import Duffer.Pack.File (resolveRef, resolveAll')
+import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
 import Duffer.Pack.Entries
 
@@ -71,9 +71,6 @@ describeReadingAll oType objects = describe oType $
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     index <- runIO $ parsedIndex <$> readFile indexPath
-    cEMap <- runIO $ combinedEntryMap indexPath
-    it "can reconstruct the pack index entries" $
-        packIndexEntries cEMap `shouldMatchList` index
     iEMap <- runIO $ indexedEntryMap indexPath
     it "decodes and encodes correctly" $ do
         iBSMap     <- indexedByteStringMap indexPath
@@ -83,11 +80,14 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         iDecMap `shouldBe` iEMap
         let crcMap = Map.map crc32 iEnMap
         Map.elems crcMap `shouldMatchList` map getCRC index
+    cEMap <- runIO $ combinedEntryMap indexPath
+    it "can reconstruct the pack index entries" $
+        packIndexEntries cEMap `shouldMatchList` index
     objects <- runIO $ resolveAll  indexPath
     let refs = map (snd . toAssoc) index
     it "resolves each object correctly" $ do
         let resolvedRefs = map (\ref -> let
-                (Just object) = resolveRef cEMap ref
+                (Just object) = resolveEntry cEMap ref
                 in hash object) refs
         resolvedRefs `shouldMatchList` refs
     it "resolves objects correctly" $ do
