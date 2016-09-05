@@ -7,8 +7,8 @@ import Control.Monad              (unless)
 import Control.Monad.IO.Class     (liftIO)
 import Control.Monad.Trans.Reader (ReaderT, asks)
 import Data.Attoparsec.ByteString (parseOnly)
-import Data.ByteString
-    (ByteString, append, readFile, writeFile, init)
+import Data.ByteString            (ByteString, append, readFile, writeFile
+                                  , init)
 import System.Directory           (doesFileExist, createDirectoryIfMissing)
 import System.FilePath            ((</>), takeDirectory)
 
