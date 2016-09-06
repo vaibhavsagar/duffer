@@ -72,3 +72,6 @@ parseObject = choice
     , "commit" ? parseCommit
     , "tag"    ? parseTag
     ] where (?) oType parser = parseHeader oType >> parser
+
+parseSymRef :: Parser String
+parseSymRef = string "ref:" *> space *> anyChar `manyTill` endOfLine
