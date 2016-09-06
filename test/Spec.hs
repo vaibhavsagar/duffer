@@ -48,10 +48,10 @@ testEncodingAndParsing = hspec . parallel $ describe "integer encodings" $ do
             decoded = either error id $ parseOnly parseOffset encoded
             in decoded == (offset :: Int)
     it "encodes and decodes object types and lengths" $ property $
-        \len oType -> len >= 0 ==> let
-            encoded = encodeTypeLen oType len
+        \len objectType -> len >= 0 ==> let
+            encoded = encodeTypeLen objectType len
             decoded = either error id $ parseOnly parseTypeLen encoded
-            in decoded == (oType, len :: Int)
+            in decoded == (objectType, len :: Int)
 
 testUnpackingAndWriting :: [FilePath] -> IO ()
 testUnpackingAndWriting indices =
