@@ -71,27 +71,27 @@ describeReadingAll oType objects = describe oType $
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     index <- runIO $ parsedIndex <$> readFile indexPath
-    iEMap <- runIO $ indexedEntryMap indexPath
+    entryMap <- runIO $ indexedEntryMap indexPath
     it "decodes and encodes correctly" $ do
-        iBSMap     <- indexedByteStringMap indexPath
-        let iEnMap =  Map.map toBytes iEMap
-        iEnMap `shouldBe` iBSMap
-        let iDecMap = Map.map parsedPackRegion iEnMap
-        iDecMap `shouldBe` iEMap
-        let crcMap = Map.map crc32 iEnMap
+        byteStringMap  <- indexedByteStringMap indexPath
+        let encodedMap =  Map.map toBytes entryMap
+        encodedMap `shouldBe` byteStringMap
+        let decodedMap = Map.map parsedPackRegion encodedMap
+        decodedMap `shouldBe` entryMap
+        let crcMap = Map.map crc32 encodedMap
         Map.elems crcMap `shouldMatchList` map getCRC index
-    cEMap <- runIO $ combinedEntryMap indexPath
+    combinedMap <- runIO $ combinedEntryMap indexPath
     it "can reconstruct the pack index entries" $
-        packIndexEntries cEMap `shouldMatchList` index
+        packIndexEntries combinedMap `shouldMatchList` index
     objects <- runIO $ resolveAll  indexPath
     let refs = map (snd . toAssoc) index
     it "resolves each object correctly" $ do
         let resolvedRefs = map (\ref -> let
-                (Just object) = resolveEntry cEMap ref
+                (Just object) = resolveEntry combinedMap ref
                 in hash object) refs
         resolvedRefs `shouldMatchList` refs
     it "resolves objects correctly" $ do
-        let objects' = resolveAll' iEMap
+        let objects' = resolveAll' entryMap
         objects' `shouldMatchList` objects
         refs `shouldMatchList` map hash objects
     it "writes resolved objects out" $ do
@@ -118,7 +118,7 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
 
 getPackIndices :: String -> IO [FilePath]
 getPackIndices path = let packFilePath = path ++ "/objects/pack" in
-    map (combine packFilePath) .  filter (\f -> takeExtension f == ".idx") <$>
+    map (combine packFilePath) . filter (\f -> takeExtension f == ".idx") <$>
     getDirectoryContents packFilePath
 
 readHashObject :: String -> Ref -> Expectation
