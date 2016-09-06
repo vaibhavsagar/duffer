@@ -87,7 +87,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     let refs = map (snd . toAssoc) index
     it "resolves each object correctly" $ do
         let resolvedRefs = map (\ref -> let
-                (Just object) = resolveEntry combinedMap ref
+                Just object = resolveEntry combinedMap ref
                 in hash object) refs
         resolvedRefs `shouldMatchList` refs
     it "resolves objects correctly" $ do
