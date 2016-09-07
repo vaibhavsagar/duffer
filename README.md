@@ -33,7 +33,7 @@ library:
   supporting pluggable backends like Irmin and `libgit2` so that you're not
   limited to a filesystem backend.
 - A GraphQL/other query language interface to a `git` repository's commits. If
-  commits form a beautiful acyclic directed graph, surely there is a better way
+  commits form a beautiful acyclic directed graph, there has to be a better way
   of querying them than `git log`.
 
 # Getting Started
