@@ -1,4 +1,4 @@
-duffer.hs
+duffer
 =========
 [![Build Status](https://travis-ci.org/vaibhavsagar/duffer.hs.svg?branch=master)](https://travis-ci.org/vaibhavsagar/duffer.hs)
 
