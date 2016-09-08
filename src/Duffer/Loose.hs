@@ -66,5 +66,8 @@ resolveRef refPath = do
     readObject ref
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref
-updateRef refPath object = asks (</> refPath) >>= liftIO . (>> return sha1) .
-    flip writeFile (append sha1 "\n") where sha1 = hash object
+updateRef refPath object = do
+    let sha1 = hash object
+    path <- asks (</> refPath)
+    liftIO $ writeFile path (append sha1 "\n")
+    return sha1
