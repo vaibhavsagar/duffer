@@ -131,7 +131,7 @@ parseObjectContent t = case t of
 parseDecompressed :: Parser (PackCompressed B.ByteString)
 parseDecompressed = do
     compressed       <- takeLazyByteString
-    let level        =  getCompressionLevel $ L.toStrict $ L.take 2 compressed
+    let level        =  getCompressionLevel $ L.head $ L.drop 1 compressed
     let decompressed =  L.toStrict $ decompress compressed
     return $ PackCompressed level decompressed
 

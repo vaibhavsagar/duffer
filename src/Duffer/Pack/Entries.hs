@@ -9,7 +9,7 @@ import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
 import Data.Digest.CRC32
-import Data.Word (Word32)
+import Data.Word (Word8, Word32)
 
 import Duffer.Loose.Objects (Ref)
 
@@ -95,10 +95,8 @@ compressToLevel level content = toStrict $
       { Z.compressLevel = level }
       $ fromStrict content
 
-getCompressionLevel :: B.ByteString -> Z.CompressionLevel
-getCompressionLevel bytes = let
-    levelByte = fromIntegral $ B.head $ B.tail bytes
-    in case levelByte of
+getCompressionLevel :: Word8 -> Z.CompressionLevel
+getCompressionLevel levelByte = case levelByte of
         1   -> Z.bestSpeed
         156 -> Z.defaultCompression
         _   -> error "I can't make sense of this compression level"
