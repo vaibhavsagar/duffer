@@ -13,8 +13,8 @@ import GHC.Word               (Word8)
 import Prelude hiding (take)
 
 import Duffer.Loose.Objects
-import Duffer.Loose.Parser
-    (parseBinRef, parseBlob, parseTree, parseCommit, parseTag)
+import Duffer.Loose.Parser (parseBinRef, parseBlob, parseTree, parseCommit
+                           ,parseTag)
 import Duffer.Pack.Entries
 
 hashResolved :: PackObjectType -> PackCompressed B.ByteString -> Ref
