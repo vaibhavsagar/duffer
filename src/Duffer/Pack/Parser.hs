@@ -161,3 +161,7 @@ parsePackRegion = do
 
 parsedPackRegion :: B.ByteString -> PackEntry
 parsedPackRegion = either error id . parseOnly parsePackRegion
+
+parsePackfileHeader :: Parser Int
+parsePackfileHeader =
+    word8s (B.unpack "PACK") *> take 4 *> (fromBytes <$> take 4)
