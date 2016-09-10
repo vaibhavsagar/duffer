@@ -23,6 +23,7 @@ library
                        Duffer.Pack.File
                        Duffer.Pack.Parser
                        Duffer.Pack.Entries
+                       Duffer.Pack.Streaming
   build-depends:       base >= 4.7 && < 5
                      , byteable
                      , bytestring
