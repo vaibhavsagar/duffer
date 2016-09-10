@@ -33,9 +33,9 @@ parsePackfileStart = do
     return (lenHeader, noOfObjects)
 
 indexPackfile path = do
-    handle                                <- SI.openFile path SI.ReadMode
-    ((startOffset, noObjects), entriesP)  <- runStateT parsePackfileStart (PB.fromHandle handle)
-    loopEntries entriesP startOffset noObjects M.empty
+    handle                     <- PB.fromHandle <$> SI.openFile path SI.ReadMode
+    ((start, count), entriesP) <- runStateT parsePackfileStart handle
+    loopEntries entriesP start count M.empty
 
 type SeparatedEntries = M.Map Int B.ByteString
 
