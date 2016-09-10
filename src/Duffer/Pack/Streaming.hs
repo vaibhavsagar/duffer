@@ -6,6 +6,7 @@ import qualified Data.Map.Strict        as M
 import Pipes
 import Prelude hiding (take)
 import qualified Pipes.ByteString as PB
+import qualified Pipes.Parse      as PP
 import qualified Pipes.Zlib as PZ
 import qualified Pipes.Attoparsec as PA
 import qualified System.IO as SI
@@ -15,6 +16,7 @@ import Duffer.Pack.Entries
 
 type SeparatedEntries = M.Map Int B.ByteString
 
+-- getNextEntry :: PP.Parser B.ByteString IO a
 getNextEntry = do
     Just (Right typeLen) <- PA.parse parseTypeLen
     remainder <- get
@@ -28,15 +30,16 @@ parsePackfileStart = do
     Just (Right (lenHeader, noOfObjects)) <- PA.parseL parsePackfileHeader
     return (lenHeader, noOfObjects)
 
+indexPackfile :: FilePath -> IO SeparatedEntries
 indexPackfile path = do
     handle                    <- PB.fromHandle <$> SI.openFile path SI.ReadMode
     ((start, count), entries) <- runStateT parsePackfileStart handle
-    loopEntries entries start count M.empty
+    fst <$> loopEntries entries start count M.empty
 
 
-loopEntries :: Producer B.ByteString IO a -> Int -> Int -> SeparatedEntries -> IO (SeparatedEntries)
+loopEntries :: Producer B.ByteString IO a -> Int -> Int -> SeparatedEntries -> IO (SeparatedEntries, Producer B.ByteString IO a)
 loopEntries producer offset remaining indexedMap = case remaining of
-    0 -> return indexedMap
+    0 -> return (indexedMap, producer)
     _ -> do
         ((header, decompressedP, level), _) <- runStateT getNextEntry producer
         Right (decompressed, eitherP)       <- next decompressedP
