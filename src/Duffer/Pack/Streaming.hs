@@ -1,23 +1,19 @@
 module Duffer.Pack.Streaming where
 
 import Control.Monad.Trans.State.Strict
-import Data.Attoparsec.ByteString
-import Data.Byteable
-import qualified Data.ByteString.Lazy   as L
 import qualified Data.ByteString        as B
 import qualified Data.Map.Strict        as M
-import qualified Codec.Compression.Zlib as Z
 import Pipes
 import Prelude hiding (take)
 import qualified Pipes.ByteString as PB
-import qualified Pipes.Prelude as PP
 import qualified Pipes.Zlib as PZ
 import qualified Pipes.Attoparsec as PA
 import qualified System.IO as SI
 
 import Duffer.Pack.Parser
 import Duffer.Pack.Entries
-import Duffer.Loose.Parser
+
+type SeparatedEntries = M.Map Int B.ByteString
 
 getNextEntry = do
     Just (Right typeLen) <- PA.parse parseTypeLen
@@ -33,18 +29,18 @@ parsePackfileStart = do
     return (lenHeader, noOfObjects)
 
 indexPackfile path = do
-    handle                     <- PB.fromHandle <$> SI.openFile path SI.ReadMode
-    ((start, count), entriesP) <- runStateT parsePackfileStart handle
-    loopEntries entriesP start count M.empty
+    handle                    <- PB.fromHandle <$> SI.openFile path SI.ReadMode
+    ((start, count), entries) <- runStateT parsePackfileStart handle
+    loopEntries entries start count M.empty
 
-type SeparatedEntries = M.Map Int B.ByteString
 
 loopEntries :: Producer B.ByteString IO a -> Int -> Int -> SeparatedEntries -> IO (SeparatedEntries)
 loopEntries producer offset remaining indexedMap = case remaining of
     0 -> return indexedMap
     _ -> do
         ((header, decompressedP, level), _) <- runStateT getNextEntry producer
-        Right (decompressed, producer')     <- next decompressedP
+        Right (decompressed, eitherP)       <- next decompressedP
+        Left (Left producer')               <- next eitherP
         let content     = B.append header $ compressToLevel level decompressed
         let indexedMap' = M.insert offset content indexedMap
         let offset'     = offset + B.length content
