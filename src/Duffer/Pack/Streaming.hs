@@ -1,20 +1,23 @@
 module Duffer.Pack.Streaming where
 
 import Control.Monad.Trans.State.Strict
-import qualified Data.ByteString        as B
-import qualified Data.Map.Strict        as M
-import Pipes
-import Prelude hiding (take)
+import qualified Data.ByteString  as B
+import qualified Data.Map.Strict  as M
+import qualified Pipes.Attoparsec as PA
 import qualified Pipes.ByteString as PB
 import qualified Pipes.Parse      as PP
-import qualified Pipes.Zlib as PZ
-import qualified Pipes.Attoparsec as PA
-import qualified System.IO as SI
+import qualified Pipes.Zlib       as PZ
+import qualified System.IO        as SI
+import Pipes
+import Prelude hiding (take)
 
 import Duffer.Pack.Parser
 import Duffer.Pack.Entries
 
 type SeparatedEntries = M.Map Int B.ByteString
+
+emptySeparated :: SeparatedEntries
+emptySeparated = M.empty
 
 -- getNextEntry :: PP.Parser B.ByteString IO a
 getNextEntry = do
@@ -22,9 +25,8 @@ getNextEntry = do
     remainder <- get
     PB.drawByte
     Just levelByte <- PB.peekByte
-    let level = getCompressionLevel levelByte
     let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
-    return (uncurry encodeTypeLen typeLen, decompressed, level)
+    return (uncurry encodeTypeLen typeLen, decompressed, levelByte)
 
 parsePackfileStart = do
     Just (Right (lenHeader, noOfObjects)) <- PA.parseL parsePackfileHeader
@@ -41,9 +43,10 @@ loopEntries :: Producer B.ByteString IO a -> Int -> Int -> SeparatedEntries -> I
 loopEntries producer offset remaining indexedMap = case remaining of
     0 -> return (indexedMap, producer)
     _ -> do
-        ((header, decompressedP, level), _) <- runStateT getNextEntry producer
-        Right (decompressed, eitherP)       <- next decompressedP
-        Left (Left producer')               <- next eitherP
+        (header, decompressedP, levelB) <- evalStateT getNextEntry producer
+        Right (decompressed, eitherP)   <- next decompressedP
+        Left (Left producer')           <- next eitherP
+        let level       = getCompressionLevel levelB
         let content     = B.append header $ compressToLevel level decompressed
         let indexedMap' = M.insert offset content indexedMap
         let offset'     = offset + B.length content
