@@ -96,7 +96,7 @@ compressToLevel level content = toStrict $
       $ fromStrict content
 
 getCompressionLevel :: Word8 -> Z.CompressionLevel
-getCompressionLevel levelByte = case (fromIntegral levelByte) of
+getCompressionLevel levelByte = case levelByte of
         1   -> Z.bestSpeed
         156 -> Z.defaultCompression
         _   -> error "I can't make sense of this compression level"

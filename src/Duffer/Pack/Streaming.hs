@@ -1,16 +1,17 @@
 module Duffer.Pack.Streaming where
 
 import Control.Monad.Trans.State.Strict
+import Data.ByteString.Base16 (decode)
 import qualified Data.ByteString  as B
 import qualified Data.Map.Strict  as M
 import qualified Pipes.Attoparsec as PA
 import qualified Pipes.ByteString as PB
-import qualified Pipes.Parse      as PP
 import qualified Pipes.Zlib       as PZ
 import qualified System.IO        as SI
 import Pipes
 import Prelude hiding (take)
 
+import Duffer.Loose.Parser (parseBinRef)
 import Duffer.Pack.Parser
 import Duffer.Pack.Entries
 
@@ -22,11 +23,19 @@ emptySeparated = M.empty
 -- getNextEntry :: PP.Parser B.ByteString IO a
 getNextEntry = do
     Just (Right typeLen) <- PA.parse parseTypeLen
+    Just (Right baseRef) <- case fst typeLen of
+        OfsDeltaObject -> do
+            Just (Right offset) <- PA.parse parseOffset
+            return $ Just (Right (encodeOffset offset))
+        RefDeltaObject -> do
+            Just (Right ref)    <- PA.parse parseBinRef
+            return $ Just (Right (fst $ decode ref))
+        _              -> return $ Just (Right "")
     remainder <- get
     let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
     PB.drawByte
     Just levelByte <- PB.peekByte
-    return (uncurry encodeTypeLen typeLen, decompressed, levelByte)
+    return (uncurry encodeTypeLen typeLen, baseRef, decompressed, levelByte)
 
 parsePackfileStart = do
     Just (Right (lenHeader, noOfObjects)) <- PA.parseL parsePackfileHeader
@@ -43,11 +52,11 @@ loopEntries :: Producer B.ByteString IO a -> Int -> Int -> SeparatedEntries -> I
 loopEntries producer offset remaining indexedMap = case remaining of
     0 -> return (indexedMap, producer)
     _ -> do
-        (header, decompressedP, levelB) <- evalStateT getNextEntry producer
+        (header, ref, decompressedP, levelB) <- evalStateT getNextEntry producer
         Right (decompressed, eitherP)   <- next decompressedP
         Left (Left producer')           <- next eitherP
         let level       = getCompressionLevel levelB
-        let content     = B.append header $ compressToLevel level decompressed
+        let content     = B.concat [header, ref, compressToLevel level decompressed]
         let indexedMap' = M.insert offset content indexedMap
         let offset'     = offset + B.length content
         let remaining'  = remaining - 1
