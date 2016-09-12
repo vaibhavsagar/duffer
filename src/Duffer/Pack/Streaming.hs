@@ -23,9 +23,9 @@ emptySeparated = M.empty
 getNextEntry = do
     Just (Right typeLen) <- PA.parse parseTypeLen
     remainder <- get
+    let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
     PB.drawByte
     Just levelByte <- PB.peekByte
-    let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
     return (uncurry encodeTypeLen typeLen, decompressed, levelByte)
 
 parsePackfileStart = do
