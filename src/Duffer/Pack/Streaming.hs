@@ -49,7 +49,23 @@ loopEntries producer offset remaining indexedMap = case remaining of
         let offset'     = offset + B.length content
         let remaining'  = remaining - 1
         loopEntries producer' offset' remaining' indexedMap'
-    where advanceToCompletion decompressed producer = do
+     where getNextEntry = do
+            Just (Right typeLen) <- PA.parse parseTypeLen
+            baseRef <- case fst typeLen of
+                OfsDeltaObject -> do
+                    Just (Right offset) <- PA.parse parseOffset
+                    return $ encodeOffset offset
+                RefDeltaObject -> do
+                    Just (Right ref)    <- PA.parse parseBinRef
+                    return $ fst $ decode ref
+                _              -> return ""
+            remainder <- get
+            let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
+            PB.drawByte
+            Just levelByte <- PB.peekByte
+            let level = getCompressionLevel levelByte
+            return (uncurry encodeTypeLen typeLen, baseRef, decompressed, level)
+           advanceToCompletion decompressed producer = do
             step <- next producer
             case step of
                 (Left (Left p)) -> return (decompressed, p)
@@ -57,19 +73,3 @@ loopEntries producer offset remaining indexedMap = case remaining of
                     (d', p) <- advanceToCompletion d p'
                     return (B.append decompressed d', p)
                 _               -> error "No idea how to handle this result"
-          getNextEntry = do
-            Just (Right typeLen) <- PA.parse parseTypeLen
-            Just (Right baseRef) <- case fst typeLen of
-                OfsDeltaObject -> do
-                    Just (Right offset) <- PA.parse parseOffset
-                    return $ Just (Right (encodeOffset offset))
-                RefDeltaObject -> do
-                    Just (Right ref)    <- PA.parse parseBinRef
-                    return $ Just (Right (fst $ decode ref))
-                _              -> return $ Just (Right "")
-            remainder <- get
-            let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
-            PB.drawByte
-            Just levelByte <- PB.peekByte
-            let level = getCompressionLevel levelByte
-            return (uncurry encodeTypeLen typeLen, baseRef, decompressed, level)
