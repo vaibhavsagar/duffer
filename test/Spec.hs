@@ -21,6 +21,7 @@ import Duffer
 import Duffer.Pack
 import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
+import Duffer.Pack.Streaming
 import Duffer.Pack.Entries
 
 main :: IO ()
@@ -70,16 +71,19 @@ describeReadingAll oType objects = describe oType $
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
-    index <- runIO $ parsedIndex <$> readFile indexPath
-    entryMap <- runIO $ indexedEntryMap indexPath
+    index          <- runIO $ parsedIndex <$> readFile indexPath
+    entryMap       <- runIO $ indexedEntryMap indexPath
+    byteStringMap  <- runIO $ indexedByteStringMap indexPath
     it "decodes and encodes correctly" $ do
-        byteStringMap  <- indexedByteStringMap indexPath
         let encodedMap =  Map.map toBytes entryMap
         encodedMap `shouldBe` byteStringMap
         let decodedMap = Map.map parsedPackRegion encodedMap
         decodedMap `shouldBe` entryMap
         let crcMap = Map.map crc32 encodedMap
         Map.elems crcMap `shouldMatchList` map getCRC index
+    it "can stream a packfile" $ do
+        indexedPackfile <- indexPackfile $ packFile indexPath
+        indexedPackfile `shouldBe` byteStringMap
     combinedMap <- runIO $ combinedEntryMap indexPath
     it "can reconstruct the pack index entries" $
         packIndexEntries combinedMap `shouldMatchList` index
