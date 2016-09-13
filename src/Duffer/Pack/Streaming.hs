@@ -26,10 +26,15 @@ indexPackfile path = do
     ((start, count), entries) <- runStateT parsePackfileStart handle
     fst <$> loopEntries entries start count M.empty
     where parsePackfileStart = do
-            Just (Right (lenHeader, noOfObjects)) <- PA.parseL parsePackfileHeader
-            return (lenHeader, noOfObjects)
+            Just (Right (len, count)) <- PA.parseL parsePackfileHeader
+            return (len, count)
 
-loopEntries :: Producer B.ByteString IO a -> Int -> Int -> SeparatedEntries -> IO (SeparatedEntries, Producer B.ByteString IO a)
+loopEntries
+    :: Producer B.ByteString IO a -- remaining packfile input
+    -> Int                        -- number of bytes read so far
+    -> Int                        -- number of entries remaining
+    -> SeparatedEntries           -- map of offsets to bytestrings
+    -> IO (SeparatedEntries, Producer B.ByteString IO a) -- map and remainder
 loopEntries producer offset remaining indexedMap = case remaining of
     0 -> return (indexedMap, producer)
     _ -> do
@@ -38,8 +43,8 @@ loopEntries producer offset remaining indexedMap = case remaining of
         let (decompressed, eitherP) = case step of
                 (Right (d, p)) -> (d,  p)
                 (Left  p')     -> ("", return p')
-        (decompressed', producer') <- advanceToCompletion decompressed eitherP
-        let content     = B.concat [header, ref, compressToLevel level decompressed']
+        (output, producer') <- advanceToCompletion decompressed eitherP
+        let content     = B.concat [header, ref, compressToLevel level output]
         let indexedMap' = M.insert offset content indexedMap
         let offset'     = offset + B.length content
         let remaining'  = remaining - 1
