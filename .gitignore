@@ -4,3 +4,5 @@
 .ipynb_checkpoints
 presentation/reveal.js
 presentation/*.html
+create_docset.sh
+target.docset/
