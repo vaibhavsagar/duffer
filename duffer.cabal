@@ -43,7 +43,6 @@ library
                      , pipes
                      , pipes-attoparsec
                      , pipes-bytestring
-                     , pipes-parse
                      , pipes-zlib
   default-extensions:  OverloadedStrings
   ghc-options:       -fwarn-unused-imports
