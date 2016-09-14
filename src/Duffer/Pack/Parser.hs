@@ -133,6 +133,10 @@ parseCopyInstruction byte = CopyInstruction
     <$>  getVarInt [0..3] [0,8..24]
     <*> (getVarInt [4..6] [0,8..16] >>= \len ->
         return $ if len == 0 then 0x10000 else len)
+    -- this feels messy, it's definitely hard to read :/ i'm not sure
+    -- what the best way to fix this is. maybe pull getVarInt and
+    -- readShift out into their own functions? that feels weird though
+    -- since they're very special purpose . . .
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
           readShift more shift = if more
@@ -140,6 +144,7 @@ parseCopyInstruction byte = CopyInstruction
             else return 0
 
 parseDelta :: Parser Delta
+-- sick applicative usage, 10/10
 parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction
     where len = littleEndian <$> parseVarInt
 
@@ -149,8 +154,17 @@ parseObjectContent t = case t of
     TreeObject   -> parseTree
     BlobObject   -> parseBlob
     TagObject    -> parseTag
+    -- bummer that this can fail at runtime :( maybe overkill, but
+    -- maybe would have different datatypes for resolved and
+    -- unresolved pack objects and then have PackObjectType be a
+    -- typeclass w/ all the operations that need to work on both?
     _            -> error "deltas must be resolved first"
 
+
+-- its confused that a function called parseDecompressed returns a
+-- PackCompressed. I think of parse as being called parseX and having
+-- type Parser X, so this one strikes me as a bit odd. why isn't it
+-- called parseCompressed?
 parseDecompressed :: Parser (PackCompressed B.ByteString)
 parseDecompressed = do
     compressed       <- takeLazyByteString
@@ -168,6 +182,8 @@ parseOfsDelta, parseRefDelta :: Parser PackDelta
 parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
 parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
+
+-- same as above re: the compressed / decompressed thing
 parseDecompressedDelta :: Parser (PackCompressed Delta)
 parseDecompressedDelta = do
     packCompressed <- parseDecompressed
