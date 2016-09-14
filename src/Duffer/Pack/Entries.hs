@@ -16,6 +16,9 @@ import Duffer.Loose.Objects (Ref)
 data PackIndexEntry = PackIndexEntry Int Ref Word32
     deriving (Show, Eq)
 
+-- is there a reason not to just call this PackObject? PackObjectType
+-- feels a bit repetative to me (should be obvious from conetxt that
+-- its a type)
 data PackObjectType
     = UnusedPackObjectType0
     | CommitObject

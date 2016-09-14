@@ -29,10 +29,18 @@ word8s = mapM word8
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
+    -- these are fixed parts of the index? might be worth pulling
+    -- them out into named constants to indicate this if that's the case
     header    <- word8s [255, 116, 79, 99]
     version   <- word8s [0, 0, 0, 2]
     totals    <- count 256 parse4Bytes
     let total =  count (last totals)
+    -- it feels a bit weird to be referencing things from Loose.Parser
+    -- like this. I imagine this is because you developed the Loose
+    -- parser before this one and then just imported the stuff that
+    -- was the same from there :) in terms of package organization, it
+    -- might be worth pulling things that are shared into their own
+    -- module and importing them from there in both Parsers
     refs      <- total parseBinRef
     crc32s    <- total parse4Bytes
     offsets   <- total parse4Bytes
@@ -163,6 +171,19 @@ parsePackRegion = do
 parsedPackRegion :: B.ByteString -> PackEntry
 parsedPackRegion = either error id . parseOnly parsePackRegion
 
+-- reading the spec, this header is the first thing I see, so when
+-- reading here it's a bit confusing to me that this function isn't
+-- referenced from any other function in this module. my brain wants
+-- to find a top level "parsePackfile" function (from ByteString ->
+-- Either Error Packfile of smth like that), which goes like
+-- "parsePackfileHeader, then . . ., etc., etc."
+--
+-- even if you don't actually use it typically because you're
+-- streaming one part at a time or w/e it would probably be good to
+-- have written down here if only as an aid to the reader to figure
+-- out what order they should be looking at the code in. or if there
+-- are really are multiple entry points, move them to the top and have
+-- a comment indicating them as such?
 parsePackfileHeader :: Parser Int
 parsePackfileHeader =
     word8s (B.unpack "PACK") *> take 4 *> (fromBytes <$> take 4)
