@@ -161,6 +161,8 @@ parseDecompressedDelta = do
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
+    -- having the type assertion here feels bad to me, but I tried a
+    -- bunch of stuff and couldn't figure out a better way to do it :/
     (objectType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
     case objectType of
         t | fullObject t -> Resolved   <$> parseFullObject objectType
