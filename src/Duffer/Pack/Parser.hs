@@ -47,7 +47,7 @@ parsePackIndex = do
     remaining <- takeByteString
     let (fifth, checks) = B.splitAt (B.length remaining - 40) remaining
     let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
-    return $ zipWith ($) (zipWith PackIndexEntry fixedOffsets refs) crc32s
+    return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
 parse4Bytes :: (Bits t, Integral t) => Parser t
 parse4Bytes = fromBytes <$> take 4
