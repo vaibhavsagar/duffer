@@ -48,10 +48,11 @@ parsedIndex :: B.ByteString -> [PackIndexEntry]
 parsedIndex = either error id . parseOnly parsePackIndex
 
 parseVarInt :: (Bits t, Integral t) => Parser [t]
-parseVarInt = anyWord8 >>= \byte ->
-    let value = fromIntegral $ byte .&. 127
-        more  = testBit byte 7
-    in (value:) <$> if more then parseVarInt else return []
+parseVarInt = do
+  byte <- anyWord8
+  let value = fromIntegral $ byte .&. 127
+      more  = testBit byte 7
+  (value:) <$> if more then parseVarInt else return []
 
 littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
 littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
