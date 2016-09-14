@@ -34,7 +34,7 @@ loopEntries
     -> Int                        -- number of bytes read so far
     -> Int                        -- number of entries remaining
     -> SeparatedEntries           -- map of offsets to bytestrings
-    -> IO (SeparatedEntries, Producer B.ByteString IO a) -- map and remainder
+    -> IO (SeparatedEntries, Producer B.ByteString IO a)
 loopEntries producer offset remaining indexedMap = case remaining of
     0 -> return (indexedMap, producer)
     _ -> do
@@ -49,7 +49,8 @@ loopEntries producer offset remaining indexedMap = case remaining of
         let offset'     = offset + B.length content
         let remaining'  = remaining - 1
         loopEntries producer' offset' remaining' indexedMap'
-     where getNextEntry = do
+     where
+        getNextEntry = do
             Just (Right typeLen) <- PA.parse parseTypeLen
             baseRef <- case fst typeLen of
                 OfsDeltaObject -> do
@@ -65,7 +66,7 @@ loopEntries producer offset remaining indexedMap = case remaining of
             Just levelByte <- PB.peekByte
             let level = getCompressionLevel levelByte
             return (uncurry encodeTypeLen typeLen, baseRef, decompressed, level)
-           advanceToCompletion decompressed producer = do
+        advanceToCompletion decompressed producer = do
             step <- next producer
             case step of
                 (Left (Left p)) -> return (decompressed, p)
