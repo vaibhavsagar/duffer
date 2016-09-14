@@ -59,6 +59,20 @@ parseVarInt :: (Bits t, Integral t) => Parser [t]
 parseVarInt = do
   byte <- anyWord8
   let value = fromIntegral $ byte .&. 127
+      -- a general observation: there's a fair amount of `testBit
+      -- whatever 7` in this file, and also a fair amount of if ... then ... else.
+      --
+      -- they also tend to be clustered together! this feels like it
+      -- might be a code smell? i feel like the "haskell way" is to
+      -- lift stuff into the type and make decisions by pattern
+      -- matching. here that might take the form of two newtype
+      -- wrapers for Word8, one of which is for things where the 7th
+      -- bit is set, and other for things where it's not?
+      --
+      -- i'm not sure if this would even work, but is seems like it
+      -- would be nice to abstract the pattern of "do this thing if
+      -- the 7th bit is set, this thing if it's not" somewhere so that
+      -- there aren't as many if expressions
       more  = testBit byte 7
   (value:) <$> if more then parseVarInt else return []
 
