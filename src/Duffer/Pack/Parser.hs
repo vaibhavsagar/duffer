@@ -29,10 +29,18 @@ word8s = mapM word8
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
+    -- these are fixed parts of the index? might be worth pulling
+    -- them out into named constants to indicate this if that's the case
     header    <- word8s [255, 116, 79, 99]
     version   <- word8s [0, 0, 0, 2]
     totals    <- count 256 parse4Bytes
     let total =  count (last totals)
+    -- it feels a bit weird to be referencing things from Loose.Parser
+    -- like this. I imagine this is because you developed the Loose
+    -- parser before this one and then just imported the stuff that
+    -- was the same from there :) in terms of package organization, it
+    -- might be worth pulling things that are shared into their own
+    -- module and importing them from there in both Parsers
     refs      <- total parseBinRef
     crc32s    <- total parse4Bytes
     offsets   <- total parse4Bytes
@@ -48,10 +56,25 @@ parsedIndex :: B.ByteString -> [PackIndexEntry]
 parsedIndex = either error id . parseOnly parsePackIndex
 
 parseVarInt :: (Bits t, Integral t) => Parser [t]
-parseVarInt = anyWord8 >>= \byte ->
-    let value = fromIntegral $ byte .&. 127
-        more  = testBit byte 7
-    in (value:) <$> if more then parseVarInt else return []
+parseVarInt = do
+  byte <- anyWord8
+  let value = fromIntegral $ byte .&. 127
+      -- a general observation: there's a fair amount of `testBit
+      -- whatever 7` in this file, and also a fair amount of if ... then ... else.
+      --
+      -- they also tend to be clustered together! this feels like it
+      -- might be a code smell? i feel like the "haskell way" is to
+      -- lift stuff into the type and make decisions by pattern
+      -- matching. here that might take the form of two newtype
+      -- wrapers for Word8, one of which is for things where the 7th
+      -- bit is set, and other for things where it's not?
+      --
+      -- i'm not sure if this would even work, but is seems like it
+      -- would be nice to abstract the pattern of "do this thing if
+      -- the 7th bit is set, this thing if it's not" somewhere so that
+      -- there aren't as many if expressions
+      more  = testBit byte 7
+  (value:) <$> if more then parseVarInt else return []
 
 littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
 littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
@@ -110,6 +133,10 @@ parseCopyInstruction byte = CopyInstruction
     <$>  getVarInt [0..3] [0,8..24]
     <*> (getVarInt [4..6] [0,8..16] >>= \len ->
         return $ if len == 0 then 0x10000 else len)
+    -- this feels messy, it's definitely hard to read :/ i'm not sure
+    -- what the best way to fix this is. maybe pull getVarInt and
+    -- readShift out into their own functions? that feels weird though
+    -- since they're very special purpose . . .
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
           readShift more shift = if more
@@ -117,6 +144,7 @@ parseCopyInstruction byte = CopyInstruction
             else return 0
 
 parseDelta :: Parser Delta
+-- sick applicative usage, 10/10
 parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction
     where len = littleEndian <$> parseVarInt
 
@@ -126,8 +154,17 @@ parseObjectContent t = case t of
     TreeObject   -> parseTree
     BlobObject   -> parseBlob
     TagObject    -> parseTag
+    -- bummer that this can fail at runtime :( maybe overkill, but
+    -- maybe would have different datatypes for resolved and
+    -- unresolved pack objects and then have PackObjectType be a
+    -- typeclass w/ all the operations that need to work on both?
     _            -> error "deltas must be resolved first"
 
+
+-- its confused that a function called parseDecompressed returns a
+-- PackCompressed. I think of parse as being called parseX and having
+-- type Parser X, so this one strikes me as a bit odd. why isn't it
+-- called parseCompressed?
 parseDecompressed :: Parser (PackCompressed B.ByteString)
 parseDecompressed = do
     compressed       <- takeLazyByteString
@@ -145,6 +182,8 @@ parseOfsDelta, parseRefDelta :: Parser PackDelta
 parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
 parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
+
+-- same as above re: the compressed / decompressed thing
 parseDecompressedDelta :: Parser (PackCompressed Delta)
 parseDecompressedDelta = do
     packCompressed <- parseDecompressed
@@ -152,6 +191,8 @@ parseDecompressedDelta = do
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
+    -- having the type assertion here feels bad to me, but I tried a
+    -- bunch of stuff and couldn't figure out a better way to do it :/
     (objectType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
     case objectType of
         t | fullObject t -> Resolved   <$> parseFullObject objectType
@@ -162,6 +203,19 @@ parsePackRegion = do
 parsedPackRegion :: B.ByteString -> PackEntry
 parsedPackRegion = either error id . parseOnly parsePackRegion
 
+-- reading the spec, this header is the first thing I see, so when
+-- reading here it's a bit confusing to me that this function isn't
+-- referenced from any other function in this module. my brain wants
+-- to find a top level "parsePackfile" function (from ByteString ->
+-- Either Error Packfile of smth like that), which goes like
+-- "parsePackfileHeader, then . . ., etc., etc."
+--
+-- even if you don't actually use it typically because you're
+-- streaming one part at a time or w/e it would probably be good to
+-- have written down here if only as an aid to the reader to figure
+-- out what order they should be looking at the code in. or if there
+-- are really are multiple entry points, move them to the top and have
+-- a comment indicating them as such?
 parsePackfileHeader :: Parser Int
 parsePackfileHeader =
     word8s (B.unpack "PACK") *> take 4 *> (fromBytes <$> take 4)
