@@ -28,18 +28,18 @@ data PackObjectType
     deriving (Enum, Eq, Show)
 
 data PackDelta
-    = OfsDelta Int (PackCompressed Delta)
-    | RefDelta Ref (PackCompressed Delta)
+    = OfsDelta Int (PackDecompressed Delta)
+    | RefDelta Ref (PackDecompressed Delta)
     deriving (Show, Eq)
 
 data PackedObject =
-    PackedObject PackObjectType Ref (PackCompressed B.ByteString)
+    PackedObject PackObjectType Ref (PackDecompressed B.ByteString)
     deriving (Show, Eq)
 
 data PackEntry = Resolved PackedObject | UnResolved PackDelta
     deriving (Show, Eq)
 
-data PackCompressed a = PackCompressed
+data PackDecompressed a = PackDecompressed
     { packCLevel   :: Z.CompressionLevel
     , packCContent :: a
     } deriving (Show, Eq)
@@ -68,10 +68,10 @@ type RefIndex  = Map.Map Ref Int
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject)         = toBytes packedObject
-    toBytes (UnResolved ofsD@(OfsDelta _ delta@(PackCompressed l d))) = let
+    toBytes (UnResolved ofsD@(OfsDelta _ delta@(PackDecompressed l d))) = let
         header = encodeTypeLen OfsDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes ofsD
-    toBytes (UnResolved refD@(RefDelta _ delta@(PackCompressed l d))) = let
+    toBytes (UnResolved refD@(RefDelta _ delta@(PackDecompressed l d))) = let
         header = encodeTypeLen RefDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes refD
 
@@ -81,8 +81,8 @@ instance Byteable PackedObject where
         compressed = toBytes packed
         in header `B.append` compressed
 
-instance (Byteable a) => Byteable (PackCompressed a) where
-    toBytes (PackCompressed level content) =
+instance (Byteable a) => Byteable (PackDecompressed a) where
+    toBytes (PackDecompressed level content) =
         compressToLevel level $ toBytes content
 
 isResolved :: PackEntry -> Bool
@@ -101,9 +101,9 @@ getCompressionLevel levelByte = case levelByte of
         156 -> Z.defaultCompression
         _   -> error "I can't make sense of this compression level"
 
-instance Functor PackCompressed where
-    fmap f (PackCompressed level content) =
-        PackCompressed level (f content)
+instance Functor PackDecompressed where
+    fmap f (PackDecompressed level content) =
+        PackDecompressed level (f content)
 
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjectType len = let

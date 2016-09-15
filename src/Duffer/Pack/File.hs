@@ -26,7 +26,7 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         | fullObject t -> object
         | otherwise    -> error "PackedObject cannot contain deltas"
     -- An OfsDelta needs to be resolved against a base object
-    UnResolved (OfsDelta o (PackCompressed l (Delta _ _ instructions))) -> let
+    UnResolved (OfsDelta o (PackDecompressed l (Delta _ _ instructions))) -> let
         -- Find base object type and source.
         PackedObject t _ source = resolveDelta combinedMap (index-o)
         -- Interpret the delta instructions with the provided source.
@@ -35,7 +35,7 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         resultingHash           = hashResolved t resolvedDelta
         -- We now have an object of type t with a hash and a ByteString.
         in PackedObject t resultingHash (resolvedDelta {packCLevel = l})
-    UnResolved (RefDelta r (PackCompressed l (Delta _ _ instructions))) -> let
+    UnResolved (RefDelta r (PackDecompressed l (Delta _ _ instructions))) -> let
         refIndex                = (Map.!) (getRefIndex combinedMap) r
         PackedObject t _ source = resolveDelta combinedMap refIndex
         -- Resolve the delta against this source.
@@ -92,7 +92,7 @@ resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
         base = oMap Map.! (oIndex Map.! r')
         in resolve base delta
     _ -> entry
-    where resolve (PackedObject t _ source) (PackCompressed l (Delta _ _ is)) =
+    where resolve (PackedObject t _ source) (PackDecompressed l (Delta _ _ is)) =
             let
                 resolved = (`applyInstructions` is) <$> source
                 r        = hashResolved t resolved
