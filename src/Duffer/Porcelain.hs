@@ -1,13 +1,15 @@
 module Duffer.Porcelain where
 
-import qualified Data.ByteString as B
+import qualified Data.ByteString      as B
+import qualified Data.ByteString.UTF8 as BU
+import qualified Data.Set             as S
 
 import Control.Applicative        ((<|>))
 import Control.Monad              (unless)
 import Control.Monad.IO.Class     (liftIO)
 import Control.Monad.Trans.Reader (ask, asks)
 import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
-                                  ,doesFileExist, getDirectoryContents)
+                                  ,doesFileExist, listDirectory)
 import System.FilePath            ((</>))
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString.UTF8       (fromString)
@@ -58,7 +60,7 @@ resolvePartialRef search = do
     if exists
         then do
             let rest = drop 2 search
-            possible <- liftIO $ getDirectoryContents objectDir
+            possible <- liftIO $ listDirectory objectDir
             let filtered = filter (isPrefixOf rest) possible
             if length filtered == 1
                 then return $ Just $ fromString $ dir ++ head filtered
@@ -84,3 +86,22 @@ initRepo = do
             , (path </> "config", "")
             , (path </> "description", "")
             ]
+
+writeTree :: FilePath -> WithRepo Ref
+writeTree path = do
+    repo <- ask
+    contents <- liftIO $ listDirectory path
+    entries <- mapM (\entry -> do
+        fileExists <- liftIO $ doesFileExist      $ path </> entry
+        dirExists  <- liftIO $ doesDirectoryExist $ path </> entry
+        case (dirExists, fileExists) of
+            (True, _) -> do
+                treeRef <- writeTree $ path </> entry
+                return $ TreeEntry 0o040000 (BU.fromString entry) treeRef
+            (_, True) -> do
+                content <- liftIO $ B.readFile $ path </> entry
+                blobRef <- writeObject $ Blob content
+                return $ TreeEntry 0o100644 (BU.fromString entry) blobRef
+            (False, False) -> error "what even"
+        ) contents
+    writeObject $ Tree $ S.fromList entries
