@@ -51,8 +51,8 @@ loopEntries producer offset remaining indexedMap = case remaining of
         loopEntries producer' offset' remaining' indexedMap'
      where
         getNextEntry = do
-            Just (Right typeLen) <- PA.parse parseTypeLen
-            baseRef <- case fst typeLen of
+            Just (Right tLen) <- PA.parse parseTypeLen
+            baseRef <- case fst tLen of
                 OfsDeltaObject -> do
                     Just (Right offset) <- PA.parse parseOffset
                     return $ encodeOffset offset
@@ -65,7 +65,7 @@ loopEntries producer offset remaining indexedMap = case remaining of
             PB.drawByte
             Just levelByte <- PB.peekByte
             let level = getCompressionLevel levelByte
-            return (uncurry encodeTypeLen typeLen, baseRef, decompressed, level)
+            return (uncurry encodeTypeLen tLen, baseRef, decompressed, level)
         advanceToCompletion decompressed producer = do
             step <- next producer
             case step of
