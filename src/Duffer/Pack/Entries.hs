@@ -40,8 +40,8 @@ data PackEntry = Resolved PackedObject | UnResolved PackDelta
     deriving (Show, Eq)
 
 data PackDecompressed a = PackDecompressed
-    { packCLevel   :: Z.CompressionLevel
-    , packCContent :: a
+    { packLevel   :: Z.CompressionLevel
+    , packContent :: a
     } deriving (Show, Eq)
 
 data DeltaInstruction
@@ -77,7 +77,7 @@ instance Byteable PackEntry where
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ packed) = let
-        header     = encodeTypeLen t $ B.length $ packCContent packed
+        header     = encodeTypeLen t $ B.length $ packContent packed
         compressed = toBytes packed
         in header `B.append` compressed
 

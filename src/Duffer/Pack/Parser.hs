@@ -50,8 +50,11 @@ parsedIndex = either error id . parseOnly parsePackIndex
 parseVarInt :: (Bits t, Integral t) => Parser [t]
 parseVarInt = anyWord8 >>= \byte ->
     let value = fromIntegral $ byte .&. 127
-        more  = testBit byte 7
+        more  = testMSB byte
     in (value:) <$> if more then parseVarInt else return []
+
+testMSB :: Bits t => t -> Bool
+testMSB = flip testBit 7
 
 littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
 littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
@@ -74,7 +77,7 @@ parseTypeLen = do
     header <- anyWord8
     let packType = packObjectType header
     let initial  = fromIntegral $ header .&. 15
-    size <- if header `testBit` 7
+    size <- if testMSB header
         then do
             rest <- littleEndian <$> parseVarInt
             return $ initial + (rest `shiftL` 4)
@@ -85,7 +88,7 @@ parseTypeLen = do
 parseDeltaInstruction :: Parser DeltaInstruction
 parseDeltaInstruction = do
     instruction <- fromIntegral <$> anyWord8
-    if instruction `testBit` 7
+    if testMSB instruction
         then parseCopyInstruction   instruction
         else parseInsertInstruction instruction
 

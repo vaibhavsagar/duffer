@@ -34,7 +34,7 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         -- The resulting ByteString can be parsed to yield an object.
         resultingHash           = hashResolved t resolvedDelta
         -- We now have an object of type t with a hash and a ByteString.
-        in PackedObject t resultingHash (resolvedDelta {packCLevel = l})
+        in PackedObject t resultingHash (resolvedDelta {packLevel = l})
     UnResolved (RefDelta r (PackDecompressed l (Delta _ _ instructions))) -> let
         refIndex                = (Map.!) (getRefIndex combinedMap) r
         PackedObject t _ source = resolveDelta combinedMap refIndex
@@ -42,7 +42,7 @@ resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index o
         resolvedDelta           = (`applyInstructions` instructions) <$> source
         -- Compute the hash of this object.
         resultingHash           = hashResolved t resolvedDelta
-        in PackedObject t resultingHash (resolvedDelta {packCLevel = l})
+        in PackedObject t resultingHash (resolvedDelta {packLevel = l})
 
 resolveEntry :: CombinedMap -> Ref -> Maybe GitObject
 resolveEntry combinedMap ref = case Map.lookup ref (getRefIndex combinedMap) of
@@ -96,4 +96,4 @@ resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
             let
                 resolved = (`applyInstructions` is) <$> source
                 r        = hashResolved t resolved
-                in Resolved $ PackedObject t r (resolved {packCLevel = l})
+                in Resolved $ PackedObject t r (resolved {packLevel = l})
