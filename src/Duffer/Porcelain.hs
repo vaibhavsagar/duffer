@@ -3,10 +3,11 @@ module Duffer.Porcelain where
 import qualified Data.ByteString as B
 
 import Control.Applicative        ((<|>))
+import Control.Monad              (unless)
 import Control.Monad.IO.Class     (liftIO)
-import Control.Monad.Trans.Reader (asks)
-import System.Directory           (doesDirectoryExist, doesFileExist
-                                  ,getDirectoryContents)
+import Control.Monad.Trans.Reader (ask, asks)
+import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
+                                  ,doesFileExist, getDirectoryContents)
 import System.FilePath            ((</>))
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString.UTF8       (fromString)
@@ -63,3 +64,23 @@ resolvePartialRef search = do
                 then return $ Just $ fromString $ dir ++ head filtered
                 else return Nothing
         else return Nothing
+
+initRepo :: WithRepo ()
+initRepo = do
+    path <- ask
+    objectsPresent <- liftIO $ doesDirectoryExist $ path </> "objects"
+    liftIO $ unless objectsPresent $ do
+        mapM_ (createDirectoryIfMissing True)
+            [ path </> "branches"
+            , path </> "hooks"
+            , path </> "info"
+            , path </> "objects" </> "info"
+            , path </> "objects" </> "pack"
+            , path </> "refs"    </> "heads"
+            , path </> "refs"    </> "tags"
+            ]
+        mapM_ (uncurry writeFile)
+            [ (path </> "HEAD",   "ref: refs/heads/master\n")
+            , (path </> "config", "")
+            , (path </> "description", "")
+            ]
