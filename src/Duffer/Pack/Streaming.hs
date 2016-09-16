@@ -73,4 +73,4 @@ loopEntries producer offset remaining indexedMap = case remaining of
                 (Right (d, p')) -> do
                     (d', p) <- advanceToCompletion d p'
                     return (B.append decompressed d', p)
-                _               -> error "No idea how to handle this result"
+                _               -> error "No idea how to handle Left (Right _)"
