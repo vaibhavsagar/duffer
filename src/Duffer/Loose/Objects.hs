@@ -64,6 +64,9 @@ instance Byteable PersonTime where
     toBytes (PersonTime name mail time zone) =
         B.concat [name, " <", mail, "> ", time, " ", zone]
 
+instance Show PersonTime where
+    show = toString . toBytes
+
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
         where components = [octMode, entryType, sha1', toString name]
@@ -79,14 +82,14 @@ instance Ord TreeEntry where
         where sortableName (TreeEntry mode name _) = name `B.append`
                 if mode == 0o040000 || mode == 0o160000 then "/" else ""
 
-instance Byteable GitObject where
-    toBytes = L.toStrict . showObject
-
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
         mode' = fromString $ printf "%o" mode
         sha1' = fst $ decode sha1
         in B.concat [mode', " ", name, "\NUL", sha1']
+
+instance Byteable GitObject where
+    toBytes = L.toStrict . showObject
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
