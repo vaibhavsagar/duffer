@@ -37,4 +37,4 @@ extra-package-dbs: []
 
 apply-ghc-options: everything
 ghc-options:
-      cryptonite: -opta-Wa,-mrelax-relocations=no
+      cryptonite: -opta-Wa
