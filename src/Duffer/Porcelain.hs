@@ -53,9 +53,8 @@ resolveGitRef path = do
         else return Nothing
 
 listDirectory :: FilePath -> IO [FilePath]
-listDirectory path = do
-    paths <- getDirectoryContents path
-    return $ filter (\p -> p `notElem` [".", ".."]) paths
+listDirectory =
+    fmap (filter (\p -> p `notElem` [".", ".."])) . getDirectoryContents
 
 resolvePartialRef :: String -> WithRepo (Maybe Ref)
 resolvePartialRef search = do
