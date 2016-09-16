@@ -9,7 +9,7 @@ import Control.Monad              (unless)
 import Control.Monad.IO.Class     (liftIO)
 import Control.Monad.Trans.Reader (ask, asks)
 import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
-                                  ,doesFileExist, listDirectory)
+                                  ,doesFileExist, getDirectoryContents)
 import System.FilePath            ((</>))
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString.UTF8       (fromString)
@@ -51,6 +51,11 @@ resolveGitRef path = do
             return $ either (const Nothing) Just $
                     parseOnly parseHexRef gitRefContents
         else return Nothing
+
+listDirectory :: FilePath -> IO [FilePath]
+listDirectory path = do
+    paths <- getDirectoryContents path
+    return $ filter (\p -> p `notElem` [".", ".."]) paths
 
 resolvePartialRef :: String -> WithRepo (Maybe Ref)
 resolvePartialRef search = do
