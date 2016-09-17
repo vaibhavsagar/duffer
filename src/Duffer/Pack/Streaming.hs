@@ -24,7 +24,7 @@ indexPackfile :: FilePath -> IO SeparatedEntries
 indexPackfile path = do
     handle                    <- PB.fromHandle <$> SI.openFile path SI.ReadMode
     ((start, count), entries) <- runStateT parsePackfileStart handle
-    fst <$> loopEntries entries start count M.empty
+    fst <$> loopEntries entries start count emptySeparated
     where parsePackfileStart = do
             Just (Right (len, count)) <- PA.parseL parsePackfileHeader
             return (len, count)
