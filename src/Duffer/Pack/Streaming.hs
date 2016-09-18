@@ -67,8 +67,7 @@ loopEntries producer offset remaining indexedMap = case remaining of
             Just levelByte <- PB.peekByte
             let level = getCompressionLevel levelByte
             return (uncurry encodeTypeLen tLen, baseRef, decompressed, level)
-        advanceToCompletion decompressed producer = do
-            step <- next producer
+        advanceToCompletion decompressed producer = next producer >>= \step ->
             case step of
                 (Left (Left p)) -> return (decompressed, p)
                 (Right (d, p')) ->
