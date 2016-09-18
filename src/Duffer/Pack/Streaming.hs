@@ -1,5 +1,6 @@
 module Duffer.Pack.Streaming where
 
+import Control.Arrow (first)
 import Control.Monad.Trans.State.Strict
 import Data.ByteString.Base16 (decode)
 import qualified Data.ByteString  as B
@@ -70,7 +71,6 @@ loopEntries producer offset remaining indexedMap = case remaining of
             step <- next producer
             case step of
                 (Left (Left p)) -> return (decompressed, p)
-                (Right (d, p')) -> do
-                    (d', p) <- advanceToCompletion d p'
-                    return (B.append decompressed d', p)
+                (Right (d, p')) ->
+                    first (B.append decompressed) <$> advanceToCompletion d p'
                 _               -> error "No idea how to handle Left (Right _)"
