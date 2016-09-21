@@ -9,6 +9,7 @@ import Control.Monad.Trans.Reader (ReaderT, asks)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString            (ByteString, append, readFile, writeFile
                                   ,init)
+import Data.Maybe                 (fromJust)
 import System.Directory           (doesFileExist, createDirectoryIfMissing)
 import System.FilePath            ((</>), takeDirectory)
 
@@ -59,11 +60,11 @@ hasObject ref = do
     path <- asks (sha1Path ref)
     liftIO $ doesFileExist path
 
-resolveRef :: FilePath -> WithRepo (Maybe GitObject)
+resolveRef :: FilePath -> WithRepo GitObject
 resolveRef refPath = do
     path <- asks (</> refPath)
     ref  <- liftIO $ init <$> readFile path
-    readObject ref
+    fromJust <$> readObject ref
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = do
