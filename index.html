@@ -35,112 +35,75 @@
 <section><section id="introduction" class="titleslide slide level1"><h1>Introduction</h1></section><section id="about-me" class="slide level2">
 <h1>About Me</h1>
 <ul>
+<li>Former web developer</li>
 <li>Aspiring functional programmer</li>
 <li>Enjoy poking at Git for fun and profit</li>
+<li>Attending a batch at the Recurse Center here in NYC, working on pretty much only this</li>
+<li>[Show RC logo here]</li>
 </ul>
-</section><section id="about-this-presentation" class="slide level2">
-<h1>About this presentation</h1>
+</section><section id="about-this-project" class="slide level2">
+<h1>About this project</h1>
 <ul>
 <li>Code is at <a href="https://github.com/vaibhavsagar/duffer.hs" class="uri">https://github.com/vaibhavsagar/duffer.hs</a></li>
 <li>Presentation is in the <code>gh-pages</code> branch or <a href="http://www.vaibhavsagar.com/duffer.hs" class="uri">http://www.vaibhavsagar.com/duffer.hs</a></li>
-</ul>
-</section><section id="you-will-learn" class="slide level2">
-<h1>You will learn</h1>
-<ul>
-<li>Reading blobs, trees, tags, and commits</li>
-<li>Writing blobs, trees, tags, and commits</li>
-</ul>
-</section><section id="you-will-not-learn" class="slide level2">
-<h1>You will not learn</h1>
-<ul>
-<li>Reading and writing packfiles</li>
-<li>Interacting with the git index</li>
-<li>How to reimplement Git</li>
+<li>Started to give a presentation on git internals to the Canberra Functional Programming meetup</li>
+<li>My experience as a beginner working on this project. (describe presentation)</li>
 </ul>
 </section></section>
-<section><section id="git-objects" class="titleslide slide level1"><h1>Git Objects</h1></section><section id="basic" class="slide level2">
-<h1>Basic</h1>
+<section><section id="git-demo" class="titleslide slide level1"><h1>Git Demo</h1></section></section>
+<section><section id="code-spelunking" class="titleslide slide level1"><h1>Code spelunking</h1></section></section>
+<section><section id="concepts" class="titleslide slide level1"><h1>Concepts</h1></section><section id="libraries" class="slide level2">
+<h1>Libraries</h1>
 <ul>
-<li>Objects start with a header denoting their type, content length, and a null byte</li>
-<li>Objects are zlib compressed.</li>
-<li>Objects are uniquely identified by their SHA1 hash.</li>
-<li>Objects are stored in <code>.git/objects/&lt;sha1[0:2]&gt;/&lt;sha1[2:]&gt;</code></li>
-<li>Objects can be inspected with <code>git cat-file -p</code> or <code>git cat-file &lt;type&gt;</code></li>
+<li>attoparsec =&gt; convinced me that Functor, Applicative, Monad is a good idea</li>
+<li>transformers =&gt; coolest package name ever</li>
+<li>pipes =&gt; streaming</li>
 </ul>
-</section><section id="intermediate" class="slide level2">
-<h1>Intermediate</h1>
+</section><section id="further-avenues-of-exploration" class="slide level2">
+<h1>Further avenues of exploration</h1>
 <ul>
-<li>Branches and tags are implemented as references</li>
-<li>Any git object can be tagged</li>
-<li>tags can be signed with a key (not implemented)</li>
+<li>servant =&gt; type-safe web APIs</li>
+<li>lens =&gt; a better API</li>
 </ul>
-</section><section id="advanced-not-implemented" class="slide level2">
-<h1>Advanced (not implemented)</h1>
+</section><section id="ideas" class="slide level2">
+<h1>Ideas</h1>
 <ul>
-<li>objects can be packed into a packfile</li>
-<li>the git index is a list of all blobs in the repository with stat(2) data</li>
-<li>HEAD is a symbolic reference instead of a normal reference</li>
+<li>A git-based project management system</li>
+<li>Using git as the backend of an application</li>
 </ul>
 </section></section>
-<section><section id="blob" class="titleslide slide level1"><h1>Blob</h1></section><section id="details" class="slide level2">
-<h1>Details</h1>
+<section><section id="my-experience-with-haskell" class="titleslide slide level1"><h1>My experience with Haskell</h1></section><section id="good" class="slide level2">
+<h1>Good</h1>
 <ul>
-<li>&lt;content&gt; =&gt; &quot;blob &lt;length&gt;\NUL&lt;content&gt;&quot;</li>
-<li>e.g. b75f4c9dbe3b61cacba052f23461834468832e41</li>
+<li>Refactoring is a joy</li>
+<li>Testing is a joy</li>
+<li>fitting small components together is more satisfying than any other language I've used</li>
+<li>Lots of support on IRC and r/haskell</li>
+<li>IHaskell is a godsend and everyone should use it</li>
+<li>types that encode side effects + syntax sugar for category theoretic concepts = magic</li>
+<li>My frustration dealing with deserialisation reminded me why we have types in the first place</li>
+</ul>
+</section><section id="bad" class="slide level2">
+<h1>Bad</h1>
+<ul>
+<li>Documentation is mostly terrible - random blog posts</li>
+<li>Hard to find the right libraries - more random blog posts</li>
+<li>Very demanding learning curve - difficult to see the motivation</li>
+<li>As a community, how can we improve?</li>
+</ul>
+</section><section id="some-thoughts" class="slide level2">
+<h1>Some thoughts</h1>
+<ul>
+<li>I thought Haskell was pretty silly the first time I encountered it</li>
+<li>Only after a couple of bad production experiences did I see the point</li>
+<li>How else do we provide a compelling reason to learn it?</li>
+<li>Maybe we just need to convince everyone that Haskell is a good idea and let them find it in their own time</li>
 </ul>
 </section></section>
-<section><section id="tree" class="titleslide slide level1"><h1>Tree</h1></section><section id="details-1" class="slide level2">
-<h1>Details</h1>
+<section><section id="what-can-you-do-with-this" class="titleslide slide level1"><h1>What can you do with this</h1></section><section id="historical-revisionism" class="slide level2">
+<h1>Historical Revisionism</h1>
 <ul>
-<li>&lt;content&gt; is a sorted list of tree entries</li>
-<li>&lt;entry&gt; =&gt; &quot;&lt;mode&gt; &lt;name&gt;\NUL&lt;SHA1&gt;&quot;</li>
-<li>tree entries are either blobs or other trees</li>
-<li>e.g. <code>git cat-file tree HEAD</code></li>
-<li><code>git submodule</code> uses a commit as a tree entry (not implemented)</li>
-</ul>
-</section></section>
-<section><section id="commit" class="titleslide slide level1"><h1>Commit</h1></section><section id="details-2" class="slide level2">
-<h1>Details</h1>
-<ul>
-<li>tree, parent(s), author, committer, message</li>
-<li>e.g. <code>git cat-file commit HEAD</code></li>
-<li>initial commit has no parent ref</li>
-<li>this is where Git's DAG comes from</li>
-<li>commits can be GPG signed (not implemented)</li>
-</ul>
-</section></section>
-<section><section id="tag" class="titleslide slide level1"><h1>Tag</h1></section><section id="details-3" class="slide level2">
-<h1>Details</h1>
-<ul>
-<li>object, type, tag, tagger, annotation</li>
-<li>ref is created at <code>refs/tags/&lt;name&gt;</code> pointing to tag object</li>
-<li>tags can be GPG signed (not implemented)</li>
-</ul>
-</section></section>
-<section><section id="ref" class="titleslide slide level1"><h1>Ref</h1></section><section id="details-4" class="slide level2">
-<h1>Details</h1>
-<ul>
-<li>a file at <code>refs/heads/&lt;name&gt;</code> with commit SHA1</li>
-<li>a file at <code>refs/tags/&lt;name&gt;</code> with SHA1 (lightweight tag) or tag SHA1 (annotated tag)</li>
-</ul>
-</section></section>
-<section><section id="demo" class="titleslide slide level1"><h1>Demo</h1></section><section id="tasks" class="slide level2">
-<h1>Tasks</h1>
-<ul>
-<li>Create a &quot;hello world&quot; blob and store it</li>
-<li>Create a new branch with the same history</li>
-<li>Add the &quot;hello world&quot; blob to the root tree and write it (index will not be updated)</li>
-<li>Create a new commit on the new branch</li>
-<li>View the parent of the new commit</li>
-<li>Watch things break horribly</li>
-</ul>
-</section></section>
-<section><section id="git-annex" class="titleslide slide level1"><h1>Git Annex</h1></section><section id="details-5" class="slide level2">
-<h1>Details</h1>
-<ul>
-<li>Stores files under <code>.git/annex/[0:2]/[2:4]/[4:]</code></li>
-<li>stores a symlink or pointer where the file should be</li>
-<li>Has a pre-commit hook to fix file paths if files are moved</li>
+<li>https://github.com/vaibhavsagar/git-internals-workshop</li>
 </ul>
 </section></section>
 <section><section id="further-reading" class="titleslide slide level1"><h1>Further Reading</h1></section><section id="better-implementations" class="slide level2">
@@ -154,13 +117,6 @@
 <h1>Interesting Projects</h1>
 <ul>
 <li>https://github.com/mirage/irmin - A distributed database with Git-like design</li>
-</ul>
-</section><section id="ideas" class="slide level2">
-<h1>Ideas</h1>
-<ul>
-<li>A git-based project management system</li>
-<li>A web application to serve git objects and packfiles</li>
-<li>Using git as the backend of an application</li>
 </ul>
 </section></section>
 <section><section id="questions" class="titleslide slide level1"><h1>Questions?</h1></section></section>
