@@ -1,7 +1,12 @@
-% Duffer's guide to Git internals
+% Duffer's Guide to `git` Internals
 % Vaibhav Sagar
 
-# Introduction
+# What
+
+## My Library
+
+- an API for `git` repositories
+- Pure Haskell
 
 # Demo
 
@@ -29,6 +34,13 @@ data GitObject
         }
 deriving (Eq)
 ```
+<div class="notes">
+- A Blob   represents a file
+- A Tree   represents a directory listing
+- A Commit represents a snapshot of a project at a point in time
+- A Tag    names another `git` object.
+</div>
+
 ## Types
 
 ```haskell
@@ -50,6 +62,9 @@ data PersonTime = PersonTime
 type Ref  = B.ByteString
 type Repo = FilePath
 ```
+<div class="notes">
+Included for completeness.
+</div>
 
 ## Functor
 
@@ -58,20 +73,48 @@ parseTree :: Parser GitObject
 parseTree = Tree . fromList <$> many' parseTreeEntry
 ```
 
+<div class="notes">
+- `attoparsec` is easily the best library I've ever used
+- provides a compelling reason to learn about Functor/Applicative/Monad
+</div>
+
 ## Applicative
 
-## Monad
+```haskell
+parseMessage :: Parser B.ByteString
+parseMessage = endOfLine *> takeByteString
+```
 
+<div class="notes">
+I think this reads pretty well.
+</div>
 
-## What's next?
+## Monad (Transformers)
 
-- servant => type-safe web APIs
-- lens    => a better API
+```haskell
+type WithRepo = ReaderT Repo IO
 
-## Ideas
+hasObject :: Ref -> WithRepo Bool
+hasObject ref = do
+    path <- asks (sha1Path ref)
+    liftIO $ doesFileExist path
+```
 
-- A git-based project management system
-- Using git as the backend of an application
+<div class="notes">
+- I was threading through the repository path as a parameter until I found a
+  random blog post talking about using the Reader monad for configuration. It's
+  a perfect fit for this problem. Also convinced me that monad transformers are
+  a good idea.
+</div>
+
+## Testing
+
+- `duffer` uses itself to test itself.
+
+<div class="notes">
+- `git` hashes everything so if even one byte is off it is very obvious.
+- Free test cases!
+</div>
 
 # Functional Git
 
@@ -84,6 +127,18 @@ parseTree = Tree . fromList <$> many' parseTreeEntry
 
 - Append-only object store and mutable ref store
 - Separating the immutable and the mutable? Sounds like this language I know...
+
+# More
+
+## What's next?
+
+- servant => type-safe web APIs
+- lens    => a better API
+
+## Ideas
+
+- A git-based project management system
+- Using git as the backend of an application
 
 # My experience with Haskell
 
