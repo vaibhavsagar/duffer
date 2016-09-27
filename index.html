@@ -10,7 +10,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
   <link rel="stylesheet" href="reveal.js/css/reveal.css">
   <style type="text/css">code{white-space: pre;}</style>
-  <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="reveal.js/css/theme/simple.css" id="theme">
   <!-- Printing and PDF exports -->
   <script>
     var link = document.createElement( 'link' );
@@ -32,38 +69,57 @@
   <h2 class="author">Vaibhav Sagar</h2>
 </section>
 
-<section><section id="introduction" class="titleslide slide level1"><h1>Introduction</h1></section><section id="about-me" class="slide level2">
-<h1>About Me</h1>
-<ul>
-<li>Former web developer</li>
-<li>Aspiring functional programmer</li>
-<li>Enjoy poking at Git for fun and profit</li>
-<li>Attending a batch at the Recurse Center, where I've had the time and space to work on this</li>
-</ul>
-</section><section id="the-recurse-center" class="slide level2">
-<h1>The Recurse Center</h1>
-<p><img src="./emoji_rc.svg" height=400 width=400
-  style="border: none;background: none;box-shadow: none;"/></p>
-</section><section id="about-this-project" class="slide level2">
-<h1>About this project</h1>
-<ul>
-<li>Code is at <a href="https://github.com/vaibhavsagar/duffer" class="uri">https://github.com/vaibhavsagar/duffer</a></li>
-<li>Presentation is in the <code>gh-pages</code> branch or <a href="http://www.vaibhavsagar.com/duffer" class="uri">http://www.vaibhavsagar.com/duffer</a></li>
-<li>Started to give a presentation on <code>git</code> internals to the Canberra Functional Programming Group</li>
-<li>My first ever project in Haskell</li>
-</ul>
-</section></section>
+<section><section id="introduction" class="titleslide slide level1"><h1>Introduction</h1></section></section>
 <section><section id="demo" class="titleslide slide level1"><h1>Demo</h1></section></section>
-<section><section id="code" class="titleslide slide level1"><h1>Code</h1></section></section>
-<section><section id="concepts" class="titleslide slide level1"><h1>Concepts</h1></section><section id="libraries" class="slide level2">
-<h1>Libraries</h1>
-<ul>
-<li>attoparsec =&gt; convinced me that Functor, Applicative, Monad is a good idea</li>
-<li>transformers =&gt; coolest package name ever</li>
-<li>pipes =&gt; streaming</li>
-</ul>
-</section><section id="further-avenues-of-exploration" class="slide level2">
-<h1>Further avenues of exploration</h1>
+<section><section id="code" class="titleslide slide level1"><h1>Code</h1></section><section id="types" class="slide level2">
+<h1>Types</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">GitObject</span>
+    <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot">content ::</span> <span class="dt">B.ByteString</span>}
+    <span class="fu">|</span> <span class="dt">Tree</span> {<span class="ot">entries ::</span> <span class="dt">Set</span> <span class="dt">TreeEntry</span>}
+    <span class="fu">|</span> <span class="dt">Commit</span>
+        {<span class="ot"> treeRef       ::</span> <span class="dt">Ref</span>
+        ,<span class="ot"> parentRefs    ::</span> [<span class="dt">Ref</span>]
+        ,<span class="ot"> authorTime    ::</span> <span class="dt">PersonTime</span>
+        ,<span class="ot"> committerTime ::</span> <span class="dt">PersonTime</span>
+        ,<span class="ot"> message       ::</span> <span class="dt">B.ByteString</span>
+        }
+    <span class="fu">|</span> <span class="dt">Tag</span>
+        {<span class="ot"> objectRef  ::</span> <span class="dt">Ref</span>
+        ,<span class="ot"> objectType ::</span> <span class="dt">String</span>
+        ,<span class="ot"> tagName    ::</span> <span class="dt">String</span>
+        ,<span class="ot"> tagger     ::</span> <span class="dt">PersonTime</span>
+        ,<span class="ot"> annotation ::</span> <span class="dt">B.ByteString</span>
+        }
+<span class="kw">deriving</span> (<span class="dt">Eq</span>)</code></pre></div>
+</section><section id="types-1" class="slide level2">
+<h1>Types</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">TreeEntry</span> <span class="fu">=</span> <span class="dt">TreeEntry</span>
+    {<span class="ot"> entryPerms ::</span> <span class="dt">Int</span>
+    ,<span class="ot"> entryName  ::</span> <span class="dt">B.ByteString</span>
+    ,<span class="ot"> entryRef   ::</span> <span class="dt">Ref</span>
+    }
+    <span class="kw">deriving</span> (<span class="dt">Eq</span>)
+
+<span class="kw">data</span> <span class="dt">PersonTime</span> <span class="fu">=</span> <span class="dt">PersonTime</span>
+    {<span class="ot"> personName ::</span> <span class="dt">B.ByteString</span>
+    ,<span class="ot"> personMail ::</span> <span class="dt">B.ByteString</span>
+    ,<span class="ot"> personTime ::</span> <span class="dt">B.ByteString</span>
+    ,<span class="ot"> personTZ   ::</span> <span class="dt">B.ByteString</span>
+    }
+    <span class="kw">deriving</span> (<span class="dt">Eq</span>)
+
+<span class="kw">type</span> <span class="dt">Ref</span>  <span class="fu">=</span> <span class="dt">B.ByteString</span>
+<span class="kw">type</span> <span class="dt">Repo</span> <span class="fu">=</span> FilePath</code></pre></div>
+</section><section id="functor" class="slide level2">
+<h1>Functor</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">parseTree ::</span> <span class="dt">Parser</span> <span class="dt">GitObject</span>
+parseTree <span class="fu">=</span> <span class="dt">Tree</span> <span class="fu">.</span> fromList <span class="fu">&lt;$&gt;</span> many&#39; parseTreeEntry</code></pre></div>
+</section><section id="applicative" class="slide level2">
+<h1>Applicative</h1>
+</section><section id="monad" class="slide level2">
+<h1>Monad</h1>
+</section><section id="whats-next" class="slide level2">
+<h1>What's next?</h1>
 <ul>
 <li>servant =&gt; type-safe web APIs</li>
 <li>lens =&gt; a better API</li>
@@ -75,16 +131,29 @@
 <li>Using git as the backend of an application</li>
 </ul>
 </section></section>
+<section><section id="functional-git" class="titleslide slide level1"><h1>Functional Git</h1></section><section id="data-structures" class="slide level2">
+<h1>Data Structures</h1>
+<ul>
+<li>Merkle trees &amp; Merkle DAGs</li>
+<li>Not too different from an efficiently implemented functional data structure.</li>
+</ul>
+</section><section id="design" class="slide level2">
+<h1>Design</h1>
+<ul>
+<li>Append-only object store and mutable ref store</li>
+<li>Separating the immutable and the mutable? Sounds like this language I know...</li>
+</ul>
+</section></section>
 <section><section id="my-experience-with-haskell" class="titleslide slide level1"><h1>My experience with Haskell</h1></section><section id="good" class="slide level2">
 <h1>Good</h1>
 <ul>
 <li>Refactoring is a joy</li>
-<li>Testing is a joy</li>
+<li>Testing is easy with small, mostly pure functions, and a git repository.</li>
 <li>Debugging is straightforward</li>
-<li>fitting small components together is more satisfying than any other language I've used</li>
+<li>Compositional tools blow other languages out of the water</li>
 <li>Lots of support on IRC and r/haskell</li>
 <li>IHaskell is a godsend and everyone should use it</li>
-<li>types that encode side effects + syntax sugar for category theoretic concepts = magic</li>
+<li>types that encode side effects are genius</li>
 <li>My frustration dealing with deserialisation reminded me why we have types in the first place</li>
 </ul>
 </section><section id="bad" class="slide level2">
@@ -121,6 +190,14 @@
 <h1>Interesting Projects</h1>
 <ul>
 <li>https://github.com/mirage/irmin - A distributed database with Git-like design</li>
+</ul>
+</section><section id="about-this-project" class="slide level2">
+<h1>About this project</h1>
+<ul>
+<li>Code is at <a href="https://github.com/vaibhavsagar/duffer" class="uri">https://github.com/vaibhavsagar/duffer</a></li>
+<li>Presentation is in the <code>gh-pages</code> branch or <a href="http://www.vaibhavsagar.com/duffer" class="uri">http://www.vaibhavsagar.com/duffer</a></li>
+<li>Started to give a presentation on <code>git</code> internals to the Canberra Functional Programming Group</li>
+<li>My first ever project in Haskell</li>
 </ul>
 </section></section>
 <section><section id="questions" class="titleslide slide level1"><h1>Questions?</h1></section></section>
