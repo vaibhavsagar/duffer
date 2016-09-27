@@ -3,41 +3,67 @@
 
 # Introduction
 
-## About Me
-
-- Former web developer
-- Aspiring functional programmer
-- Enjoy poking at Git for fun and profit
-- Attending a batch at the Recurse Center, where I've had the time and space to
-  work on this
-
-## The Recurse Center
-
-<img src="./emoji_rc.svg" height=400 width=400
-  style="border: none;background: none;box-shadow: none;"/>
-
-## About this project
-
-- Code is at <https://github.com/vaibhavsagar/duffer>
-- Presentation is in the `gh-pages` branch or
-  <http://www.vaibhavsagar.com/duffer>
-- Started to give a presentation on `git` internals to the Canberra Functional
-  Programming Group
-- My first ever project in Haskell
-
 # Demo
 
 # Code
 
-# Concepts
+## Types
 
-## Libraries
+```haskell
+data GitObject
+    = Blob {content :: B.ByteString}
+    | Tree {entries :: Set TreeEntry}
+    | Commit
+        { treeRef       :: Ref
+        , parentRefs    :: [Ref]
+        , authorTime    :: PersonTime
+        , committerTime :: PersonTime
+        , message       :: B.ByteString
+        }
+    | Tag
+        { objectRef  :: Ref
+        , objectType :: String
+        , tagName    :: String
+        , tagger     :: PersonTime
+        , annotation :: B.ByteString
+        }
+deriving (Eq)
+```
+## Types
 
-- attoparsec   => convinced me that Functor, Applicative, Monad is a good idea
-- transformers => coolest package name ever
-- pipes        => streaming
+```haskell
+data TreeEntry = TreeEntry
+    { entryPerms :: Int
+    , entryName  :: B.ByteString
+    , entryRef   :: Ref
+    }
+    deriving (Eq)
 
-## Further avenues of exploration
+data PersonTime = PersonTime
+    { personName :: B.ByteString
+    , personMail :: B.ByteString
+    , personTime :: B.ByteString
+    , personTZ   :: B.ByteString
+    }
+    deriving (Eq)
+
+type Ref  = B.ByteString
+type Repo = FilePath
+```
+
+## Functor
+
+```haskell
+parseTree :: Parser GitObject
+parseTree = Tree . fromList <$> many' parseTreeEntry
+```
+
+## Applicative
+
+## Monad
+
+
+## What's next?
 
 - servant => type-safe web APIs
 - lens    => a better API
@@ -47,19 +73,31 @@
 - A git-based project management system
 - Using git as the backend of an application
 
+# Functional Git
+
+## Data Structures
+
+- Merkle trees & Merkle DAGs
+- Not too different from an efficiently implemented functional data structure.
+
+## Design
+
+- Append-only object store and mutable ref store
+- Separating the immutable and the mutable? Sounds like this language I know...
+
 # My experience with Haskell
 
 ## Good
 
 - Refactoring is a joy
-- Testing is a joy
+- Testing is easy with small, mostly pure functions, and a git repository.
 - Debugging is straightforward
-- fitting small components together is more satisfying than any other language
-  I've used
+- Compositional tools blow other languages out of the water
 - Lots of support on IRC and r/haskell
 - IHaskell is a godsend and everyone should use it
-- types that encode side effects + syntax sugar for category theoretic concepts = magic
-- My frustration dealing with deserialisation reminded me why we have types in the first place
+- types that encode side effects are genius
+- My frustration dealing with deserialisation reminded me why we have types in
+  the first place
 
 ## Bad
 
@@ -93,5 +131,14 @@
 ## Interesting Projects
 
 - https://github.com/mirage/irmin - A distributed database with Git-like design
+
+## About this project
+
+- Code is at <https://github.com/vaibhavsagar/duffer>
+- Presentation is in the `gh-pages` branch or
+  <http://www.vaibhavsagar.com/duffer>
+- Started to give a presentation on `git` internals to the Canberra Functional
+  Programming Group
+- My first ever project in Haskell
 
 # Questions?
