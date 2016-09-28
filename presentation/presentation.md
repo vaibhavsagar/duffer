@@ -1,6 +1,18 @@
 % Duffer's Guide to `git` Internals
 % Vaibhav Sagar
 
+<div class="notes">
+I'm going to try to give two talks in one: a `git` internals talk as well as
+a Haskell beginner talk. That is because this is the first ever Haskell code
+I wrote from scratch. I hope that despite my relative inexperience you will
+learn something new.
+
+I have had zero success explaining either `git` or Haskell to people by
+talking at them, so please feel free to stop me and ask questions. I'm also
+a very fast talker expecially when I'm nervous, so don't hesitate to tell me
+to slow down.
+</div>
+
 # What
 
 ## My Library
@@ -107,13 +119,86 @@ hasObject ref = do
   a good idea.
 </div>
 
+## Bit Twiddling
+
+```haskell
+setMSBs :: [Int] -> [Int]
+setMSBs ints = let
+    ints'  = reverse ints
+    ints'' = head ints' : map (`setBit` 7) ( tail ints')
+in reverse ints''
+```
+
+<div class="notes">
+This is where most of my bugs live. I think this comes back to why we have
+types in the first place: an invalid bytestring typechecks the same as a
+valid bytestring, just like all data is bytes in memory. Serialisation was
+much more straightforward.
+
+I'm actually currently dealing with a bug where two different bytestrings
+parse to the same value. I'm hoping that my deserialisation logic is the
+culprit.
+</div>
+
+## Streaming
+
+```haskell
+getNextEntry = do
+    Just (Right tLen) <- PA.parse parseTypeLen
+    baseRef <- case fst tLen of
+        OfsDeltaObject -> do
+            Just (Right offset) <- PA.parse parseOffset
+            return $ encodeOffset offset
+        RefDeltaObject -> do
+            Just (Right ref)    <- PA.parse parseBinRef
+            return $ fst $ decode ref
+        _              -> return ""
+    remainder <- get
+    let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
+    PB.drawByte
+    Just levelByte <- PB.peekByte
+    let level = getCompressionLevel levelByte
+    return (uncurry encodeTypeLen tLen, baseRef, decompressed, level)
+```
+
+<div class="notes">
+This code is gross, but it works! I asked for help with this and I think the
+consensus was that the libraries for streaming `zlib` decompression are less
+than ideal.
+</div>
+
+## Layout
+
+```
+src
+├── Duffer
+│   ├── Loose
+│   │   ├── Objects.hs
+│   │   └── Parser.hs
+│   ├── Loose.hs
+│   ├── Pack
+│   │   ├── Entries.hs
+│   │   ├── File.hs
+│   │   ├── Parser.hs
+│   │   └── Streaming.hs
+│   ├── Pack.hs
+│   └── Porcelain.hs
+└── Duffer.hs
+```
+
+<div class="notes">
+`git` has a packfile representation that is used for compression and network
+transfer. I have parsers for the loose and packed representations and
+additional logic for dealing with some quirks of the packfile format.
+</div>
+
 ## Testing
 
-- `duffer` uses itself to test itself.
+- `duffer` uses its own repo to test itself.
 
 <div class="notes">
 - `git` hashes everything so if even one byte is off it is very obvious.
-- Free test cases!
+- Free test cases every time a new commit is created
 </div>
 
 # Functional Git
@@ -132,8 +217,13 @@ hasObject ref = do
 
 ## What's next?
 
-- servant => type-safe web APIs
-- lens    => a better API
+- A `git` web server?
+- A better API
+
+<div class="notes">
+`servant` seems like the obvious choice for writing a web server, and maybe
+`lens` would help me come up with a better API for my library?
+</div>
 
 ## Ideas
 
@@ -142,24 +232,23 @@ hasObject ref = do
 
 # My experience with Haskell
 
-## Good
+## Advice for beginners
 
-- Refactoring is a joy
-- Testing is easy with small, mostly pure functions, and a git repository.
-- Debugging is straightforward
-- Compositional tools blow other languages out of the water
+- Don't get too hung up on understanding monads before you write any code
 - Lots of support on IRC and r/haskell
 - IHaskell is a godsend and everyone should use it
-- types that encode side effects are genius
-- My frustration dealing with deserialisation reminded me why we have types in
-  the first place
+
+<div class="notes">
+- What worked for me was learning how to desugar `do`-notation.
+- Haskell stars like Gabriel Gonzalez, OCharles, and EKmett hang out there.
+- It's the one thing keeping me from moving to GHC 8.
+</div>
 
 ## Bad
 
 - Documentation is mostly terrible - random blog posts
 - Hard to find the right libraries - more random blog posts
 - Very demanding learning curve - difficult to see the motivation
-- As a community, how can we improve?
 
 ## Some thoughts
 
@@ -192,8 +281,5 @@ hasObject ref = do
 - Code is at <https://github.com/vaibhavsagar/duffer>
 - Presentation is in the `gh-pages` branch or
   <http://www.vaibhavsagar.com/duffer>
-- Started to give a presentation on `git` internals to the Canberra Functional
-  Programming Group
-- My first ever project in Haskell
 
 # Questions?
