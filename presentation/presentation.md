@@ -219,10 +219,13 @@ additional logic for dealing with some quirks of the packfile format.
 
 - A `git` web server?
 - A better API
+- Multiple backends
 
 <div class="notes">
 `servant` seems like the obvious choice for writing a web server, and maybe
 `lens` would help me come up with a better API for my library?
+
+There's no reason the filesystem has to be the backing store of a repository.
 </div>
 
 ## Ideas
@@ -246,17 +249,21 @@ additional logic for dealing with some quirks of the packfile format.
 
 ## Bad
 
-- Documentation is mostly terrible - random blog posts
-- Hard to find the right libraries - more random blog posts
-- Very demanding learning curve - difficult to see the motivation
+- Documentation is mostly terrible
+- Hard to find the right libraries
+- Very demanding learning curve
+
+<div class="notes">
+- random blog posts or r/haskell comments
+- more random blog posts
+- difficult to see the motivation
+</div>
 
 ## Some thoughts
 
 - I thought Haskell was pretty silly the first time I encountered it
 - Only after a couple of bad production experiences did I see the point
 - How else do we provide a compelling reason to learn it?
-- Maybe we just need to convince everyone that Haskell is a good idea and
-  let them find it in their own time
 
 # What can you do with this
 
@@ -281,5 +288,16 @@ additional logic for dealing with some quirks of the packfile format.
 - Code is at <https://github.com/vaibhavsagar/duffer>
 - Presentation is in the `gh-pages` branch or
   <http://www.vaibhavsagar.com/duffer>
+
+## RC
+
+<img src="http://emoji.octopus.holdings/emoji/emoji_rc.svg" width=400 height=400>
+
+https://www.recurse.com
+
+<div class="notes">
+In lieu of an employer slide I thought I'd mention that I'm in the middle of my
+batch at RC, and I love it here. If you're interested check us out :)
+</div>
 
 # Questions?
