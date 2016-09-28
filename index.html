@@ -69,6 +69,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
   <h2 class="author">Vaibhav Sagar</h2>
 </section>
 
+<section class="slide level2">
+
+<aside class="notes">
+<p>I'm going to try to give two talks in one: a <code>git</code> internals talk as well as a Haskell beginner talk. That is because this is the first ever Haskell code I wrote from scratch. I hope that despite my relative inexperience you will learn something new.</p>
+<p>I have had zero success explaining either <code>git</code> or Haskell to people by talking at them, so please feel free to stop me and ask questions. I'm also a very fast talker expecially when I'm nervous, so don't hesitate to tell me to slow down.</p>
+</aside>
+</section>
 <section><section id="what" class="titleslide slide level1"><h1>What</h1></section><section id="my-library" class="slide level2">
 <h1>My Library</h1>
 <ul>
@@ -157,15 +164,66 @@ hasObject ref <span class="fu">=</span> <span class="kw">do</span>
 <li>I was threading through the repository path as a parameter until I found a random blog post talking about using the Reader monad for configuration. It's a perfect fit for this problem. Also convinced me that monad transformers are a good idea.</li>
 </ul>
 </aside>
+</section><section id="bit-twiddling" class="slide level2">
+<h1>Bit Twiddling</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">setMSBs ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
+setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
+    ints&#39;  <span class="fu">=</span> reverse ints
+    ints&#39;&#39; <span class="fu">=</span> head ints&#39; <span class="fu">:</span> map (<span class="ot">`setBit`</span> <span class="dv">7</span>) ( tail ints&#39;)
+<span class="kw">in</span> reverse ints&#39;&#39;</code></pre></div>
+<aside class="notes">
+<p>This is where most of my bugs live. I think this comes back to why we have types in the first place: an invalid bytestring typechecks the same as a valid bytestring, just like all data is bytes in memory. Serialisation was much more straightforward.</p>
+<p>I'm actually currently dealing with a bug where two different bytestrings parse to the same value. I'm hoping that my deserialisation logic is the culprit.</p>
+</aside>
+</section><section id="streaming" class="slide level2">
+<h1>Streaming</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">getNextEntry <span class="fu">=</span> <span class="kw">do</span>
+    <span class="dt">Just</span> (<span class="dt">Right</span> tLen) <span class="ot">&lt;-</span> PA.parse parseTypeLen
+    baseRef <span class="ot">&lt;-</span> <span class="kw">case</span> fst tLen <span class="kw">of</span>
+        <span class="dt">OfsDeltaObject</span> <span class="ot">-&gt;</span> <span class="kw">do</span>
+            <span class="dt">Just</span> (<span class="dt">Right</span> offset) <span class="ot">&lt;-</span> PA.parse parseOffset
+            return <span class="fu">$</span> encodeOffset offset
+        <span class="dt">RefDeltaObject</span> <span class="ot">-&gt;</span> <span class="kw">do</span>
+            <span class="dt">Just</span> (<span class="dt">Right</span> ref)    <span class="ot">&lt;-</span> PA.parse parseBinRef
+            return <span class="fu">$</span> fst <span class="fu">$</span> decode ref
+        _              <span class="ot">-&gt;</span> return <span class="st">&quot;&quot;</span>
+    remainder <span class="ot">&lt;-</span> get
+    <span class="kw">let</span> decompressed <span class="fu">=</span> PZ.decompress&#39; PZ.defaultWindowBits remainder
+    PB.drawByte
+    <span class="dt">Just</span> levelByte <span class="ot">&lt;-</span> PB.peekByte
+    <span class="kw">let</span> level <span class="fu">=</span> getCompressionLevel levelByte
+    return (uncurry encodeTypeLen tLen, baseRef, decompressed, level)</code></pre></div>
+<aside class="notes">
+<p>This code is gross, but it works! I asked for help with this and I think the consensus was that the libraries for streaming <code>zlib</code> decompression are less than ideal.</p>
+</aside>
+</section><section id="layout" class="slide level2">
+<h1>Layout</h1>
+<pre><code>src
+├── Duffer
+│   ├── Loose
+│   │   ├── Objects.hs
+│   │   └── Parser.hs
+│   ├── Loose.hs
+│   ├── Pack
+│   │   ├── Entries.hs
+│   │   ├── File.hs
+│   │   ├── Parser.hs
+│   │   └── Streaming.hs
+│   ├── Pack.hs
+│   └── Porcelain.hs
+└── Duffer.hs</code></pre>
+<aside class="notes">
+<p><code>git</code> has a packfile representation that is used for compression and network transfer. I have parsers for the loose and packed representations and additional logic for dealing with some quirks of the packfile format.</p>
+</aside>
 </section><section id="testing" class="slide level2">
 <h1>Testing</h1>
 <ul>
-<li><code>duffer</code> uses itself to test itself.</li>
+<li><code>duffer</code> uses its own repo to test itself.</li>
 </ul>
 <aside class="notes">
 <ul>
 <li><code>git</code> hashes everything so if even one byte is off it is very obvious.</li>
-<li>Free test cases!</li>
+<li>Free test cases every time a new commit is created</li>
 </ul>
 </aside>
 </section></section>
@@ -185,9 +243,12 @@ hasObject ref <span class="fu">=</span> <span class="kw">do</span>
 <section><section id="more" class="titleslide slide level1"><h1>More</h1></section><section id="whats-next" class="slide level2">
 <h1>What's next?</h1>
 <ul>
-<li>servant =&gt; type-safe web APIs</li>
-<li>lens =&gt; a better API</li>
+<li>A <code>git</code> web server?</li>
+<li>A better API</li>
 </ul>
+<aside class="notes">
+<p><code>servant</code> seems like the obvious choice for writing a web server, and maybe <code>lens</code> would help me come up with a better API for my library?</p>
+</aside>
 </section><section id="ideas" class="slide level2">
 <h1>Ideas</h1>
 <ul>
@@ -195,25 +256,26 @@ hasObject ref <span class="fu">=</span> <span class="kw">do</span>
 <li>Using git as the backend of an application</li>
 </ul>
 </section></section>
-<section><section id="my-experience-with-haskell" class="titleslide slide level1"><h1>My experience with Haskell</h1></section><section id="good" class="slide level2">
-<h1>Good</h1>
+<section><section id="my-experience-with-haskell" class="titleslide slide level1"><h1>My experience with Haskell</h1></section><section id="advice-for-beginners" class="slide level2">
+<h1>Advice for beginners</h1>
 <ul>
-<li>Refactoring is a joy</li>
-<li>Testing is easy with small, mostly pure functions, and a git repository.</li>
-<li>Debugging is straightforward</li>
-<li>Compositional tools blow other languages out of the water</li>
+<li>Don't get too hung up on understanding monads before you write any code</li>
 <li>Lots of support on IRC and r/haskell</li>
 <li>IHaskell is a godsend and everyone should use it</li>
-<li>types that encode side effects are genius</li>
-<li>My frustration dealing with deserialisation reminded me why we have types in the first place</li>
 </ul>
+<aside class="notes">
+<ul>
+<li>What worked for me was learning how to desugar <code>do</code>-notation.</li>
+<li>Haskell stars like Gabriel Gonzalez, OCharles, and EKmett hang out there.</li>
+<li>It's the one thing keeping me from moving to GHC 8.</li>
+</ul>
+</aside>
 </section><section id="bad" class="slide level2">
 <h1>Bad</h1>
 <ul>
 <li>Documentation is mostly terrible - random blog posts</li>
 <li>Hard to find the right libraries - more random blog posts</li>
 <li>Very demanding learning curve - difficult to see the motivation</li>
-<li>As a community, how can we improve?</li>
 </ul>
 </section><section id="some-thoughts" class="slide level2">
 <h1>Some thoughts</h1>
@@ -247,8 +309,6 @@ hasObject ref <span class="fu">=</span> <span class="kw">do</span>
 <ul>
 <li>Code is at <a href="https://github.com/vaibhavsagar/duffer" class="uri">https://github.com/vaibhavsagar/duffer</a></li>
 <li>Presentation is in the <code>gh-pages</code> branch or <a href="http://www.vaibhavsagar.com/duffer" class="uri">http://www.vaibhavsagar.com/duffer</a></li>
-<li>Started to give a presentation on <code>git</code> internals to the Canberra Functional Programming Group</li>
-<li>My first ever project in Haskell</li>
 </ul>
 </section></section>
 <section><section id="questions" class="titleslide slide level1"><h1>Questions?</h1></section></section>
