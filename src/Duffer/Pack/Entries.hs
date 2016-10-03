@@ -185,6 +185,8 @@ toLittleEndian nums = case nums of
 instance Byteable DeltaInstruction where
     toBytes (InsertInstruction content) =
         B.singleton (fromIntegral $ B.length content) `B.append` content
+    toBytes (CopyInstruction offset 0x10000) =
+        toBytes $ CopyInstruction offset 0
     toBytes (CopyInstruction offset size) = let
         offsetBytes = toByteList offset
         lenBytes    = toByteList size
