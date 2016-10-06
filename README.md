@@ -15,7 +15,6 @@ excellent and very educational [hs-git](https://github.com/vincenthz/hs-git/).
 # Some things this library does not do (yet)
 
 - Generate a packfile index from a packfile.
-- Read a streamed packfile (during e.g. git clone).
 - Support arbitrary backends besides file storage.
 - Read .git/index
 - Generate human readable diffs.
