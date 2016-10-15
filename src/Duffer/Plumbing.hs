@@ -1,4 +1,4 @@
-module Duffer.Porcelain where
+module Duffer.Plumbing where
 
 import qualified Data.ByteString      as B
 import qualified Data.ByteString.UTF8 as BU
