@@ -54,7 +54,7 @@ resolveGitRef path = do
 
 listDirectory :: FilePath -> IO [FilePath]
 listDirectory =
-    fmap (filter (\p -> p `notElem` [".", ".."])) . getDirectoryContents
+    fmap (filter (`notElem` [".", ".."])) . getDirectoryContents
 
 resolvePartialRef :: String -> WithRepo (Maybe Ref)
 resolvePartialRef search = do
