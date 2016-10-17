@@ -19,6 +19,7 @@ install:
 - stack install pandoc
 
 script:
+- git repack -ad
 - stack --no-terminal --skip-ghc-check test
 
 after_success:

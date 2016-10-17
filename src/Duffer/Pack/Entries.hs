@@ -73,10 +73,10 @@ type RefIndex  = Map.Map Ref Int
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject)         = toBytes packedObject
-    toBytes (UnResolved ofsD@(OfsDelta _ delta@(PackDecompressed l d))) = let
+    toBytes (UnResolved ofsD@(OfsDelta _ (PackDecompressed _ d))) = let
         header = encodeTypeLen OfsDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes ofsD
-    toBytes (UnResolved refD@(RefDelta _ delta@(PackDecompressed l d))) = let
+    toBytes (UnResolved refD@(RefDelta _ (PackDecompressed _ d))) = let
         header = encodeTypeLen RefDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes refD
 
@@ -111,9 +111,9 @@ instance Functor PackDecompressed where
         PackDecompressed level (f content)
 
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
-encodeTypeLen packObjectType len = let
+encodeTypeLen packObjType len = let
     (last4, rest) = packEntryLenList len
-    firstByte     = (fromEnum packObjectType `shiftL` 4) .|. last4
+    firstByte     = (fromEnum packObjType `shiftL` 4) .|. last4
     firstByte'    = if rest /= "" then setBit firstByte 7 else firstByte
     in B.cons (fromIntegral firstByte') rest
 
