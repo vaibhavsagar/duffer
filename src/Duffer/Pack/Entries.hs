@@ -59,8 +59,7 @@ data Delta = Delta Int Int [DeltaInstruction] deriving (Show, Eq)
 data CombinedMap = CombinedMap
     { getOffsetMap :: OffsetMap
     , getRefIndex  :: RefIndex
-    }
-    deriving (Show)
+    } deriving (Show)
 
 data ObjectMap = ObjectMap
     { getObjectMap   :: Map.Map Int PackedObject
