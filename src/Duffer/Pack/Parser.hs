@@ -8,6 +8,7 @@ import Data.Bits
 
 import Codec.Compression.Zlib (decompress)
 import Control.Monad          (zipWithM)
+import Data.List              (foldl')
 import GHC.Word               (Word8)
 
 import Prelude hiding (take)
@@ -57,8 +58,8 @@ testMSB :: Bits t => t -> Bool
 testMSB = flip testBit 7
 
 littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
-littleEndian = foldr (\a b -> a + (b `shiftL` 7)) 0
-bigEndian    = foldl (\a b -> (a `shiftL` 7) + b) 0
+littleEndian = foldr  (\a b -> a + (b `shiftL` 7)) 0
+bigEndian    = foldl' (\a b -> (a `shiftL` 7) + b) 0
 
 parseOffset :: (Bits t, Integral t) => Parser t
 parseOffset = do

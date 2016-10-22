@@ -9,6 +9,7 @@ import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
 import Data.Digest.CRC32
+import Data.List (foldl')
 import Data.Word (Word8, Word32)
 
 import Duffer.Loose.Objects (Ref)
@@ -204,7 +205,7 @@ instance Byteable DeltaInstruction where
                     then replicate pad False ++ bits
                     else bits
               boolsToByte :: Int -> [Bool] -> Int
-              boolsToByte = foldl (\acc b -> shiftL acc 1 + fromEnum b)
+              boolsToByte = foldl' (\acc b -> shiftL acc 1 + fromEnum b)
 
 fullObject :: PackObjectType -> Bool
 fullObject t = t `elem` [CommitObject, TreeObject, BlobObject, TagObject]

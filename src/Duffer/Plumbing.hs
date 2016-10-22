@@ -13,7 +13,7 @@ import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
 import System.FilePath            ((</>))
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString.UTF8       (fromString)
-import Data.List                  (isPrefixOf)
+import Data.List                  (isPrefixOf, foldl')
 
 import Duffer.Loose
 import Duffer.Loose.Objects
@@ -26,7 +26,7 @@ fuzzyReadObject search = do
     remoteRef  <- resolveGitRef $ "refs/remotes" </> search
     tagRef     <- resolveGitRef $ "refs/tags"    </> search
     partialRef <- resolvePartialRef search
-    let result = foldl (<|>) Nothing
+    let result = foldl' (<|>) Nothing
             [symRef, branchRef, remoteRef, tagRef, partialRef]
     maybe (return Nothing) readObject result
 
