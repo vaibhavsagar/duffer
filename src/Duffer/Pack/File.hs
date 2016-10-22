@@ -80,7 +80,7 @@ separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
 separateResolved objectMap offsetMap = let
     (objects, deltas) = Map.partition isResolved offsetMap
     objects'          = Map.map (\(Resolved o) -> o) objects
-    objectMap'      = Map.foldrWithKey insertObject objectMap objects'
+    objectMap'        = Map.foldrWithKey insertObject objectMap objects'
     in (objectMap', deltas)
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry
