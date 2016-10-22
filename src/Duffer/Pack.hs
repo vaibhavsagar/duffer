@@ -38,12 +38,12 @@ indexedEntryMap = fmap (Map.map parsedPackRegion) . indexedByteStringMap
 
 indexedByteStringMap :: FilePath -> IO (Map.Map Int B.ByteString)
 indexedByteStringMap indexPath = do
-    offsetMap  <- makeOffsetMap <$> B.readFile indexPath
-    let filePath  = packFile indexPath
-    contentEnd <- B.length <$> B.readFile filePath
-    let indices   = Map.keys offsetMap
-    let rangeMap  = Map.insert (contentEnd - 20) "" offsetMap
-    entries    <- mapM (getPackRegion filePath rangeMap) indices
+    offsetMap     <- makeOffsetMap <$> B.readFile indexPath
+    let filePath  =  packFile indexPath
+    contentEnd    <- B.length <$> B.readFile filePath
+    let indices   =  Map.keys offsetMap
+    let rangeMap  =  Map.insert (contentEnd - 20) "" offsetMap
+    entries       <- mapM (getPackRegion filePath rangeMap) indices
     return $ Map.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
@@ -53,6 +53,6 @@ combinedEntryMap indexPath = CombinedMap
 
 resolveAll :: FilePath -> IO [GitObject]
 resolveAll indexPath = do
-    combined <- combinedEntryMap indexPath
-    let reconstitute = unpackObject . resolveDelta combined
+    combined         <- combinedEntryMap indexPath
+    let reconstitute =  unpackObject . resolveDelta combined
     return $ map reconstitute $ Map.elems (getRefIndex combined)
