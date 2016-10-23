@@ -30,17 +30,26 @@ word8s = mapM word8
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
-    header    <- word8s [255, 116, 79, 99]
-    version   <- word8s [0, 0, 0, 2]
-    totals    <- count 256 parse4Bytes
-    let total =  count (last totals)
-    refs      <- total parseBinRef
-    crc32s    <- total parse4Bytes
-    offsets   <- total parse4Bytes
+    parsePackIndexHeader
+    total     <- last <$> parsePackIndexTotals
+    refs      <- parsePackIndexRefs total
+    crc32s    <- count total parse4Bytes
+    offsets   <- count total parse4Bytes
     remaining <- takeByteString
     let (fifth, checks) = B.splitAt (B.length remaining - 40) remaining
     let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
+
+parsePackIndexHeader :: Parser ()
+parsePackIndexHeader = word8s start *> word8s version *> pure ()
+    where start   = [255, 116, 79, 99]
+          version = [0, 0, 0, 2]
+
+parsePackIndexTotals :: Parser [Int]
+parsePackIndexTotals = count 256 parse4Bytes
+
+parsePackIndexRefs :: Int -> Parser [Ref]
+parsePackIndexRefs total = count total parseBinRef
 
 parse4Bytes :: (Bits t, Integral t) => Parser t
 parse4Bytes = fromBytes <$> take 4
