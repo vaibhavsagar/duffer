@@ -40,9 +40,9 @@ readObject ref = do
     exists  <- hasObject ref
     if exists
         then do
-            path    <- asks (sha1Path ref)
-            content <- liftIO $ decompress <$> readFile path
-            let parsed = parseOnly parseObject content
+            path       <- asks (sha1Path ref)
+            content    <- liftIO $ decompress <$> readFile path
+            let parsed =  parseOnly parseObject content
             return $ either (const Nothing) Just parsed
         else return Nothing
 
@@ -68,7 +68,7 @@ resolveRef refPath = do
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = do
-    let sha1 = hash object
-    path <- asks (</> refPath)
+    let sha1 =  hash object
+    path     <- asks (</> refPath)
     liftIO $ writeFile path (append sha1 "\n")
     return sha1
