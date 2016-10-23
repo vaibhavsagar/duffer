@@ -5,4 +5,6 @@
 presentation/reveal.js
 presentation/*.html
 create_docset.sh
-target.docset/
+target.docset
+packfiles
+*.tix
