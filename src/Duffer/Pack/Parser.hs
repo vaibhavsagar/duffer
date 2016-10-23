@@ -48,7 +48,7 @@ parsePackIndexTotals :: Parser [Int]
 parsePackIndexTotals = count 256 parse4Bytes
 
 parsePackIndexRefs :: Int -> Parser [Ref]
-parsePackIndexRefs total = count total parseBinRef
+parsePackIndexRefs = flip count parseBinRef
 
 parse4Bytes :: (Bits t, Integral t) => Parser t
 parse4Bytes = fromBytes <$> take 4
