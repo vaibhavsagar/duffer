@@ -3,9 +3,10 @@ module Duffer.Pack where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
-import GHC.Int (Int64)
-import System.IO.MMap (mmapFileByteString)
-import System.FilePath ((-<.>))
+import GHC.Int          (Int64)
+import System.IO.MMap   (mmapFileByteString)
+import System.FilePath  ((-<.>), combine, takeExtension)
+import System.Directory (getDirectoryContents)
 
 import Duffer.Loose.Objects (GitObject)
 import Duffer.Pack.Entries
@@ -21,6 +22,11 @@ region offsetMap offset = let
     (Just nextOffset) = Map.lookupGT offset offsetMap
     len               = fst nextOffset - offset
     in Just (fromIntegral offset, len)
+
+getPackIndices :: FilePath -> IO [FilePath]
+getPackIndices path = let packFilePath = path ++ "/objects/pack" in
+    map (combine packFilePath) . filter (\f -> takeExtension f == ".idx") <$>
+    getDirectoryContents packFilePath
 
 getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
 getPackFileEntry packFilePath rangeMap index =

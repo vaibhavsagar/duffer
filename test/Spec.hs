@@ -120,11 +120,6 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
             {std_out = CreatePipe, std_in = UseHandle pipe} >>=
             \(_, Just handle, _, _) -> return handle
 
-getPackIndices :: String -> IO [FilePath]
-getPackIndices path = let packFilePath = path ++ "/objects/pack" in
-    map (combine packFilePath) . filter (\f -> takeExtension f == ".idx") <$>
-    getDirectoryContents packFilePath
-
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 = do
     maybeObject <- runReaderT (readObject sha1) path
