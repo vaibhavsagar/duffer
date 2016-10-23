@@ -14,8 +14,8 @@ import Duffer.Pack.Parser
 import Duffer.Pack.File
 
 packFile, packIndex :: FilePath -> FilePath
-packFile  path = path -<.> "pack"
-packIndex path = path -<.> "idx"
+packFile  = (-<.> "pack")
+packIndex = (-<.> "idx")
 
 region :: Map.Map Int a -> Int -> Maybe (Int64, Int)
 region offsetMap offset = let
