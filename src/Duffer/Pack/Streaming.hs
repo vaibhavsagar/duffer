@@ -21,13 +21,13 @@ type SeparatedEntries = M.Map Int B.ByteString
 emptySeparated :: SeparatedEntries
 emptySeparated = M.empty
 
-indexPackfile :: FilePath -> IO SeparatedEntries
-indexPackfile path = do
+indexPackFile :: FilePath -> IO SeparatedEntries
+indexPackFile path = do
     handle                    <- PB.fromHandle <$> SI.openFile path SI.ReadMode
-    ((start, count), entries) <- runStateT parsePackfileStart handle
+    ((start, count), entries) <- runStateT parsePackFileStart handle
     fst <$> loopEntries entries start count emptySeparated
-    where parsePackfileStart = do
-            Just (Right (len, count)) <- PA.parseL parsePackfileHeader
+    where parsePackFileStart = do
+            Just (Right (len, count)) <- PA.parseL parsePackFileHeader
             return (len, count)
 
 loopEntries

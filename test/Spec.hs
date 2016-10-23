@@ -82,8 +82,8 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         let crcMap = Map.map crc32 encodedMap
         Map.elems crcMap `shouldMatchList` map getCRC index
     it "can separate a streamed packfile" $ do
-        indexedPackfile <- indexPackfile $ packFile indexPath
-        indexedPackfile `shouldBe` byteStringMap
+        indexedPackFile <- indexPackFile $ packFile indexPath
+        indexedPackFile `shouldBe` byteStringMap
     combinedMap <- runIO $ combinedEntryMap indexPath
     it "can reconstruct the pack index entries" $
         packIndexEntries combinedMap `shouldMatchList` index
