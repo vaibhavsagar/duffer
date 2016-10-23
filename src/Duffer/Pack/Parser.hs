@@ -30,8 +30,7 @@ word8s = mapM word8
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
-    parsePackIndexHeader
-    total     <- last <$> parsePackIndexTotals
+    total     <- parsePackIndexHeader *> fmap last parsePackIndexTotals
     refs      <- parsePackIndexRefs total
     crc32s    <- count total parse4Bytes
     offsets   <- count total parse4Bytes
