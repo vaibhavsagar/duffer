@@ -236,8 +236,8 @@ fromBytes = B.foldl (\a b -> (a `shiftL` 8) + fromIntegral b) 0
 
 toSomeBitList :: (Bits t, Integral t) => Int -> t -> [t]
 toSomeBitList some n = case divMod n (bit some) of
-    (0, i) -> [fromIntegral i]
-    (x, y) -> toSomeBitList some x ++ toSomeBitList some y
+    (0, i) ->                         [fromIntegral i]
+    (x, y) -> toSomeBitList some x ++ [fromIntegral y]
 
 toByteList, to7BitList :: (Bits t, Integral t) => t -> [t]
 toByteList = toSomeBitList 8
