@@ -29,16 +29,16 @@ getPackIndices path = let packFilePath = path ++ "/objects/pack" in
     map (combine packFilePath) . filter (\f -> takeExtension f == ".idx") <$>
     getDirectoryContents packFilePath
 
-hasPackedObject :: Ref -> FilePath -> IO Bool
-hasPackedObject ref indexPath = do
+hasPacked :: Ref -> FilePath -> IO Bool
+hasPacked ref indexPath = do
     content  <- B.readFile indexPath
     let refs =  parsedPackIndexRefs content
     return $ ref `elem` refs
 
-readPackedObject :: Ref -> FilePath -> IO (Maybe GitObject)
-readPackedObject ref path = do
+readPacked :: Ref -> FilePath -> IO (Maybe GitObject)
+readPacked ref path = do
     indices <- getPackIndices path
-    matches <- filterM (hasPackedObject ref) indices
+    matches <- filterM (hasPacked ref) indices
     case matches of
         []        -> return Nothing
         (index:_) -> do
