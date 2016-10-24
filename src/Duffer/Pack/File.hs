@@ -20,7 +20,7 @@ applyInstruction instruction = case instruction of
     (InsertInstruction content)     -> const content
 
 resolveDelta :: CombinedMap -> Int -> PackedObject
-resolveDelta combinedMap index = case (Map.!) (getOffsetMap combinedMap) index of
+resolveDelta combinedMap index = case getOffsetMap combinedMap Map.! index of
     Resolved object@(PackedObject t _ _)
         -- If we find a commit, tree, blob, or tag, our work is done.
         | fullObject t -> object
