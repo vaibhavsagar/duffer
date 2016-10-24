@@ -106,8 +106,8 @@ I think this reads pretty well.
 ```haskell
 type WithRepo = ReaderT Repo IO
 
-hasObject :: Ref -> WithRepo Bool
-hasObject ref = do
+hasLooseObject :: Ref -> WithRepo Bool
+hasLooseObject ref = do
     path <- asks (sha1Path ref)
     liftIO $ doesFileExist path
 ```

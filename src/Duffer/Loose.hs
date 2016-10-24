@@ -37,7 +37,7 @@ decompress = L.toStrict . Z.decompress . L.fromStrict
 
 readLooseObject :: Ref -> WithRepo (Maybe GitObject)
 readLooseObject ref = do
-    exists  <- hasObject ref
+    exists  <- hasLooseObject ref
     if exists
         then do
             path       <- asks (sha1Path ref)
@@ -55,8 +55,8 @@ writeObject object = let sha1 = hash object in do
         L.writeFile path $ (Z.compress . showObject) object
     return sha1
 
-hasObject :: Ref -> WithRepo Bool
-hasObject ref = do
+hasLooseObject :: Ref -> WithRepo Bool
+hasLooseObject ref = do
     path <- asks (sha1Path ref)
     liftIO $ doesFileExist path
 
