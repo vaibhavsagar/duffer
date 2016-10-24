@@ -24,19 +24,19 @@ type WithRepo = ReaderT Repo IO
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (~~) object 0 = return (Just object)
 (~~) object n = do
-    parent <- readObject (head $ parentRefs object)
+    parent <- readLooseObject (head $ parentRefs object)
     case parent of
         Just p  -> p ~~ (n-1)
         Nothing -> return Nothing
 
 (^^) :: GitObject -> Int -> WithRepo (Maybe GitObject)
-(^^) object n = readObject $ parentRefs object !! (n-1)
+(^^) object n = readLooseObject $ parentRefs object !! (n-1)
 
 decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
-readObject :: Ref -> WithRepo (Maybe GitObject)
-readObject ref = do
+readLooseObject :: Ref -> WithRepo (Maybe GitObject)
+readLooseObject ref = do
     exists  <- hasObject ref
     if exists
         then do
@@ -64,7 +64,7 @@ resolveRef :: FilePath -> WithRepo GitObject
 resolveRef refPath = do
     path <- asks (</> refPath)
     ref  <- liftIO $ init <$> readFile path
-    fromJust <$> readObject ref
+    fromJust <$> readLooseObject ref
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = do

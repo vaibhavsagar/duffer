@@ -28,7 +28,7 @@ fuzzyReadObject search = do
     partialRef <- resolvePartialRef search
     let result = foldl' (<|>) Nothing
             [symRef, branchRef, remoteRef, tagRef, partialRef]
-    maybe (return Nothing) readObject result
+    maybe (return Nothing) readLooseObject result
 
 resolveSymRef :: FilePath -> WithRepo (Maybe Ref)
 resolveSymRef path = do

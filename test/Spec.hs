@@ -122,7 +122,7 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 = do
-    maybeObject <- runReaderT (readObject sha1) path
+    maybeObject <- runReaderT (readLooseObject sha1) path
     case maybeObject of
         (Just object) -> hash object `shouldBe` sha1
         Nothing       -> let
