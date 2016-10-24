@@ -46,8 +46,8 @@ readLooseObject ref = do
             return $ either (const Nothing) Just parsed
         else return Nothing
 
-writeObject :: GitObject -> WithRepo Ref
-writeObject object = let sha1 = hash object in do
+writeLooseObject :: GitObject -> WithRepo Ref
+writeLooseObject object = let sha1 = hash object in do
     path   <- asks (sha1Path sha1)
     exists <- liftIO $ doesFileExist path
     liftIO $ unless exists $ do

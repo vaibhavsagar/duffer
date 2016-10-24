@@ -104,8 +104,8 @@ writeTree path = do
                 return $ TreeEntry 0o040000 (BU.fromString entry) treeRef
             (_, True) -> do
                 content <- liftIO $ B.readFile $ path </> entry
-                blobRef <- writeObject $ Blob content
+                blobRef <- writeLooseObject $ Blob content
                 return $ TreeEntry 0o100644 (BU.fromString entry) blobRef
             (False, False) -> error "what even"
         ) contents
-    writeObject $ Tree $ S.fromList entries
+    writeLooseObject $ Tree $ S.fromList entries
