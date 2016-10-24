@@ -3,12 +3,13 @@ module Duffer.Pack where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
-import GHC.Int          (Int64)
-import System.IO.MMap   (mmapFileByteString)
-import System.FilePath  ((-<.>), combine, takeExtension)
-import System.Directory (getDirectoryContents)
+import Control.Monad              (filterM)
+import GHC.Int                    (Int64)
+import System.IO.MMap             (mmapFileByteString)
+import System.FilePath            ((-<.>), combine, takeExtension)
+import System.Directory           (getDirectoryContents)
 
-import Duffer.Loose.Objects (GitObject)
+import Duffer.Loose.Objects (GitObject, Ref)
 import Duffer.Pack.Entries
 import Duffer.Pack.Parser
 import Duffer.Pack.File
@@ -27,6 +28,22 @@ getPackIndices :: FilePath -> IO [FilePath]
 getPackIndices path = let packFilePath = path ++ "/objects/pack" in
     map (combine packFilePath) . filter (\f -> takeExtension f == ".idx") <$>
     getDirectoryContents packFilePath
+
+hasPackedObject :: Ref -> FilePath -> IO Bool
+hasPackedObject ref indexPath = do
+    content  <- B.readFile indexPath
+    let refs =  parsedPackIndexRefs content
+    return $ ref `elem` refs
+
+readPackedObject :: Ref -> FilePath -> IO (Maybe GitObject)
+readPackedObject ref path = do
+    indices <- getPackIndices path
+    matches <- filterM (hasPackedObject ref) indices
+    case matches of
+        []        -> return Nothing
+        (index:_) -> do
+            entryMap <- combinedEntryMap index
+            return $ resolveEntry entryMap ref
 
 getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
 getPackFileEntry packFilePath rangeMap index =

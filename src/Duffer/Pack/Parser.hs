@@ -39,6 +39,11 @@ parsePackIndex = do
     let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
+parsePackIndexUptoRefs :: Parser [Ref]
+parsePackIndexUptoRefs = do
+    total <- parsePackIndexHeader *> fmap last parsePackIndexTotals
+    parsePackIndexRefs total
+
 parsePackIndexHeader :: Parser ()
 parsePackIndexHeader = word8s start *> word8s version *> pure ()
     where start   = [255, 116, 79, 99]
@@ -173,6 +178,9 @@ parsePackRegion = do
 
 parsedPackRegion :: B.ByteString -> PackEntry
 parsedPackRegion = either error id . parseOnly parsePackRegion
+
+parsedPackIndexRefs :: B.ByteString -> [Ref]
+parsedPackIndexRefs = either error id . parseOnly parsePackIndexUptoRefs
 
 parsePackFileHeader :: Parser Int
 parsePackFileHeader =
