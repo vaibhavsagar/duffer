@@ -11,14 +11,13 @@ import Test.QuickCheck
 import Control.Monad (zipWithM_)
 import System.Process
 import System.FilePath
-import System.Directory
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString.UTF8 (lines, toString)
 import GHC.IO.Handle (Handle)
 import Prelude hiding (lines, readFile)
 
 import Duffer
-import Duffer.Unified (readPackedObject)
+import Duffer.Unified (readPackedObject, readObject)
 import Duffer.Pack
 import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
@@ -30,9 +29,9 @@ main = do
     testEncodingAndParsing
     let objectTypes = ["blob", "tree", "commit", "tag"]
     let allTypesObjects = mapM objectsOfType objectTypes
-    testReadingPacked objectTypes =<< allTypesObjects
-    testUnpackingAndWriting       =<< getPackIndices ".git"
-    testReadingLoose objectTypes  =<< allTypesObjects
+    testReading objectTypes =<< allTypesObjects
+    testUnpackingAndWriting =<< getPackIndices ".git"
+    testReading objectTypes =<< allTypesObjects
 
 instance Arbitrary PackObjectType where
     arbitrary = oneof $ map return
@@ -62,25 +61,15 @@ testUnpackingAndWriting indices =
     hspec . parallel $ describe "unpacking packfiles" $
         mapM_ testAndWriteUnpacked indices
 
-testReadingLoose :: [String] -> [[Ref]] -> IO ()
-testReadingLoose types partitionedObjects =
+testReading :: [String] -> [[Ref]] -> IO ()
+testReading types partitionedObjects =
     hspec . parallel $ describe "reading loose objects" $
-        zipWithM_ describeReadingAllLoose types partitionedObjects
+        zipWithM_ describeReadingAll types partitionedObjects
 
-describeReadingAllLoose :: String -> [Ref] -> SpecWith ()
-describeReadingAllLoose oType objects = describe oType $
+describeReadingAll :: String -> [Ref] -> SpecWith ()
+describeReadingAll oType objects = describe oType $
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (mapM_ (readHashLooseObject ".git") os)
-
-testReadingPacked :: [String] -> [[Ref]] -> IO ()
-testReadingPacked types partitionedObjects =
-    hspec . parallel $ describe "reading packed objects" $
-        zipWithM_ describeReadingAllPacked types partitionedObjects
-
-describeReadingAllPacked :: String -> [Ref] -> SpecWith ()
-describeReadingAllPacked oType objects = describe oType $
-    readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (mapM_ (readHashPackedObject ".git") os)
+    where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
@@ -133,21 +122,11 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
             {std_out = CreatePipe, std_in = UseHandle pipe} >>=
             \(_, Just handle, _, _) -> return handle
 
-readHashLooseObject :: String -> Ref -> Expectation
-readHashLooseObject path sha1 = do
-    maybeObject <- runReaderT (readLooseObject sha1) path
+readHashObject :: String -> Ref -> Expectation
+readHashObject path sha1 = do
+    maybeObject <- runReaderT (readObject sha1) path
     case maybeObject of
         (Just object) -> hash object `shouldBe` sha1
         Nothing       -> let
             sha1String = toString sha1
             in expectationFailure $ sha1String ++ " not found"
-
-readHashPackedObject :: String -> Ref -> Expectation
-readHashPackedObject path sha1 = do
-    maybeObject <- runReaderT (readPackedObject sha1) path
-    case maybeObject of
-        (Just object) -> hash object `shouldBe` sha1
-        Nothing       -> let
-            sha1String = toString sha1
-            in expectationFailure $ sha1String ++ " not found"
-
