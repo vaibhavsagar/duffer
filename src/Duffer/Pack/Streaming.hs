@@ -3,6 +3,7 @@ module Duffer.Pack.Streaming where
 import Control.Arrow (first)
 import Control.Monad.Trans.State.Strict
 import Data.ByteString.Base16 (decode)
+import Data.Maybe (fromJust)
 import qualified Data.ByteString  as B
 import qualified Data.Map.Strict  as M
 import qualified Pipes.Attoparsec as PA
@@ -27,7 +28,7 @@ indexPackFile path = do
     ((start, count), entries) <- runStateT parsePackFileStart handle
     fst <$> loopEntries entries start count emptySeparated
     where parsePackFileStart = do
-            Just (Right (len, count)) <- PA.parseL parsePackFileHeader
+            (Right (len, count)) <- fromJust <$> PA.parseL parsePackFileHeader
             return (len, count)
 
 loopEntries
@@ -52,7 +53,7 @@ loopEntries producer offset remaining indexedMap = case remaining of
         loopEntries producer' offset' remaining' indexedMap'
      where
         getNextEntry = do
-            Just (Right tLen) <- PA.parse parseTypeLen
+            (Right tLen) <- fromJust <$> PA.parse parseTypeLen
             baseRef <- case fst tLen of
                 OfsDeltaObject -> do
                     Just (Right offset) <- PA.parse parseOffset
@@ -64,7 +65,7 @@ loopEntries producer offset remaining indexedMap = case remaining of
             remainder <- get
             let decompressed = PZ.decompress' PZ.defaultWindowBits remainder
             PB.drawByte
-            Just levelByte <- PB.peekByte
+            levelByte <- fromJust <$> PB.peekByte
             let level = getCompressionLevel levelByte
             return (uncurry encodeTypeLen tLen, baseRef, decompressed, level)
         advanceToCompletion decompressed producer = next producer >>= \step ->
