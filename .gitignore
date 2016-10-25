@@ -8,3 +8,4 @@ create_docset.sh
 target.docset
 packfiles
 *.tix
+*.prof
