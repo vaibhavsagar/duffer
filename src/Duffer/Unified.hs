@@ -14,7 +14,7 @@ readPackedObject ref = do
     liftIO $ readPacked ref path
 
 readObject :: Ref -> WithRepo (Maybe GitObject)
-readObject ref = do
-    maybeLoose  <- readLooseObject  ref
-    maybePacked <- readPackedObject ref
-    return $ maybeLoose <|> maybePacked
+readObject ref = (<|>) <$> readLooseObject ref <*> readPackedObject ref
+
+writeObject :: GitObject -> WithRepo Ref
+writeObject = writeLooseObject
