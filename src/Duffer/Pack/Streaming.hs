@@ -56,10 +56,10 @@ loopEntries producer offset remaining indexedMap = case remaining of
             (Right tLen) <- fromJust <$> PA.parse parseTypeLen
             baseRef <- case fst tLen of
                 OfsDeltaObject -> do
-                    Just (Right offset) <- PA.parse parseOffset
+                    (Right offset) <- fromJust <$> PA.parse parseOffset
                     return $ encodeOffset offset
                 RefDeltaObject -> do
-                    Just (Right ref)    <- PA.parse parseBinRef
+                    (Right ref)    <- fromJust <$> PA.parse parseBinRef
                     return $ fst $ decode ref
                 _              -> return ""
             remainder <- get
