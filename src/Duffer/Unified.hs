@@ -1,6 +1,5 @@
 module Duffer.Unified where
 
-import Control.Applicative        ((<|>))
 import Control.Monad.IO.Class     (liftIO)
 import Control.Monad.Trans.Reader (ask)
 
@@ -14,7 +13,11 @@ readPackedObject ref = do
     liftIO $ readPacked ref path
 
 readObject :: Ref -> WithRepo (Maybe GitObject)
-readObject ref = (<|>) <$> readLooseObject ref <*> readPackedObject ref
+readObject ref = do
+    existsLoose <- hasLooseObject ref
+    if existsLoose
+        then readLooseObject  ref
+        else readPackedObject ref
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject = writeLooseObject

@@ -63,7 +63,7 @@ testUnpackingAndWriting indices =
 
 testReading :: [String] -> [[Ref]] -> IO ()
 testReading types partitionedObjects =
-    hspec . parallel $ describe "reading loose objects" $
+    hspec . parallel $ describe "reading objects" $
         zipWithM_ describeReadingAll types partitionedObjects
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
