@@ -155,8 +155,8 @@ parseMessage <span class="fu">=</span> endOfLine <span class="fu">*&gt;</span> t
 <h1>Monad (Transformers)</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">WithRepo</span> <span class="fu">=</span> <span class="dt">ReaderT</span> <span class="dt">Repo</span> <span class="dt">IO</span>
 
-<span class="ot">hasObject ::</span> <span class="dt">Ref</span> <span class="ot">-&gt;</span> <span class="dt">WithRepo</span> <span class="dt">Bool</span>
-hasObject ref <span class="fu">=</span> <span class="kw">do</span>
+<span class="ot">hasLooseObject ::</span> <span class="dt">Ref</span> <span class="ot">-&gt;</span> <span class="dt">WithRepo</span> <span class="dt">Bool</span>
+hasLooseObject ref <span class="fu">=</span> <span class="kw">do</span>
     path <span class="ot">&lt;-</span> asks (sha1Path ref)
     liftIO <span class="fu">$</span> doesFileExist path</code></pre></div>
 <aside class="notes">
