@@ -26,6 +26,7 @@ library
                        Duffer.Pack.Streaming
                        Duffer.Plumbing
                        Duffer.Unified
+                       Duffer.WithRepo
   build-depends:       base >= 4.7 && < 5
                      , byteable
                      , bytestring

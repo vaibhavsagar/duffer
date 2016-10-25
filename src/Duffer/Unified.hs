@@ -1,11 +1,9 @@
 module Duffer.Unified where
 
-import Control.Monad.IO.Class     (liftIO)
-import Control.Monad.Trans.Reader (ask)
-
 import Duffer.Loose
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack
+import Duffer.WithRepo
 
 readPackedObject :: Ref -> WithRepo (Maybe GitObject)
 readPackedObject ref = do

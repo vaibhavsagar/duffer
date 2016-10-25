@@ -4,8 +4,6 @@ import qualified Data.ByteString.Lazy   as L
 import qualified Codec.Compression.Zlib as Z (compress, decompress)
 
 import Control.Monad              (unless)
-import Control.Monad.IO.Class     (liftIO)
-import Control.Monad.Trans.Reader (ReaderT, asks)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString            (ByteString, append, readFile, writeFile
                                   ,init)
@@ -15,11 +13,9 @@ import System.FilePath            ((</>), takeDirectory)
 
 import Prelude hiding (readFile, writeFile, init)
 
-import Duffer.Loose.Objects
-    (GitObject(..), Ref, Repo, sha1Path, hash, showObject)
+import Duffer.Loose.Objects (GitObject(..), Ref, sha1Path, hash, showObject)
 import Duffer.Loose.Parser  (parseObject)
-
-type WithRepo = ReaderT Repo IO
+import Duffer.WithRepo      (WithRepo, asks, liftIO)
 
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (~~) object 0 = return (Just object)

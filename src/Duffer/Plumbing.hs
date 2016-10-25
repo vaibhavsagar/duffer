@@ -6,8 +6,6 @@ import qualified Data.Set             as S
 
 import Control.Applicative        ((<|>))
 import Control.Monad              (unless)
-import Control.Monad.IO.Class     (liftIO)
-import Control.Monad.Trans.Reader (ask, asks)
 import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
                                   ,doesFileExist, getDirectoryContents)
 import System.FilePath            ((</>))
@@ -18,6 +16,7 @@ import Data.List                  (isPrefixOf, foldl')
 import Duffer.Loose
 import Duffer.Loose.Objects
 import Duffer.Loose.Parser
+import Duffer.WithRepo
 
 fuzzyReadObject :: String -> WithRepo (Maybe GitObject)
 fuzzyReadObject search = do
