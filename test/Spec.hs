@@ -6,6 +6,7 @@ import Data.Attoparsec.ByteString (parseOnly)
 import Data.Byteable
 import Data.ByteString (readFile, hGetContents)
 import Data.Digest.CRC32
+import Data.Maybe (fromJust)
 import Test.Hspec
 import Test.QuickCheck
 import Control.Monad (zipWithM_)
@@ -92,9 +93,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     objects <- runIO $ resolveAll  indexPath
     let refs = map (snd . toAssoc) index
     it "resolves each object correctly" $ do
-        let resolvedRefs = map (\ref -> let
-                Just object = resolveEntry combinedMap ref
-                in hash object) refs
+        let resolvedRefs = map (hash . fromJust .resolveEntry combinedMap) refs
         resolvedRefs `shouldMatchList` refs
     it "resolves objects correctly" $ do
         let objects' = resolveAll' entryMap
