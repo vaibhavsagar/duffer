@@ -17,7 +17,7 @@ import GHC.IO.Handle (Handle)
 import Prelude hiding (lines, readFile)
 
 import Duffer
-import Duffer.Unified (readPackedObject, readObject)
+import Duffer.Unified (readObject)
 import Duffer.Pack
 import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser

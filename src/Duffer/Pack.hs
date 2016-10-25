@@ -13,6 +13,7 @@ import Duffer.Loose.Objects (GitObject, Ref)
 import Duffer.Pack.Entries
 import Duffer.Pack.Parser
 import Duffer.Pack.File
+import Duffer.WithRepo
 
 packFile, packIndex :: FilePath -> FilePath
 packFile  = (-<.> "pack")
@@ -34,6 +35,11 @@ hasPacked ref indexPath = do
     content  <- B.readFile indexPath
     let refs =  parsedPackIndexRefs content
     return $ ref `elem` refs
+
+readPackObject :: Ref -> WithRepo (Maybe GitObject)
+readPackObject ref = do
+    path <- ask
+    liftIO $ readPacked ref path
 
 readPacked :: Ref -> FilePath -> IO (Maybe GitObject)
 readPacked ref path = do
