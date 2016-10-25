@@ -17,7 +17,7 @@ import GHC.IO.Handle (Handle)
 import Prelude hiding (lines, readFile)
 
 import Duffer
-import Duffer.Unified (readObject)
+import Duffer.Unified (readObject, writeObject)
 import Duffer.Pack
 import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
@@ -99,9 +99,9 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     it "resolves objects correctly" $ do
         let objects' = resolveAll' entryMap
         objects' `shouldMatchList` objects
-        refs `shouldMatchList` map hash objects
+        refs     `shouldMatchList` map hash objects
     it "writes resolved objects out" $ do
-        let write = flip runReaderT ".git" . writeLooseObject
+        let write = flip runReaderT ".git" . writeObject
         mapM write objects >>= shouldMatchList refs
 
 objectsOfType :: String -> IO [Ref]
