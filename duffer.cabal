@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Duffer
                        Duffer.Loose
+                       Duffer.Loose.JSON
                        Duffer.Loose.Objects
                        Duffer.Loose.Parser
                        Duffer.Pack
@@ -46,6 +47,10 @@ library
                      , pipes-attoparsec
                      , pipes-bytestring
                      , pipes-zlib
+                     , aeson
+                     , text
+                     , base64-bytestring
+                     , unordered-containers
   default-extensions:  OverloadedStrings
   ghc-options:       -fwarn-unused-imports
                      -fwarn-tabs
