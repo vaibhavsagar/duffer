@@ -4,5 +4,5 @@ module Duffer (
     hash
 ) where
 
-import Duffer.Loose as X
+import Duffer.Unified as X
 import Duffer.Loose.Objects (Ref, hash)
