@@ -101,7 +101,7 @@ instance FromJSON GitObject where
             <*> (T.unpack  <$> v .: "name")
             <*>                v .: "tagger"
             <*> (encodeBS  <$> v .: "annotation")
-        _          -> empty
+        _ -> empty
     parseJSON _ = empty
 
 instance FromJSON TreeEntry where
