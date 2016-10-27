@@ -3,6 +3,7 @@ module Duffer.WithRepo
     , ask
     , asks
     , liftIO
+    , withRepo
     ) where
 
 import Control.Monad.Trans.Reader (ask, asks, runReaderT, ReaderT)
