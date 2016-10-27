@@ -33,23 +33,29 @@ encodeBS  = E.encodeUtf8
 
 gitObjectPairs :: KeyValue t => GitObject -> [t]
 gitObjectPairs obj = case obj of
-    Blob {..} -> ["type" .= String "blob", "content" .= b64encode content]
-    Tree {..} -> ["type" .= String "tree", "entries" .= S.toList entries]
+    Blob {..} ->
+        [ "object_type" .= String "blob"
+        , "content"     .= b64encode content
+        ]
+    Tree {..} ->
+        [ "object_type" .= String "tree"
+        , "entries"     .= S.toList entries
+        ]
     Commit {..} ->
-        [ "type"          .= String "commit"
-        , "treeRef"       .= decodeRef treeRef
-        , "parentRefs"    .= map decodeRef parentRefs
-        , "authorTime"    .= authorTime
-        , "committerTime" .= committerTime
-        , "message"       .= decodeBS message
+        [ "object_type" .= String "commit"
+        , "tree"        .= decodeRef treeRef
+        , "parents"     .= map decodeRef parentRefs
+        , "author"      .= authorTime
+        , "committer"   .= committerTime
+        , "message"     .= decodeBS message
         ]
     Tag {..} ->
-        [ "type"       .= String "tag"
-        , "objectRef"  .= decodeRef objectRef
-        , "objectType" .= T.pack objectType
-        , "tagName"    .= T.pack tagName
-        , "tagger"     .= tagger
-        , "annotation" .= decodeBS annotation
+        [ "object_type" .= String "tag"
+        , "object"      .= decodeRef objectRef
+        , "type"        .= T.pack objectType
+        , "name"        .= T.pack tagName
+        , "tagger"      .= tagger
+        , "annotation"  .= decodeBS annotation
         ]
 
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
@@ -80,19 +86,19 @@ instance ToJSON PersonTime where
     toEncoding = pairs  . foldr1 (<>) . personTimePairs
 
 instance FromJSON GitObject where
-    parseJSON (Object v) = case H.lookup "type" v of
+    parseJSON (Object v) = case H.lookup "object_type" v of
         Just "blob"   -> Blob <$> (b64decode  <$> v .: "content")
         Just "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
         Just "commit" -> Commit
-            <$> (encodeRef     <$> v .: "treeRef")
-            <*> (map encodeRef <$> v .: "parentRefs")
-            <*>                    v .: "authorTime"
-            <*>                    v .: "committerTime"
+            <$> (encodeRef     <$> v .: "tree")
+            <*> (map encodeRef <$> v .: "parents")
+            <*>                    v .: "author"
+            <*>                    v .: "committer"
             <*> (encodeBS      <$> v .: "message")
         Just "tag" -> Tag
-            <$> (encodeRef <$> v .: "objectRef")
-            <*> (T.unpack  <$> v .: "objectType")
-            <*> (T.unpack  <$> v .: "tagName")
+            <$> (encodeRef <$> v .: "object")
+            <*> (T.unpack  <$> v .: "type")
+            <*> (T.unpack  <$> v .: "name")
             <*>                v .: "tagger"
             <*> (encodeBS  <$> v .: "annotation")
         _          -> empty
