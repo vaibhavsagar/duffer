@@ -2,6 +2,7 @@
 
 import qualified Data.Map.Strict as Map
 
+import Data.Aeson
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Byteable
 import Data.ByteString (readFile, hGetContents)
@@ -18,7 +19,8 @@ import GHC.IO.Handle (Handle)
 import Prelude hiding (lines, readFile)
 
 import Duffer
-import Duffer.Unified (readObject, writeObject)
+import Duffer.Loose.Objects
+import Duffer.Loose.JSON()
 import Duffer.Pack
 import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
@@ -33,6 +35,7 @@ main = do
     testReading objectTypes =<< allTypesObjects
     testUnpackingAndWriting =<< getPackIndices ".git"
     testReading objectTypes =<< allTypesObjects
+    testJSON objectTypes    =<< allTypesObjects
 
 instance Arbitrary PackObjectType where
     arbitrary = oneof $ map return
@@ -71,6 +74,16 @@ describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects = describe oType $
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
     where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
+
+testJSON :: [String] -> [[Ref]] -> IO ()
+testJSON types partitionedObjects =
+    hspec . parallel $ describe "decoding and encoding" $
+        zipWithM_ describeDecodingEncodingAll types partitionedObjects
+
+describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
+describeDecodingEncodingAll oType objects = describe oType $
+    readAll ("correctly decodes and encodes all " ++ oType ++ "s") objects
+    where readAll desc os = it desc (mapM_ (decodeEncodeObject ".git") os)
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
@@ -128,4 +141,16 @@ readHashObject path sha1 = do
         (Just object) -> hash object `shouldBe` sha1
         Nothing       -> let
             sha1String = toString sha1
+            in expectationFailure $ sha1String ++ " not found"
+
+decodeEncodeObject :: FilePath -> Ref -> Expectation
+decodeEncodeObject path ref = do
+    maybeObject <- runReaderT (readObject ref) path
+    case maybeObject of
+        (Just object) -> let
+            encoded = encode object
+            decoded = fromJust $ decode encoded :: GitObject
+            in decoded `shouldBe` object
+        Nothing       -> let
+            sha1String = toString ref
             in expectationFailure $ sha1String ++ " not found"
