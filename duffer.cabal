@@ -17,7 +17,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     Duffer
                        Duffer.Loose
-                       Duffer.Loose.JSON
                        Duffer.Loose.Objects
                        Duffer.Loose.Parser
                        Duffer.Pack

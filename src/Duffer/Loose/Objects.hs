@@ -4,17 +4,26 @@ module Duffer.Loose.Objects where
 
 import qualified Data.ByteArray.Encoding   as E
 import qualified Data.ByteString           as B
+import qualified Data.ByteString.Base64    as B64
 import qualified Data.ByteString.Builder   as BB
 import qualified Data.ByteString.Lazy      as L
 import qualified Data.ByteString.Lazy.UTF8 as UL (toString)
+import qualified Data.HashMap.Strict       as H
+import qualified Data.Set                  as S
+import qualified Data.Text                 as T
+import qualified Data.Text.Encoding        as E
 
+import Control.Applicative    (empty)
 import Crypto.Hash            (hashWith)
 import Crypto.Hash.Algorithms (SHA1)
+import Data.Aeson
 import Data.Byteable
 import Data.ByteString.UTF8   (fromString, toString)
 import Data.ByteString.Base16 (decode)
 import Data.List              (intercalate)
+import Data.Monoid            ((<>))
 import Data.Set               (Set, toAscList)
+import Numeric                (readOct)
 import System.FilePath        ((</>))
 import Text.Printf            (printf)
 
@@ -85,7 +94,7 @@ instance Ord TreeEntry where
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
         mode' = fromString $ printf "%o" mode
-        sha1' = fst $ decode sha1
+        sha1' = fst $ Data.ByteString.Base16.decode sha1
         in B.concat [mode', " ", name, "\NUL", sha1']
 
 instance Byteable GitObject where
@@ -97,10 +106,10 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> L.ByteString
-showObject object = header `L.append` content
-    where content    = BB.toLazyByteString $ showContent object
+showObject gitObject = header `L.append` content
+    where content    = BB.toLazyByteString $ showContent gitObject
           header     = L.concat [objectType, " ", len, "\NUL"]
-          objectType = case object of
+          objectType = case gitObject of
             Blob{}   -> "blob"
             Tree{}   -> "tree"
             Commit{} -> "commit"
@@ -108,7 +117,7 @@ showObject object = header `L.append` content
           len        = L.fromStrict $ fromString . show $ L.length content
 
 showContent :: GitObject -> BB.Builder
-showContent object = case object of
+showContent gitObject = case gitObject of
     Blob content -> BB.byteString content
     Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
@@ -130,3 +139,106 @@ showContent object = case object of
 
 hash :: GitObject -> Ref
 hash = E.convertToBase E.Base16 . hashWith (undefined :: SHA1) . toBytes
+
+b64encode :: B.ByteString -> T.Text
+b64encode = E.decodeUtf8 . B64.encode
+
+b64decode :: T.Text -> B.ByteString
+b64decode = B64.decodeLenient . E.encodeUtf8
+
+decodeRef, decodeBS :: Ref -> T.Text
+decodeRef = E.decodeUtf8
+decodeBS  = E.decodeUtf8
+
+encodeRef, encodeBS :: T.Text -> B.ByteString
+encodeRef = E.encodeUtf8
+encodeBS  = E.encodeUtf8
+
+gitObjectPairs :: KeyValue t => GitObject -> [t]
+gitObjectPairs obj = case obj of
+    Blob {..} ->
+        [ "object_type" .= String "blob"
+        , "content"     .= b64encode content
+        ]
+    Tree {..} ->
+        [ "object_type" .= String "tree"
+        , "entries"     .= S.toList entries
+        ]
+    Commit {..} ->
+        [ "object_type" .= String "commit"
+        , "tree"        .= decodeRef treeRef
+        , "parents"     .= map decodeRef parentRefs
+        , "author"      .= authorTime
+        , "committer"   .= committerTime
+        , "message"     .= decodeBS message
+        ]
+    Tag {..} ->
+        [ "object_type" .= String "tag"
+        , "object"      .= decodeRef objectRef
+        , "type"        .= T.pack objectType
+        , "name"        .= T.pack tagName
+        , "tagger"      .= tagger
+        , "annotation"  .= decodeBS annotation
+        ]
+
+treeEntryPairs :: KeyValue t => TreeEntry -> [t]
+treeEntryPairs TreeEntry {..} =
+    ["mode" .= octMode, "name" .= dName, "ref" .= dRef]
+    where octMode = T.pack $ printf "%06o" entryPerms :: T.Text
+          dName   = E.decodeUtf8 entryName
+          dRef    = decodeRef entryRef
+
+personTimePairs :: KeyValue t => PersonTime -> [t]
+personTimePairs PersonTime {..} =
+    [ "name" .= decodeBS personName
+    , "mail" .= decodeBS personMail
+    , "time" .= decodeBS personTime
+    , "zone" .= decodeBS personTZ
+    ]
+
+instance ToJSON GitObject where
+    toJSON     = object . gitObjectPairs
+    toEncoding = pairs  . foldr1 (<>) . gitObjectPairs
+
+instance ToJSON TreeEntry where
+    toJSON     = object . treeEntryPairs
+    toEncoding = pairs  . foldr1 (<>) . treeEntryPairs
+
+instance ToJSON PersonTime where
+    toJSON     = object . personTimePairs
+    toEncoding = pairs  . foldr1 (<>) . personTimePairs
+
+instance FromJSON GitObject where
+    parseJSON (Object v) = case H.lookup "object_type" v of
+        Just "blob"   -> Blob <$> (b64decode  <$> v .: "content")
+        Just "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
+        Just "commit" -> Commit
+            <$> (encodeRef     <$> v .: "tree")
+            <*> (map encodeRef <$> v .: "parents")
+            <*>                    v .: "author"
+            <*>                    v .: "committer"
+            <*> (encodeBS      <$> v .: "message")
+        Just "tag" -> Tag
+            <$> (encodeRef <$> v .: "object")
+            <*> (T.unpack  <$> v .: "type")
+            <*> (T.unpack  <$> v .: "name")
+            <*>                v .: "tagger"
+            <*> (encodeBS  <$> v .: "annotation")
+        _ -> empty
+    parseJSON _ = empty
+
+instance FromJSON TreeEntry where
+    parseJSON (Object v) = TreeEntry
+        <$> (readOctal    <$> v .: "mode")
+        <*> (E.encodeUtf8 <$> v .: "name")
+        <*> (E.encodeUtf8 <$> v .: "ref")
+        where readOctal = fst . head . readOct . T.unpack
+    parseJSON _ = empty
+
+instance FromJSON PersonTime where
+    parseJSON (Object v) = PersonTime
+        <$> (E.encodeUtf8 <$> v .: "name")
+        <*> (E.encodeUtf8 <$> v .: "mail")
+        <*> (E.encodeUtf8 <$> v .: "time")
+        <*> (E.encodeUtf8 <$> v .: "zone")
+    parseJSON _ = empty

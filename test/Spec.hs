@@ -20,7 +20,6 @@ import Prelude hiding (lines, readFile)
 
 import Duffer
 import Duffer.Loose.Objects
-import Duffer.Loose.JSON()
 import Duffer.Pack
 import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
