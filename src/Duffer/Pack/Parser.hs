@@ -100,8 +100,7 @@ parseTypeLen = do
     return (packType, size)
 
 parseDeltaInstruction :: Parser DeltaInstruction
-parseDeltaInstruction = do
-    instruction <- fromIntegral <$> anyWord8
+parseDeltaInstruction = fromIntegral <$> anyWord8 >>= \instruction ->
     if testMSB instruction
         then parseCopyInstruction   instruction
         else parseInsertInstruction instruction
