@@ -2,20 +2,23 @@ module Duffer.Pack.Parser where
 
 import qualified Data.ByteString      as B
 import qualified Data.ByteString.Lazy as L
+import qualified Data.Map.Strict      as M
 
 import Data.Attoparsec.ByteString
 import Data.Bits
 
-import Codec.Compression.Zlib (decompress)
-import Control.Monad          (zipWithM)
-import Data.List              (foldl')
-import GHC.Word               (Word8)
+import Codec.Compression.Zlib           (decompress)
+import Control.Applicative              ((<|>))
+import Control.Monad                    (zipWithM)
+import Data.Attoparsec.ByteString.Char8 (char, space)
+import Data.List                        (foldl')
+import GHC.Word                         (Word8)
 
 import Prelude hiding (take)
 
 import Duffer.Loose.Objects
 import Duffer.Loose.Parser (parseBinRef, parseBlob, parseTree, parseCommit
-                           ,parseTag)
+                           ,parseTag, parseRestOfLine, parseHexRef)
 import Duffer.Pack.Entries
 
 hashResolved :: PackObjectType -> PackDecompressed B.ByteString -> Ref
@@ -40,9 +43,8 @@ parsePackIndex = do
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
 parsePackIndexUptoRefs :: Parser [Ref]
-parsePackIndexUptoRefs = do
-    total <- parsePackIndexHeader *> fmap last parsePackIndexTotals
-    parsePackIndexRefs total
+parsePackIndexUptoRefs = parsePackIndexHeader
+    *> fmap last parsePackIndexTotals >>= parsePackIndexRefs
 
 parsePackIndexHeader :: Parser ()
 parsePackIndexHeader = word8s start *> word8s version *> pure ()
@@ -75,11 +77,10 @@ littleEndian = foldr  (\a b -> a + (b `shiftL` 7)) 0
 bigEndian    = foldl' (\a b -> (a `shiftL` 7) + b) 0
 
 parseOffset :: (Bits t, Integral t) => Parser t
-parseOffset = do
-    values <- parseVarInt
-    let len = length values - 1
-    let concatenated = bigEndian values
-    return $ concatenated + if len > 0
+parseOffset = parseVarInt >>= \values ->
+    let len          = length values - 1
+        concatenated = bigEndian values
+    in return $ concatenated + if len > 0
         -- I think the addition reinstates the MSBs that are otherwise
         -- used to indicate whether there is more of the variable length
         -- integer to parse.
@@ -145,25 +146,22 @@ parseObjectContent t = case t of
     _            -> error "deltas must be resolved first"
 
 parseDecompressed :: Parser (PackDecompressed B.ByteString)
-parseDecompressed = do
-    compressed       <- takeLazyByteString
+parseDecompressed = takeLazyByteString >>= \compressed ->
     let level        =  getCompressionLevel $ L.head $ L.drop 1 compressed
-    let decompressed =  L.toStrict $ decompress compressed
-    return $ PackDecompressed level decompressed
+        decompressed =  L.toStrict $ decompress compressed
+    in return $ PackDecompressed level decompressed
 
 parseFullObject :: PackObjectType -> Parser PackedObject
-parseFullObject objectType = do
-    decompressed <- parseDecompressed
+parseFullObject objectType = parseDecompressed >>= \decompressed ->
     let ref = hashResolved objectType decompressed
-    return $ PackedObject objectType ref decompressed
+    in return $ PackedObject objectType ref decompressed
 
 parseOfsDelta, parseRefDelta :: Parser PackDelta
 parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
 parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
 parseDecompressedDelta :: Parser (PackDecompressed Delta)
-parseDecompressedDelta = do
-    packCompressed <- parseDecompressed
+parseDecompressedDelta = parseDecompressed >>= \packCompressed ->
     return $ (either error id . parseOnly parseDelta) <$> packCompressed
 
 parsePackRegion :: Parser PackEntry
@@ -184,3 +182,16 @@ parsedPackIndexRefs = either error id . parseOnly parsePackIndexUptoRefs
 parsePackFileHeader :: Parser Int
 parsePackFileHeader =
     word8s (B.unpack "PACK") *> take 4 *> (fromBytes <$> take 4)
+
+parsePackRefsHeader, parseCaret :: Parser (M.Map B.ByteString Ref)
+parsePackRefsHeader = char '#' *> parseRestOfLine *> return M.empty
+parseCaret          = char '^' *> parseRestOfLine *> return M.empty
+
+parsePackRef :: Parser (M.Map B.ByteString Ref)
+parsePackRef = flip M.singleton
+    <$> (parseHexRef <* space)
+    <*>  parseRestOfLine
+
+parsePackRefs :: Parser (M.Map B.ByteString Ref)
+parsePackRefs = parsePackRefsHeader
+    >> foldr M.union M.empty <$> many' (parseCaret <|> parsePackRef)
