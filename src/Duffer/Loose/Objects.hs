@@ -4,6 +4,7 @@ module Duffer.Loose.Objects where
 
 import qualified Data.ByteArray.Encoding   as E
 import qualified Data.ByteString           as B
+import qualified Data.ByteString.Base16    as B16 (decode)
 import qualified Data.ByteString.Base64    as B64
 import qualified Data.ByteString.Builder   as BB
 import qualified Data.ByteString.Lazy      as L
@@ -19,7 +20,6 @@ import Crypto.Hash.Algorithms (SHA1)
 import Data.Aeson
 import Data.Byteable
 import Data.ByteString.UTF8   (fromString, toString)
-import Data.ByteString.Base16 (decode)
 import Data.List              (intercalate)
 import Data.Monoid            ((<>))
 import Data.Set               (Set, toAscList)
@@ -39,8 +39,8 @@ data GitObject
         }
     | Tag
         { objectRef  :: Ref
-        , objectType :: String
-        , tagName    :: String
+        , objectType :: B.ByteString
+        , tagName    :: B.ByteString
         , tagger     :: PersonTime
         , annotation :: B.ByteString
         }
@@ -94,7 +94,7 @@ instance Ord TreeEntry where
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
         mode' = fromString $ printf "%o" mode
-        sha1' = fst $ Data.ByteString.Base16.decode sha1
+        sha1' = fst $ B16.decode sha1
         in B.concat [mode', " ", name, "\NUL", sha1']
 
 instance Byteable GitObject where
@@ -121,21 +121,21 @@ showContent gitObject = case gitObject of
     Blob content -> BB.byteString content
     Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
-        [                 "tree"      ?  treeRef
-        , mconcat $ map ("parent"     ?) parentRefs
-        ,                 "author"    ?  toBytes authorTime
-        ,                 "committer" ?  toBytes committerTime
-        ,                 "\n"        ,  BB.byteString message
+        [                "tree"      ?  treeRef
+        , mconcat $ map ("parent"    ?) parentRefs
+        ,                "author"    ?  toBytes authorTime
+        ,                "committer" ?  toBytes committerTime
+        ,                "\n"        ,  BB.byteString message
         ]
     Tag {..} -> mconcat
         [ "object" ?               objectRef
-        , "type"   ?    fromString objectType
-        , "tag"    ?    fromString tagName
+        , "type"   ?               objectType
+        , "tag"    ?               tagName
         , "tagger" ?       toBytes tagger
         , "\n"     , BB.byteString annotation
         ]
-    where (?) prefix value =
-            mconcat $ map BB.byteString [prefix, " ", value, "\n"]
+    where (?) key value =
+            mconcat $ map BB.byteString [key, " ", value, "\n"]
 
 hash :: GitObject -> Ref
 hash = E.convertToBase E.Base16 . hashWith (undefined :: SHA1) . toBytes
@@ -175,8 +175,8 @@ gitObjectPairs obj = case obj of
     Tag {..} ->
         [ "object_type" .= String "tag"
         , "object"      .= decodeRef objectRef
-        , "type"        .= T.pack objectType
-        , "name"        .= T.pack tagName
+        , "type"        .= decodeBS objectType
+        , "name"        .= decodeBS tagName
         , "tagger"      .= tagger
         , "annotation"  .= decodeBS annotation
         ]
@@ -220,8 +220,8 @@ instance FromJSON GitObject where
             <*> (encodeBS      <$> v .: "message")
         Just "tag" -> Tag
             <$> (encodeRef <$> v .: "object")
-            <*> (T.unpack  <$> v .: "type")
-            <*> (T.unpack  <$> v .: "name")
+            <*> (encodeBS  <$> v .: "type")
+            <*> (encodeBS  <$> v .: "name")
             <*>                v .: "tagger"
             <*> (encodeBS  <$> v .: "annotation")
         _ -> empty

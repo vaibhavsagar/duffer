@@ -7,7 +7,7 @@ import Prelude                          hiding (take)
 
 import Data.Attoparsec.ByteString
 import Data.ByteString.Base16     (encode)
-import Data.ByteString.UTF8       (fromString, toString)
+import Data.ByteString.UTF8       (fromString)
 import Data.Set                   (fromList)
 import Numeric                    (readOct)
 
@@ -19,8 +19,8 @@ parseNull = char '\NUL'
 parseHeader :: B.ByteString -> Parser String
 parseHeader = (*> digit `manyTill` parseNull) . (*> space) . string
 
-parseRestOfLine :: Parser String
-parseRestOfLine = toString <$> takeTill (==10) <* endOfLine
+parseRestOfLine :: Parser B.ByteString
+parseRestOfLine = takeTill (==10) <* endOfLine
 
 parseMessage :: Parser B.ByteString
 parseMessage = endOfLine *> takeByteString
@@ -47,7 +47,7 @@ parsePersonTime = PersonTime
     <$> (B.pack     <$> anyWord8 `manyTill` string " <")
     <*> (B.pack     <$> anyWord8 `manyTill` string "> ")
     <*> (fromString <$> digit    `manyTill` space)
-    <*> (fromString <$> parseRestOfLine)
+    <*> parseRestOfLine
 
 parseCommit :: Parser GitObject
 parseCommit = Commit
