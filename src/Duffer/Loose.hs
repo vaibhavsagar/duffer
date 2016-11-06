@@ -54,11 +54,19 @@ writeLooseObject object = let sha1 = hash object in do
 hasLooseObject :: Ref -> WithRepo Bool
 hasLooseObject ref = asks (sha1Path ref) >>= liftIO . doesFileExist
 
-resolveRef :: FilePath -> WithRepo GitObject
-resolveRef refPath = do
-    path <- asks (</> refPath)
-    ref  <- liftIO $ init <$> readFile path
-    fromJust <$> readLooseObject ref
+readLooseRef :: FilePath -> WithRepo (Maybe Ref)
+readLooseRef refPath = do
+    path   <- asks (</> refPath)
+    exists <- liftIO $ doesFileExist path
+    if exists
+        then do
+            ref <- liftIO $ init <$> readFile path
+            return $ Just ref
+        else return Nothing
+
+resolveRef :: FilePath -> WithRepo (Maybe GitObject)
+resolveRef refPath = readLooseRef refPath
+    >>= maybe (return Nothing) readLooseObject
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = do
