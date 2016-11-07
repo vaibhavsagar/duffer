@@ -42,16 +42,14 @@ loopEntries producer offset remaining indexedMap = case remaining of
     _ -> do
         (header, ref, decompressedP, level) <- evalStateT getNextEntry producer
         step   <- next decompressedP
-        let (decompressed, eitherP) = case step of
-                (Right (d, p)) -> (d,  p)
-                (Left  p')     -> ("", return p')
+        let (decompressed, eitherP) = either ((,) "" . return) id step
         (output, producer') <- advanceToCompletion decompressed eitherP
         let content     = B.concat [header, ref, compressToLevel level output]
         let indexedMap' = M.insert offset content indexedMap
         let offset'     = offset + B.length content
         let remaining'  = remaining - 1
         loopEntries producer' offset' remaining' indexedMap'
-     where
+    where
         getNextEntry = do
             (Right tLen) <- fromJust <$> PA.parse parseTypeLen
             baseRef <- case fst tLen of
