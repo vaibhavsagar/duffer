@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Duffer.Pack.Streaming where
 
 import Control.Arrow (first)
@@ -37,18 +39,17 @@ loopEntries
     -> Int                        -- number of entries remaining
     -> SeparatedEntries           -- map of offsets to bytestrings
     -> IO (SeparatedEntries, Producer B.ByteString IO a)
-loopEntries producer offset remaining indexedMap = case remaining of
-    0 -> return (indexedMap, producer)
-    _ -> do
-        (header, ref, decompressedP, level) <- evalStateT getNextEntry producer
-        step   <- next decompressedP
-        let (decompressed, eitherP) = either ((,) "" . return) id step
-        (output, producer') <- advanceToCompletion decompressed eitherP
-        let content     = B.concat [header, ref, compressToLevel level output]
-        let indexedMap' = M.insert offset content indexedMap
-        let offset'     = offset + B.length content
-        let remaining'  = remaining - 1
-        loopEntries producer' offset' remaining' indexedMap'
+loopEntries producer _      0         indexedMap = return (indexedMap, producer)
+loopEntries producer offset remaining indexedMap = do
+    (header, ref, decompressedP, level) <- evalStateT getNextEntry producer
+    step   <- next decompressedP
+    let (decompressed, eitherP) = either ((,) "" . return) id step
+    (output, producer') <- advanceToCompletion decompressed eitherP
+    let content     = B.concat [header, ref, compressToLevel level output]
+    let indexedMap' = M.insert offset content indexedMap
+    let offset'     = offset + B.length content
+    let remaining'  = remaining - 1
+    loopEntries producer' offset' remaining' indexedMap'
     where
         getNextEntry = do
             (Right tLen) <- fromJust <$> PA.parse parseTypeLen
@@ -66,9 +67,8 @@ loopEntries producer offset remaining indexedMap = case remaining of
             levelByte <- fromJust <$> PB.peekByte
             let level = getCompressionLevel levelByte
             return (uncurry encodeTypeLen tLen, baseRef, decompressed, level)
-        advanceToCompletion decompressed producer = next producer >>= \step ->
-            case step of
-                (Left (Left p)) -> return (decompressed, p)
-                (Right (d, p')) ->
-                    first (B.append decompressed) <$> advanceToCompletion d p'
-                _               -> error "No idea how to handle Left (Right _)"
+        advanceToCompletion decompressed producer = next producer >>= \case
+            (Left (Left p)) -> return (decompressed, p)
+            (Right (d, p')) ->
+                first (B.append decompressed) <$> advanceToCompletion d p'
+            _               -> error "No idea how to handle Left (Right _)"
