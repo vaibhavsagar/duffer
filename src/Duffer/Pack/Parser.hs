@@ -195,3 +195,6 @@ parsePackRef = flip M.singleton
 parsePackRefs :: Parser (M.Map B.ByteString Ref)
 parsePackRefs = parsePackRefsHeader
     >> foldr M.union M.empty <$> many' (parseCaret <|> parsePackRef)
+
+parsedPackRefs :: B.ByteString -> M.Map B.ByteString Ref
+parsedPackRefs = either error id . parseOnly parsePackRefs

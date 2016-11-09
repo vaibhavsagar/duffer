@@ -1,12 +1,13 @@
 module Duffer.Pack where
 
-import qualified Data.ByteString as B
-import qualified Data.Map.Strict as Map
+import qualified Data.ByteString      as B
+import qualified Data.ByteString.UTF8 as BU
+import qualified Data.Map.Strict      as Map
 
 import Control.Monad              (filterM)
 import GHC.Int                    (Int64)
 import System.IO.MMap             (mmapFileByteString)
-import System.FilePath            ((-<.>), combine, takeExtension)
+import System.FilePath            ((</>), (-<.>), combine, takeExtension)
 import System.Directory           (getDirectoryContents)
 
 import Duffer.Loose.Objects (GitObject, Ref)
@@ -46,10 +47,8 @@ readPacked ref path = do
     indices <- getPackIndices path
     matches <- filterM (hasPacked ref) indices
     case matches of
-        []        -> return Nothing
-        (index:_) -> do
-            entryMap <- combinedEntryMap index
-            return $ resolveEntry entryMap ref
+        []      -> return Nothing
+        index:_ -> flip resolveEntry ref <$> combinedEntryMap index
 
 getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
 getPackFileEntry packFilePath rangeMap index =
@@ -67,12 +66,12 @@ indexedEntryMap = fmap (Map.map parsedPackRegion) . indexedByteStringMap
 
 indexedByteStringMap :: FilePath -> IO (Map.Map Int B.ByteString)
 indexedByteStringMap indexPath = do
-    offsetMap     <- makeOffsetMap <$> B.readFile indexPath
-    let filePath  =  packFile indexPath
-    contentEnd    <- B.length <$> B.readFile filePath
-    let indices   =  Map.keys offsetMap
-    let rangeMap  =  Map.insert (contentEnd - 20) "" offsetMap
-    entries       <- mapM (getPackRegion filePath rangeMap) indices
+    offsetMap    <- makeOffsetMap <$> B.readFile indexPath
+    let filePath =  packFile indexPath
+    contentEnd   <- B.length <$> B.readFile filePath
+    let indices  =  Map.keys offsetMap
+    let rangeMap =  Map.insert (contentEnd - 20) "" offsetMap
+    entries      <- mapM (getPackRegion filePath rangeMap) indices
     return $ Map.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
@@ -85,3 +84,17 @@ resolveAll indexPath = do
     combined         <- combinedEntryMap indexPath
     let reconstitute =  unpackObject . resolveDelta combined
     return $ map reconstitute $ Map.elems (getRefIndex combined)
+
+readPackRef :: FilePath -> WithRepo (Maybe Ref)
+readPackRef refPath = do
+    refsPath <- asks (</> "packed-refs")
+    content  <- liftIO $ B.readFile refsPath
+    let refs = parsedPackRefs content
+    return $ Map.lookup (BU.fromString refPath) refs
+
+resolvePackRef :: FilePath -> WithRepo (Maybe GitObject)
+resolvePackRef refPath = do
+    maybeRef <- readPackRef refPath
+    case maybeRef of
+        Nothing  -> return Nothing
+        Just ref -> readPackObject ref
