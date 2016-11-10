@@ -55,8 +55,8 @@ getPackFileEntry packFilePath rangeMap index =
     parsedPackRegion <$> getPackRegion packFilePath rangeMap index
 
 getPackRegion :: FilePath -> Map.Map Int B.ByteString -> Int -> IO B.ByteString
-getPackRegion packFilePath rangeMap index =
-    packFileRegion packFilePath (region rangeMap index)
+getPackRegion packFilePath rangeMap =
+    packFileRegion packFilePath . region rangeMap
 
 packFileRegion :: FilePath -> Maybe (Int64, Int) -> IO B.ByteString
 packFileRegion = mmapFileByteString
