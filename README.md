@@ -40,7 +40,7 @@ library:
 
 1. [Set up `stack`](https://docs.haskellstack.org/en/stable/README/) if you
    haven't already.
-1. Clone this repository: `git clone git@github.com:vaibhavsagar/duffer.hs.git`
+1. Clone this repository: `git clone git@github.com:vaibhavsagar/duffer.git`
 1. `cd duffer`
 1. `stack test`
 1. Tests should all pass. If they don't, please open an issue.
