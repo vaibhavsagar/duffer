@@ -129,7 +129,7 @@ parseCopyInstruction byte = CopyInstruction
         return $ if len == 0 then 0x10000 else len)
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
-          readShift more shift = if more
+          readShift present shift = if present
             then (`shiftL` shift) <$> (fromIntegral <$> anyWord8)
             else return 0
 
