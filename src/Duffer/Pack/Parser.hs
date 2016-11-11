@@ -147,8 +147,8 @@ parseObjectContent t = case t of
 
 parseDecompressed :: Parser (PackDecompressed B.ByteString)
 parseDecompressed = takeLazyByteString >>= \compressed ->
-    let level        =  getCompressionLevel $ L.head $ L.drop 1 compressed
-        decompressed =  L.toStrict $ decompress compressed
+    let level        = getCompressionLevel $ L.head $ L.drop 1 compressed
+        decompressed = L.toStrict $ decompress compressed
     in return $ PackDecompressed level decompressed
 
 parseFullObject :: PackObjectType -> Parser PackedObject
