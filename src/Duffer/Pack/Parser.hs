@@ -183,14 +183,11 @@ parsePackFileHeader :: Parser Int
 parsePackFileHeader =
     word8s (B.unpack "PACK") *> take 4 *> (fromBytes <$> take 4)
 
-parsePackRefsHeader, parseCaret :: Parser (M.Map B.ByteString Ref)
+parsePackRefsHeader, parseCaret, parsePackRef :: Parser (M.Map B.ByteString Ref)
 parsePackRefsHeader = char '#' *> parseRestOfLine *> return M.empty
 parseCaret          = char '^' *> parseRestOfLine *> return M.empty
-
-parsePackRef :: Parser (M.Map B.ByteString Ref)
-parsePackRef = flip M.singleton
-    <$> (parseHexRef <* space)
-    <*>  parseRestOfLine
+parsePackRef        =
+    flip M.singleton <$> (parseHexRef <* space) <*> parseRestOfLine
 
 parsePackRefs :: Parser (M.Map B.ByteString Ref)
 parsePackRefs = parsePackRefsHeader
