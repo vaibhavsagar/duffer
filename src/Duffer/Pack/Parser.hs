@@ -11,6 +11,7 @@ import Codec.Compression.Zlib           (decompress)
 import Control.Applicative              ((<|>))
 import Control.Monad                    (zipWithM)
 import Data.Attoparsec.ByteString.Char8 (char, space)
+import Data.Bool                        (bool)
 import Data.List                        (foldl')
 import GHC.Word                         (Word8)
 
@@ -67,7 +68,7 @@ parseVarInt :: (Bits t, Integral t) => Parser [t]
 parseVarInt = anyWord8 >>= \byte ->
     let value = fromIntegral $ byte .&. 127
         more  = testMSB byte
-    in (value:) <$> if more then parseVarInt else return []
+    in (value:) <$> bool (return []) parseVarInt more
 
 testMSB :: Bits t => t -> Bool
 testMSB = flip testBit 7
@@ -80,31 +81,29 @@ parseOffset :: (Bits t, Integral t) => Parser t
 parseOffset = parseVarInt >>= \values ->
     let len          = length values - 1
         concatenated = bigEndian values
-    in return $ concatenated + if len > 0
+    in return $ concatenated + bool
         -- I think the addition reinstates the MSBs that are otherwise
         -- used to indicate whether there is more of the variable length
         -- integer to parse.
-        then sum $ map (\i -> 2^(7*i)) [1..len]
-        else 0
+        0
+        (sum $ map (\i -> 2^(7*i)) [1..len])
+        (len > 0)
 
 parseTypeLen :: (Bits t, Integral t) => Parser (PackObjectType, t)
 parseTypeLen = do
     header <- anyWord8
-    let packType = packObjectType header
     let initial  = fromIntegral $ header .&. 15
-    size <- if testMSB header
-        then do
-            rest <- littleEndian <$> parseVarInt
-            return $ initial + (rest `shiftL` 4)
-        else
-            return initial
+    let packType = packObjectType header
+    size <- (+) initial <$> bool
+        (return 0)
+        ((`shiftL` 4) <$> (littleEndian <$> parseVarInt))
+        (testMSB header)
     return (packType, size)
 
 parseDeltaInstruction :: Parser DeltaInstruction
 parseDeltaInstruction = fromIntegral <$> anyWord8 >>= \instruction ->
-    if testMSB instruction
-        then parseCopyInstruction   instruction
-        else parseInsertInstruction instruction
+    bool parseInsertInstruction parseCopyInstruction (testMSB instruction)
+        instruction
 
 parseInsertInstruction :: Int -> Parser DeltaInstruction
 parseInsertInstruction len = InsertInstruction <$> take len
@@ -126,12 +125,13 @@ parseCopyInstruction byte = CopyInstruction
     -}
     <$>  getVarInt [0..3] [0,8..24]
     <*> (getVarInt [4..6] [0,8..16] >>= \len ->
-        return $ if len == 0 then 0x10000 else len)
+        return $ bool len 0x10000 (len == 0))
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
-          readShift present shift = if present
-            then (`shiftL` shift) <$> (fromIntegral <$> anyWord8)
-            else return 0
+          readShift present shift = bool
+            (return 0)
+            ((`shiftL` shift) <$> (fromIntegral <$> anyWord8))
+            present
 
 parseDelta :: Parser Delta
 parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction

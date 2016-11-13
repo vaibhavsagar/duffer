@@ -10,6 +10,7 @@ import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
                                   ,doesFileExist, getDirectoryContents)
 import System.FilePath            ((</>))
 import Data.Attoparsec.ByteString (parseOnly)
+import Data.Bool                  (bool)
 import Data.ByteString.UTF8       (fromString)
 import Data.List                  (isPrefixOf, foldl')
 
@@ -32,24 +33,22 @@ fuzzyReadObject search = do
 resolveSymRef :: FilePath -> WithRepo (Maybe Ref)
 resolveSymRef path = do
     symRefPath <- asks (</> path)
-    exists  <- liftIO $ doesFileExist symRefPath
-    if exists
-        then do
+    liftIO (doesFileExist symRefPath) >>= bool
+        (return Nothing)
+        (do
             symRefContents <- liftIO $ readFile symRefPath
             let refPath = init $ drop 5 symRefContents
-            resolveGitRef refPath
-        else return Nothing
+            resolveGitRef refPath)
 
 resolveGitRef :: FilePath -> WithRepo (Maybe Ref)
 resolveGitRef path = do
     refPath <- asks (</> path)
-    exists  <- liftIO $ doesFileExist refPath
-    if exists
-        then do
+    liftIO (doesFileExist refPath) >>= bool
+        (return Nothing)
+        (do
             gitRefContents <- liftIO $ B.readFile refPath
             return $ either (const Nothing) Just $
-                    parseOnly parseHexRef gitRefContents
-        else return Nothing
+                    parseOnly parseHexRef gitRefContents)
 
 listDirectory :: FilePath -> IO [FilePath]
 listDirectory =
@@ -59,16 +58,16 @@ resolvePartialRef :: String -> WithRepo (Maybe Ref)
 resolvePartialRef search = do
     let dir = take 2 search
     objectDir <- asks (</> "objects" </> dir)
-    exists  <- liftIO $ doesDirectoryExist objectDir
-    if exists
-        then do
+    liftIO (doesDirectoryExist objectDir) >>= bool
+        (return Nothing)
+        (do
             let rest = drop 2 search
-            possible <- liftIO $ listDirectory objectDir
+            possible <- liftIO (listDirectory objectDir)
             let filtered = filter (isPrefixOf rest) possible
-            if length filtered == 1
-                then return $ Just $ fromString $ dir ++ head filtered
-                else return Nothing
-        else return Nothing
+            return $ bool
+                Nothing
+                (Just $ fromString $ dir ++ head filtered)
+                (length filtered == 1))
 
 initRepo :: WithRepo ()
 initRepo = do

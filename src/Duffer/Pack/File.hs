@@ -3,6 +3,7 @@ module Duffer.Pack.File where
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 
+import Data.Bool            (bool)
 import Data.Tuple           (swap)
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
@@ -72,9 +73,10 @@ resolveIter objectMap offsetMap = let
     (objectMap', offsetMap') = separateResolved objectMap offsetMap
     resolve                  = resolveIfPossible objectMap'
     offsetMap''              = Map.mapWithKey resolve offsetMap'
-    in if Map.size offsetMap' < Map.size offsetMap
-        then resolveIter objectMap' offsetMap''
-        else error "cannot progress"
+    in bool
+        (error "cannot progress")
+        (resolveIter objectMap' offsetMap'')
+        (Map.size offsetMap' < Map.size offsetMap)
 
 separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
 separateResolved objectMap offsetMap = let

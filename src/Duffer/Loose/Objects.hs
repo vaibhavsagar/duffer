@@ -18,6 +18,7 @@ import Control.Applicative    (empty)
 import Crypto.Hash            (hashWith)
 import Crypto.Hash.Algorithms (SHA1)
 import Data.Aeson
+import Data.Bool              (bool)
 import Data.Byteable
 import Data.ByteString.UTF8   (fromString, toString)
 import Data.List              (intercalate)
@@ -89,7 +90,7 @@ instance Show TreeEntry where
 instance Ord TreeEntry where
     compare t1 t2 = compare (sortableName t1) (sortableName t2)
         where sortableName (TreeEntry mode name _) = name `B.append`
-                if mode == 0o040000 || mode == 0o160000 then "/" else ""
+                bool "" "/" (mode == 0o040000 || mode == 0o160000)
 
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let

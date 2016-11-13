@@ -8,6 +8,7 @@ import Data.Byteable
 import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Bits
+import Data.Bool               (bool)
 import Data.Digest.CRC32
 import Data.List (foldl')
 import Data.Word (Word8, Word32)
@@ -114,20 +115,19 @@ encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjType len = let
     (last4, rest) = packEntryLenList len
     firstByte     = (fromEnum packObjType `shiftL` 4) .|. last4
-    firstByte'    = if rest /= "" then setBit firstByte 7 else firstByte
+    firstByte'    = bool firstByte (setBit firstByte 7) (rest /= "")
     in B.cons (fromIntegral firstByte') rest
 
 packEntryLenList :: Int -> (Int, B.ByteString)
 packEntryLenList n = let
     last4  = fromIntegral n .&. 15
     rest   = fromIntegral n `shiftR` 4 :: Int
-    last4' = if rest > 0
-        then setBit last4 7
-        else last4
+    last4' = bool last4 (setBit last4 7) (rest > 0)
     restL  = to7BitList rest
-    restL' = if restL /= [0]
-        then map fromIntegral $ head restL:map (`setBit` 7) (tail restL)
-        else []
+    restL' = bool
+        []
+        (map fromIntegral $ head restL:map (`setBit` 7) (tail restL))
+        (restL /= [0])
     in (last4', B.pack $ reverse restL')
 
 instance Byteable PackDelta where
@@ -201,9 +201,7 @@ instance Byteable DeltaInstruction where
               padFalse :: [Bool] -> Int -> [Bool]
               padFalse bits len = let
                 pad = len - length bits
-                in if pad > 0
-                    then replicate pad False ++ bits
-                    else bits
+                in bool bits (replicate pad False ++ bits) (pad > 0)
               boolsToByte :: Int -> [Bool] -> Int
               boolsToByte = foldl' (\acc b -> shiftL acc 1 + fromEnum b)
 

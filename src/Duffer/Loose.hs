@@ -5,6 +5,7 @@ import qualified Codec.Compression.Zlib as Z (compress, decompress)
 
 import Control.Monad              (unless)
 import Data.Attoparsec.ByteString (parseOnly)
+import Data.Bool                  (bool)
 import Data.ByteString            (ByteString, append, readFile, writeFile
                                   ,init)
 import Data.Maybe                 (fromJust)
@@ -32,15 +33,13 @@ decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
 readLooseObject :: Ref -> WithRepo (Maybe GitObject)
-readLooseObject ref = do
-    exists  <- hasLooseObject ref
-    if exists
-        then do
-            path       <- asks (sha1Path ref)
-            content    <- liftIO $ decompress <$> readFile path
-            let parsed =  parseOnly parseObject content
-            return $ either (const Nothing) Just parsed
-        else return Nothing
+readLooseObject ref = hasLooseObject ref >>= bool
+    (return Nothing)
+    (do
+        path       <- asks (sha1Path ref)
+        content    <- liftIO $ decompress <$> readFile path
+        let parsed =  parseOnly parseObject content
+        return $ either (const Nothing) Just parsed)
 
 writeLooseObject :: GitObject -> WithRepo Ref
 writeLooseObject object = let sha1 = hash object in do
@@ -55,14 +54,12 @@ hasLooseObject :: Ref -> WithRepo Bool
 hasLooseObject ref = asks (sha1Path ref) >>= liftIO . doesFileExist
 
 readLooseRef :: FilePath -> WithRepo (Maybe Ref)
-readLooseRef refPath = do
-    path   <- asks (</> refPath)
-    exists <- liftIO $ doesFileExist path
-    if exists
-        then do
-            ref <- liftIO $ init <$> readFile path
-            return $ Just ref
-        else return Nothing
+readLooseRef refPath = hasLooseRef refPath >>= bool
+    (return Nothing)
+    (do
+        path <- asks (</> refPath)
+        ref  <- liftIO $ init <$> readFile path
+        return $ Just ref)
 
 resolveRef :: FilePath -> WithRepo (Maybe GitObject)
 resolveRef refPath = readLooseRef refPath
