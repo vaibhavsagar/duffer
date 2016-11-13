@@ -53,6 +53,9 @@ writeLooseObject object = let sha1 = hash object in do
 hasLooseObject :: Ref -> WithRepo Bool
 hasLooseObject ref = asks (sha1Path ref) >>= liftIO . doesFileExist
 
+hasLooseRef :: FilePath -> WithRepo Bool
+hasLooseRef refPath = asks (</> refPath) >>= liftIO . doesFileExist
+
 readLooseRef :: FilePath -> WithRepo (Maybe Ref)
 readLooseRef refPath = hasLooseRef refPath >>= bool
     (return Nothing)
