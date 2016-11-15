@@ -64,8 +64,8 @@ readLooseRef refPath = hasLooseRef refPath >>= bool
         ref  <- liftIO $ init <$> readFile path
         return $ Just ref)
 
-resolveRef :: FilePath -> WithRepo (Maybe GitObject)
-resolveRef refPath = readLooseRef refPath
+resolveLooseRef :: FilePath -> WithRepo (Maybe GitObject)
+resolveLooseRef refPath = readLooseRef refPath
     >>= maybe (return Nothing) readLooseObject
 
 updateRef :: FilePath -> GitObject -> WithRepo Ref

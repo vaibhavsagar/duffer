@@ -14,3 +14,8 @@ readObject ref = hasLooseObject ref >>= bool
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject = writeLooseObject
+
+resolveRef :: FilePath -> WithRepo (Maybe GitObject)
+resolveRef refPath = hasLooseRef refPath >>= bool
+    (resolveLooseRef refPath)
+    (resolvePackRef  refPath)
