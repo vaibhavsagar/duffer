@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Duffer.Pack.Streaming where
+module Duffer.Pack.Streaming (indexPackFile) where
 
 import Control.Arrow (first)
 import Control.Monad.Trans.State.Strict
