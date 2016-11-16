@@ -4,11 +4,12 @@ import qualified Data.ByteString      as B
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.Map.Strict      as Map
 
+import Data.Bool                  (bool)
 import Control.Monad              (filterM)
 import GHC.Int                    (Int64)
 import System.IO.MMap             (mmapFileByteString)
 import System.FilePath            ((</>), (-<.>), combine, takeExtension)
-import System.Directory           (getDirectoryContents)
+import System.Directory           (getDirectoryContents, doesFileExist)
 
 import Duffer.Loose.Objects (GitObject, Ref)
 import Duffer.Pack.Entries
@@ -88,9 +89,12 @@ resolveAll indexPath = do
 readPackRef :: FilePath -> WithRepo (Maybe Ref)
 readPackRef refPath = do
     refsPath <- asks (</> "packed-refs")
-    content  <- liftIO $ B.readFile refsPath
-    let refs = parsedPackRefs content
-    return $ Map.lookup (BU.fromString refPath) refs
+    liftIO (doesFileExist refsPath) >>= bool
+        (return Nothing)
+        (do
+            content  <- liftIO $ B.readFile refsPath
+            let refs = parsedPackRefs content
+            return $ Map.lookup (BU.fromString refPath) refs)
 
 resolvePackRef :: FilePath -> WithRepo (Maybe GitObject)
 resolvePackRef refPath = do
