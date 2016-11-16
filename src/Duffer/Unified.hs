@@ -17,5 +17,13 @@ writeObject = writeLooseObject
 
 resolveRef :: FilePath -> WithRepo (Maybe GitObject)
 resolveRef refPath = hasLooseRef refPath >>= bool
-    (resolvePackRef  refPath)
-    (resolveLooseRef refPath)
+    (resolvePackRef'  refPath)
+    (resolveLooseRef' refPath)
+
+resolveLooseRef' :: FilePath -> WithRepo (Maybe GitObject)
+resolveLooseRef' refPath = readLooseRef refPath >>=
+    maybe (return Nothing) readObject
+
+resolvePackRef' :: FilePath -> WithRepo (Maybe GitObject)
+resolvePackRef' refPath = readPackRef refPath >>=
+    maybe (return Nothing) readObject
