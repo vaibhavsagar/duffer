@@ -1,5 +1,7 @@
 module Duffer.Unified where
 
+import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
+import Control.Applicative ((<|>))
 import Data.Bool (bool)
 
 import Duffer.Loose
@@ -8,9 +10,8 @@ import Duffer.Pack
 import Duffer.WithRepo
 
 readObject :: Ref -> WithRepo (Maybe GitObject)
-readObject ref = hasLooseObject ref >>= bool
-    (readPackObject  ref)
-    (readLooseObject ref)
+readObject ref = runMaybeT $
+    MaybeT (readLooseObject ref) <|> MaybeT (readPackObject ref)
 
 writeObject :: GitObject -> WithRepo Ref
 writeObject = writeLooseObject
@@ -19,6 +20,10 @@ resolveRef :: FilePath -> WithRepo (Maybe GitObject)
 resolveRef refPath = hasLooseRef refPath >>= bool
     (resolvePackRef'  refPath)
     (resolveLooseRef' refPath)
+
+readRef :: FilePath -> WithRepo (Maybe Ref)
+readRef refPath = runMaybeT $
+    MaybeT (readLooseRef refPath) <|> MaybeT (readPackRef refPath)
 
 resolveLooseRef' :: FilePath -> WithRepo (Maybe GitObject)
 resolveLooseRef' refPath = readLooseRef refPath >>=
