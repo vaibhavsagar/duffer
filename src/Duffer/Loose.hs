@@ -16,7 +16,7 @@ import Prelude hiding (readFile, writeFile, init)
 
 import Duffer.Loose.Objects (GitObject(..), Ref, sha1Path, hash, showObject)
 import Duffer.Loose.Parser  (parseObject)
-import Duffer.WithRepo      (WithRepo, asks, local, liftIO)
+import Duffer.WithRepo      (WithRepo, asks, localObjects, liftIO)
 
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (~~) object 0 = return (Just object)
@@ -33,7 +33,7 @@ decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
 readLooseObject :: Ref -> WithRepo (Maybe GitObject)
-readLooseObject = local (</> "objects") . readLooseObject'
+readLooseObject = localObjects . readLooseObject'
 
 readLooseObject' :: Ref -> WithRepo (Maybe GitObject)
 readLooseObject' ref = hasLooseObject' ref >>= bool
@@ -45,7 +45,7 @@ readLooseObject' ref = hasLooseObject' ref >>= bool
         return $ either (const Nothing) Just parsed)
 
 writeLooseObject :: GitObject -> WithRepo Ref
-writeLooseObject = local (</> "objects") . writeLooseObject'
+writeLooseObject = localObjects . writeLooseObject'
 
 writeLooseObject' :: GitObject -> WithRepo Ref
 writeLooseObject' object = let sha1 = hash object in do
@@ -57,7 +57,7 @@ writeLooseObject' object = let sha1 = hash object in do
     return sha1
 
 hasLooseObject :: Ref -> WithRepo Bool
-hasLooseObject = local (</> "objects") . hasLooseObject'
+hasLooseObject = localObjects . hasLooseObject'
 
 hasLooseObject' :: Ref -> WithRepo Bool
 hasLooseObject' ref = asks (sha1Path ref) >>= liftIO . doesFileExist

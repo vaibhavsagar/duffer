@@ -28,8 +28,8 @@ region offsetMap offset = let
     in Just (fromIntegral offset, len)
 
 getPackIndices :: FilePath -> IO [FilePath]
-getPackIndices path = let packFilePath = path ++ "/objects/pack" in
-    map (combine packFilePath) . filter (\f -> takeExtension f == ".idx") <$>
+getPackIndices path = let packFilePath = path </> "pack" in
+    map (combine packFilePath) . filter ((==) ".idx" . takeExtension) <$>
     getDirectoryContents packFilePath
 
 hasPacked :: Ref -> FilePath -> IO Bool
@@ -39,7 +39,10 @@ hasPacked ref indexPath = do
     return $ ref `elem` refs
 
 readPackObject :: Ref -> WithRepo (Maybe GitObject)
-readPackObject ref = do
+readPackObject = localObjects . readPackObject'
+
+readPackObject' :: Ref -> WithRepo (Maybe GitObject)
+readPackObject' ref = do
     path <- ask
     liftIO $ readPacked ref path
 

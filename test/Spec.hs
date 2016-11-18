@@ -32,7 +32,7 @@ main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
     let allTypesObjects = mapM objectsOfType objectTypes
     testReading objectTypes =<< allTypesObjects
-    testUnpackingAndWriting =<< getPackIndices ".git"
+    testUnpackingAndWriting =<< getPackIndices ".git/objects"
     testReading objectTypes =<< allTypesObjects
     testJSON objectTypes    =<< allTypesObjects
 
