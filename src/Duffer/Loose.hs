@@ -33,7 +33,10 @@ decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
 
 readLooseObject :: Ref -> WithRepo (Maybe GitObject)
-readLooseObject ref = hasLooseObject ref >>= bool
+readLooseObject = local (</> "objects") . readLooseObject'
+
+readLooseObject' :: Ref -> WithRepo (Maybe GitObject)
+readLooseObject' ref = hasLooseObject' ref >>= bool
     (return Nothing)
     (do
         path       <- asks (sha1Path ref)
@@ -42,16 +45,22 @@ readLooseObject ref = hasLooseObject ref >>= bool
         return $ either (const Nothing) Just parsed)
 
 writeLooseObject :: GitObject -> WithRepo Ref
-writeLooseObject object = let sha1 = hash object in do
+writeLooseObject = local (</> "objects") . writeLooseObject'
+
+writeLooseObject' :: GitObject -> WithRepo Ref
+writeLooseObject' object = let sha1 = hash object in do
     path   <- asks (sha1Path sha1)
-    exists <- liftIO $ doesFileExist path
+    exists <- hasLooseObject' sha1
     liftIO $ unless exists $ do
         createDirectoryIfMissing True (takeDirectory path)
         L.writeFile path $ (Z.compress . showObject) object
     return sha1
 
 hasLooseObject :: Ref -> WithRepo Bool
-hasLooseObject ref = asks (sha1Path ref) >>= liftIO . doesFileExist
+hasLooseObject = local (</> "objects") . hasLooseObject'
+
+hasLooseObject' :: Ref -> WithRepo Bool
+hasLooseObject' ref = asks (sha1Path ref) >>= liftIO . doesFileExist
 
 hasLooseRef :: FilePath -> WithRepo Bool
 hasLooseRef refPath = asks (</> refPath) >>= liftIO . doesFileExist

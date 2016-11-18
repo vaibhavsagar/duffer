@@ -3,10 +3,11 @@ module Duffer.WithRepo
     , ask
     , asks
     , liftIO
+    , local
     , withRepo
     ) where
 
-import Control.Monad.Trans.Reader (ask, asks, runReaderT, ReaderT)
+import Control.Monad.Trans.Reader (ask, asks, local, runReaderT, ReaderT)
 import Control.Monad.IO.Class     (liftIO)
 
 import Duffer.Loose.Objects       (Repo)

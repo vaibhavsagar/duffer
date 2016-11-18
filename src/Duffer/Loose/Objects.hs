@@ -103,7 +103,7 @@ instance Byteable GitObject where
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
-    flip (foldl (</>)) ["objects", [sa, sb], suffix]
+    flip (foldl (</>)) [[sa, sb], suffix]
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> L.ByteString
