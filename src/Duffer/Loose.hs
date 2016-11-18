@@ -16,7 +16,7 @@ import Prelude hiding (readFile, writeFile, init)
 
 import Duffer.Loose.Objects (GitObject(..), Ref, sha1Path, hash, showObject)
 import Duffer.Loose.Parser  (parseObject)
-import Duffer.WithRepo      (WithRepo, asks, liftIO)
+import Duffer.WithRepo      (WithRepo, asks, local, liftIO)
 
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (~~) object 0 = return (Just object)
