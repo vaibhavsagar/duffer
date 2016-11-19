@@ -2,7 +2,6 @@ module Duffer.Unified where
 
 import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import Control.Applicative ((<|>))
-import Data.Bool (bool)
 
 import Duffer.Loose
 import Duffer.Loose.Objects (Ref, GitObject)
@@ -17,9 +16,7 @@ writeObject :: GitObject -> WithRepo Ref
 writeObject = writeLooseObject
 
 resolveRef :: FilePath -> WithRepo (Maybe GitObject)
-resolveRef refPath = hasLooseRef refPath >>= bool
-    (resolvePackRef'  refPath)
-    (resolveLooseRef' refPath)
+resolveRef refPath = readRef refPath >>= maybe (return Nothing) readObject
 
 readRef :: FilePath -> WithRepo (Maybe Ref)
 readRef refPath = runMaybeT $
