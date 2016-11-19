@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Duffer.Pack.Entries where
 
 import qualified Codec.Compression.Zlib as Z
@@ -224,9 +226,9 @@ emptyObjectMap :: ObjectMap
 emptyObjectMap = ObjectMap Map.empty Map.empty
 
 insertObject :: Int -> PackedObject -> ObjectMap -> ObjectMap
-insertObject offset object@(PackedObject _ r _) objectMap = let
-    getObjectMap'   = Map.insert offset object (getObjectMap   objectMap)
-    getObjectIndex' = Map.insert r      offset (getObjectIndex objectMap)
+insertObject offset object@(PackedObject _ r _) ObjectMap {..} = let
+    getObjectMap'   = Map.insert offset object getObjectMap
+    getObjectIndex' = Map.insert r      offset getObjectIndex
     in ObjectMap getObjectMap' getObjectIndex'
 
 fromBytes :: (Bits t, Integral t) => B.ByteString -> t
@@ -253,8 +255,7 @@ fixOffsets fOffsets offset
     where msb = bit 31
 
 packIndexEntries :: CombinedMap -> [PackIndexEntry]
-packIndexEntries objects = let
-    crc32s     = Map.map (crc32 . toBytes) $ getOffsetMap objects
-    offsetRefs = Map.toList $ getRefIndex objects
-    entries = map (\(r, o) -> PackIndexEntry o r (crc32s Map.! o)) offsetRefs
-    in entries
+packIndexEntries CombinedMap {..} = let
+    crc32s     = Map.map (crc32 . toBytes) getOffsetMap
+    offsetRefs = Map.toList getRefIndex
+    in map (\(r, o) -> PackIndexEntry o r (crc32s Map.! o)) offsetRefs
