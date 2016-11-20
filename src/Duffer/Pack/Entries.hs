@@ -122,8 +122,8 @@ encodeTypeLen packObjType len = let
 
 packEntryLenList :: Int -> (Int, B.ByteString)
 packEntryLenList n = let
-    last4  = fromIntegral n .&. 15
     rest   = fromIntegral n `shiftR` 4 :: Int
+    last4  = fromIntegral n .&. 15
     last4' = bool last4 (setBit last4 7) (rest > 0)
     restL  = to7BitList rest
     restL' = bool
