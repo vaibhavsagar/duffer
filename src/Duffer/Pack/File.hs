@@ -13,11 +13,11 @@ applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
 applyInstructions source = B.concat . map (`applyInstruction` source)
 
 substring :: Int -> Int -> B.ByteString -> B.ByteString
-substring offset length bytestring = B.take length (B.drop offset bytestring)
+substring offset len bytestring = B.take len (B.drop offset bytestring)
 
 applyInstruction :: DeltaInstruction -> B.ByteString -> B.ByteString
 applyInstruction instruction = case instruction of
-    (CopyInstruction offset length) -> substring offset length
+    (CopyInstruction offset len) -> substring offset len
     (InsertInstruction content)     -> const content
 
 resolveDelta :: CombinedMap -> Int -> PackedObject

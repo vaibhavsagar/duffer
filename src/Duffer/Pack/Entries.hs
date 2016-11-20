@@ -154,9 +154,11 @@ encodeOffset n = let
      - n+1         = log128 x(r-1) + r
      - n           = floor ((log128 x(2^7-1) + 2^7) - 1)
      -}
-    noTerms     = floor $ logBase 128 (fromIntegral n * (128 - 1) + 128) - 1
-    remove      = sum $ take noTerms $ map (128^) [1..]
-    remainder   = n - remove
+    noTermsLog  = logBase 128 (fromIntegral n * (128 - 1) + 128) :: Double
+    noTerms     = floor noTermsLog - 1
+    powers128   = map (128^) ([1..] :: [Integer])
+    remove      = sum $ take noTerms powers128 :: Integer
+    remainder   = n - fromIntegral remove :: Int
     varInt      = to7BitList remainder
     encodedInts = setMSBs $ leftPadZeros varInt (noTerms + 1)
     in B.pack $ map fromIntegral encodedInts

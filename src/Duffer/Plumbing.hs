@@ -91,19 +91,18 @@ initRepo = do
 
 writeTree :: FilePath -> WithRepo Ref
 writeTree path = do
-    repo <- ask
     contents <- liftIO $ listDirectory path
-    entries <- mapM (\entry -> do
+    entriesL <- mapM (\entry -> do
         fileExists <- liftIO $ doesFileExist      $ path </> entry
         dirExists  <- liftIO $ doesDirectoryExist $ path </> entry
         case (dirExists, fileExists) of
             (True, _) -> do
-                treeRef <- writeTree $ path </> entry
-                return $ TreeEntry 0o040000 (BU.fromString entry) treeRef
+                tRef <- writeTree $ path </> entry
+                return $ TreeEntry 0o040000 (BU.fromString entry) tRef
             (_, True) -> do
-                content <- liftIO $ B.readFile $ path </> entry
-                blobRef <- writeLooseObject $ Blob content
-                return $ TreeEntry 0o100644 (BU.fromString entry) blobRef
+                bContent <- liftIO $ B.readFile $ path </> entry
+                bRef     <- writeLooseObject $ Blob bContent
+                return $ TreeEntry 0o100644 (BU.fromString entry) bRef
             (False, False) -> error "what even"
         ) contents
-    writeLooseObject $ Tree $ S.fromList entries
+    writeLooseObject $ Tree $ S.fromList entriesL
