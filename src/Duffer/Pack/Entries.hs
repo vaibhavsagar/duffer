@@ -232,7 +232,7 @@ insertObject offset object@(PackedObject _ r _) ObjectMap {..} = let
     in ObjectMap getObjectMap' getObjectIndex'
 
 fromBytes :: (Bits t, Integral t) => B.ByteString -> t
-fromBytes = B.foldl (\a b -> (a `shiftL` 8) + fromIntegral b) 0
+fromBytes = B.foldl' (\a b -> (a `shiftL` 8) + fromIntegral b) 0
 
 toSomeBitList :: (Bits t, Integral t) => Int -> t -> [t]
 toSomeBitList some n = reverse $ toSomeBitList' some n
