@@ -38,6 +38,16 @@ hasPacked ref indexPath = do
     let refs =  parsedPackIndexRefs content
     return $ ref `elem` refs
 
+hasPackObject :: Ref -> WithRepo Bool
+hasPackObject = localObjects . hasPackObject'
+
+hasPackObject' :: Ref -> WithRepo Bool
+hasPackObject' ref = do
+    path    <- ask
+    indices <- liftIO $ getPackIndices path
+    exists  <- liftIO $ mapM (hasPacked ref) indices
+    return $ or exists
+
 readPackObject :: Ref -> WithRepo (Maybe GitObject)
 readPackObject = localObjects . readPackObject'
 
