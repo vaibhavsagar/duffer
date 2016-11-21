@@ -38,11 +38,8 @@ readLooseObject = localObjects . readLooseObject'
 readLooseObject' :: Ref -> WithRepo (Maybe GitObject)
 readLooseObject' ref = hasLooseObject' ref >>= bool
     (return Nothing)
-    (do
-        path       <- asks (sha1Path ref)
-        content    <- liftIO $ decompress <$> readFile path
-        let parsed =  parseOnly parseObject content
-        return $ either (const Nothing) Just parsed)
+    ((either (const Nothing)  Just . parseOnly parseObject) <$>
+    (asks (sha1Path ref) >>= liftIO . fmap decompress . readFile))
 
 writeLooseObject :: GitObject -> WithRepo Ref
 writeLooseObject = localObjects . writeLooseObject'
