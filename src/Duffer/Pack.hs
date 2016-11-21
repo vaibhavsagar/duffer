@@ -3,6 +3,7 @@ module Duffer.Pack where
 import qualified Data.ByteString      as B
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.Map.Strict      as Map
+import qualified Data.Set             as Set
 
 import Data.Bool                  (bool)
 import Control.Monad              (filterM)
@@ -31,6 +32,11 @@ getPackIndices :: FilePath -> IO [FilePath]
 getPackIndices path = let packFilePath = path </> "pack" in
     map (combine packFilePath) . filter ((==) ".idx" . takeExtension) <$>
     getDirectoryContents packFilePath
+
+getPackObjectRefs :: FilePath -> IO (Set.Set Ref)
+getPackObjectRefs path = do
+    indices <- mapM B.readFile =<< getPackIndices path
+    return $ Set.fromList $ concatMap parsedPackIndexRefs indices
 
 hasPacked :: Ref -> FilePath -> IO Bool
 hasPacked ref indexPath = do
