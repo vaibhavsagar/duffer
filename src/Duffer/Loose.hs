@@ -9,7 +9,8 @@ import Data.Bool                  (bool)
 import Data.ByteString            (ByteString, append, readFile, writeFile
                                   ,init)
 import Data.Maybe                 (fromJust)
-import System.Directory           (doesFileExist, createDirectoryIfMissing)
+import System.Directory           (doesFileExist, createDirectoryIfMissing
+                                  ,getDirectoryContents)
 import System.FilePath            ((</>), takeDirectory)
 
 import Prelude hiding (readFile, writeFile, init)
@@ -31,6 +32,10 @@ import Duffer.WithRepo      (WithRepo, asks, localObjects, liftIO)
 
 decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict
+
+listDirectory :: FilePath -> IO [FilePath]
+listDirectory =
+    fmap (filter (`notElem` [".", ".."])) . getDirectoryContents
 
 readLooseObject :: Ref -> WithRepo (Maybe GitObject)
 readLooseObject = localObjects . readLooseObject'

@@ -50,10 +50,6 @@ resolveGitRef path = do
             return $ either (const Nothing) Just $
                     parseOnly parseHexRef gitRefContents)
 
-listDirectory :: FilePath -> IO [FilePath]
-listDirectory =
-    fmap (filter (`notElem` [".", ".."])) . getDirectoryContents
-
 resolvePartialRef :: String -> WithRepo (Maybe Ref)
 resolvePartialRef search = do
     let dir = take 2 search
