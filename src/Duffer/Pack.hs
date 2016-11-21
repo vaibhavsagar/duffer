@@ -33,9 +33,10 @@ getPackIndices path = let packFilePath = path </> "pack" in
     map (combine packFilePath) . filter ((==) ".idx" . takeExtension) <$>
     getDirectoryContents packFilePath
 
-getPackObjectRefs :: FilePath -> IO (Set.Set Ref)
-getPackObjectRefs path = do
-    indices <- mapM B.readFile =<< getPackIndices path
+getPackObjectRefs :: WithRepo (Set.Set Ref)
+getPackObjectRefs = do
+    path <- ask
+    indices <- liftIO (mapM B.readFile =<< getPackIndices path)
     return $ Set.fromList $ concatMap parsedPackIndexRefs indices
 
 hasPacked :: Ref -> FilePath -> IO Bool
