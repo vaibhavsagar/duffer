@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Duffer.Pack where
 
 import qualified Data.ByteString      as B
@@ -40,34 +42,26 @@ getPackObjectRefs = do
     return $ Set.fromList $ concatMap parsedPackIndexRefs indices
 
 hasPacked :: Ref -> FilePath -> IO Bool
-hasPacked ref indexPath = do
-    content  <- B.readFile indexPath
-    let refs =  parsedPackIndexRefs content
-    return $ ref `elem` refs
+hasPacked ref indexPath =
+    (elem ref . parsedPackIndexRefs) <$> B.readFile indexPath
 
 hasPackObject :: Ref -> WithRepo Bool
 hasPackObject = localObjects . hasPackObject'
 
 hasPackObject' :: Ref -> WithRepo Bool
 hasPackObject' ref = do
-    path    <- ask
-    indices <- liftIO $ getPackIndices path
-    exists  <- liftIO $ mapM (hasPacked ref) indices
-    return $ or exists
+    paths <- asks getPackIndices
+    or <$> liftIO (mapM (hasPacked ref) =<< paths)
 
 readPackObject :: Ref -> WithRepo (Maybe GitObject)
 readPackObject = localObjects . readPackObject'
 
 readPackObject' :: Ref -> WithRepo (Maybe GitObject)
-readPackObject' ref = do
-    path <- ask
-    liftIO $ readPacked ref path
+readPackObject' ref = liftIO . readPacked ref =<< ask
 
 readPacked :: Ref -> FilePath -> IO (Maybe GitObject)
-readPacked ref path = do
-    indices <- getPackIndices path
-    matches <- filterM (hasPacked ref) indices
-    case matches of
+readPacked ref path =
+    (filterM (hasPacked ref) =<< getPackIndices path) >>= \case
         []      -> return Nothing
         index:_ -> flip resolveEntry ref <$> combinedEntryMap index
 
