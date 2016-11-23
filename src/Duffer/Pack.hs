@@ -105,10 +105,8 @@ readPackRef refPath = do
     refsPath <- asks (</> "packed-refs")
     liftIO (doesFileExist refsPath) >>= bool
         (return Nothing)
-        (do
-            content  <- liftIO $ B.readFile refsPath
-            let refs = parsedPackRefs content
-            return $ Map.lookup (BU.fromString refPath) refs)
+        (Map.lookup (BU.fromString refPath) . parsedPackRefs <$>
+            liftIO (B.readFile refsPath))
 
 resolvePackRef :: FilePath -> WithRepo (Maybe GitObject)
 resolvePackRef refPath = do
