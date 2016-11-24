@@ -133,14 +133,11 @@ packEntryLenList n = let
     in (last4', B.pack $ reverse restL')
 
 instance Byteable PackDelta where
-    toBytes (RefDelta ref delta) = let
-        encodedRef = fst $ decode ref
-        compressed = toBytes delta
-        in B.append encodedRef compressed
-    toBytes (OfsDelta offset delta) = let
-        encodedOffset = encodeOffset offset
-        compressed = toBytes delta
-        in B.append encodedOffset compressed
+    toBytes packDelta = let
+        (encoded, compressed) = case packDelta of
+            (RefDelta ref delta) -> (fst $ decode ref, toBytes delta)
+            (OfsDelta off delta) -> (encodeOffset off, toBytes delta)
+        in B.append encoded compressed
 
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
