@@ -194,12 +194,12 @@ instance Byteable DeltaInstruction where
     toBytes (CopyInstruction offset size) = let
         offsetBytes = toByteList offset
         lenBytes    = toByteList size
-        encodedOff  = encode offsetBytes
-        encodedLen  = encode lenBytes
         offsetBits  = map (>0) offsetBytes
         lenBits     = map (>0) lenBytes
         bools       = True:padFalse lenBits 3 ++ padFalse offsetBits 4
         firstByte   = fromIntegral $ boolsToByte 0 bools
+        encodedOff  = encode offsetBytes
+        encodedLen  = encode lenBytes
         in B.concat [B.singleton firstByte, encodedOff, encodedLen]
         where encode = B.pack . map fromIntegral . reverse . filter (>0)
               padFalse :: [Bool] -> Int -> [Bool]
