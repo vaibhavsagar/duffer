@@ -10,3 +10,5 @@ packfiles
 *.tix
 *.prof
 *.ipynb
+*.folded
+*.svg
