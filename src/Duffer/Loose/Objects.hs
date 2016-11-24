@@ -19,7 +19,7 @@ import Crypto.Hash            (hashWith)
 import Crypto.Hash.Algorithms (SHA1)
 import Data.Aeson
 import Data.Bool              (bool)
-import Data.Byteable
+import Data.Byteable          (Byteable(..), toBytes)
 import Data.ByteString.UTF8   (fromString, toString)
 import Data.List              (intercalate)
 import Data.Monoid            ((<>))
