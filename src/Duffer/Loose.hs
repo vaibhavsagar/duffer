@@ -8,7 +8,6 @@ import Data.Attoparsec.ByteString (parseOnly)
 import Data.Bool                  (bool)
 import Data.ByteString            (ByteString, append, readFile, writeFile
                                   ,init)
-import Data.Maybe                 (fromJust)
 import System.Directory           (doesFileExist, createDirectoryIfMissing
                                   ,getDirectoryContents)
 import System.FilePath            ((</>), takeDirectory)
