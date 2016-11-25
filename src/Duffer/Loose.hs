@@ -1,6 +1,6 @@
 module Duffer.Loose where
 
-import qualified Data.ByteString.Lazy   as L
+import qualified Data.ByteString.Lazy   as L (toStrict, fromStrict, writeFile)
 import qualified Codec.Compression.Zlib as Z (compress, decompress)
 
 import Control.Monad              (unless)
