@@ -6,14 +6,14 @@ import qualified Codec.Compression.Zlib as Z
 import qualified Data.ByteString        as B
 import qualified Data.Map.Strict        as Map
 
-import Data.Byteable
+import Data.Byteable          (Byteable, toBytes)
 import Data.ByteString.Base16 (decode)
-import Data.ByteString.Lazy (fromStrict, toStrict)
-import Data.Bits
-import Data.Bool               (bool)
-import Data.Digest.CRC32
-import Data.List (foldl')
-import Data.Word (Word8, Word32)
+import Data.ByteString.Lazy   (fromStrict, toStrict)
+import Data.Bits              (Bits(..))
+import Data.Bool              (bool)
+import Data.Digest.CRC32      (crc32)
+import Data.List              (foldl')
+import Data.Word              (Word8, Word32)
 
 import Duffer.Loose.Objects (Ref)
 
