@@ -195,7 +195,7 @@ instance Byteable DeltaInstruction where
         offsetBits  = map (>0) offsetBytes
         lenBits     = map (>0) lenBytes
         bools       = True:padFalse lenBits 3 ++ padFalse offsetBits 4
-        firstByte   = fromIntegral $ boolsToByte 0 bools
+        firstByte   = fromIntegral $ boolsToByte bools
         encodedOff  = encode offsetBytes
         encodedLen  = encode lenBytes
         in B.concat [B.singleton firstByte, encodedOff, encodedLen]
@@ -204,8 +204,8 @@ instance Byteable DeltaInstruction where
               padFalse bits len = let
                 pad = len - length bits
                 in bool bits (replicate pad False ++ bits) (pad > 0)
-              boolsToByte :: Int -> [Bool] -> Int
-              boolsToByte = foldl' (\acc b -> shiftL acc 1 + fromEnum b)
+              boolsToByte :: [Bool] -> Int
+              boolsToByte = foldl' (\acc b -> shiftL acc 1 + fromEnum b) 0
 
 fullObject :: PackObjectType -> Bool
 fullObject t = t `elem` [CommitObject, TreeObject, BlobObject, TagObject]
