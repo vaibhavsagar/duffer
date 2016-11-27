@@ -35,7 +35,7 @@ main = do
     testUnpackingAndWriting =<< getPackIndices ".git/objects"
     testReading objectTypes =<< allTypesObjects
     testJSON objectTypes    =<< allTypesObjects
-    -- testRefs
+    testRefs
 
 instance Arbitrary PackObjectType where
     arbitrary = oneof $ map return
