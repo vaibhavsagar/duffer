@@ -66,9 +66,7 @@ hasLooseObject' ref = asks (sha1Path ref) >>= liftIO . doesFileExist
 hasLooseRef :: FilePath -> WithRepo Bool
 hasLooseRef refPath = asks (</> refPath) >>= liftIO . doesFileExist
 
-updateRef :: FilePath -> GitObject -> WithRepo Ref
-updateRef refPath object = do
-    let sha1 =  hash object
-    path     <- asks (</> refPath)
-    liftIO $ writeFile path (append sha1 "\n")
+updateLooseRef :: FilePath -> GitObject -> WithRepo Ref
+updateLooseRef refPath object = let sha1 = hash object in do
+    asks (</> refPath) >>= liftIO . flip writeFile (sha1 `append` "\n")
     return sha1
