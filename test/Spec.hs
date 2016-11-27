@@ -86,10 +86,11 @@ testRefs = hspec . parallel $ describe "reading refs" $ do
     it "correctly reads refs" $
         mapM_ (checkRef ".git") refsOutput
     where checkRef repo (path, ref) = do
+            putStrLn path
             maybeRef <- withRepo repo (readRef path)
             case maybeRef of
                 (Just hash) -> hash `shouldBe` ref
-                _           -> expectationFailure $ path ++ " not found"
+                Nothing     -> expectationFailure $ path ++ " not found"
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects = describe oType $
