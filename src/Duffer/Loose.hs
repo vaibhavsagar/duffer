@@ -66,18 +66,6 @@ hasLooseObject' ref = asks (sha1Path ref) >>= liftIO . doesFileExist
 hasLooseRef :: FilePath -> WithRepo Bool
 hasLooseRef refPath = asks (</> refPath) >>= liftIO . doesFileExist
 
-readLooseRef :: FilePath -> WithRepo (Maybe Ref)
-readLooseRef refPath = hasLooseRef refPath >>= bool
-    (return Nothing)
-    (do
-        path <- asks (</> refPath)
-        ref  <- liftIO $ init <$> readFile path
-        return $ Just ref)
-
-resolveLooseRef :: FilePath -> WithRepo (Maybe GitObject)
-resolveLooseRef refPath = readLooseRef refPath
-    >>= maybe (return Nothing) readLooseObject
-
 updateRef :: FilePath -> GitObject -> WithRepo Ref
 updateRef refPath object = do
     let sha1 =  hash object
