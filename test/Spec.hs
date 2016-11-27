@@ -4,7 +4,7 @@ import qualified Data.Map.Strict as Map
 
 import Data.Aeson
 import Data.Attoparsec.ByteString (parseOnly)
-import Data.Byteable
+import Data.Byteable              (Byteable(..))
 import Data.ByteString (readFile, hGetContents, split)
 import Data.Digest.CRC32
 import Data.Maybe (fromJust)
