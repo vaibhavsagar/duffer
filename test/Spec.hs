@@ -13,7 +13,6 @@ import Test.QuickCheck
 import Control.Monad (zipWithM_)
 import System.Process
 import System.FilePath
-import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString.UTF8 (lines, toString)
 import GHC.IO.Handle (Handle)
 import Prelude hiding (lines, readFile, split)
@@ -154,7 +153,7 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 = do
-    maybeObject <- runReaderT (readObject sha1) path
+    maybeObject <- withRepo path (readObject sha1)
     case maybeObject of
         (Just object) -> hash object `shouldBe` sha1
         Nothing       -> let
