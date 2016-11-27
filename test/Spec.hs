@@ -5,7 +5,7 @@ import qualified Data.Map.Strict as Map
 import Data.Aeson
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Byteable
-import Data.ByteString (readFile, hGetContents)
+import Data.ByteString (readFile, hGetContents, split)
 import Data.Digest.CRC32
 import Data.Maybe (fromJust)
 import Test.Hspec
@@ -16,7 +16,7 @@ import System.FilePath
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.ByteString.UTF8 (lines, toString)
 import GHC.IO.Handle (Handle)
-import Prelude hiding (lines, readFile)
+import Prelude hiding (lines, readFile, split)
 
 import Duffer
 import Duffer.Loose.Objects
@@ -25,6 +25,7 @@ import Duffer.Pack.File (resolveEntry, resolveAll')
 import Duffer.Pack.Parser
 import Duffer.Pack.Streaming
 import Duffer.Pack.Entries
+import Duffer.WithRepo
 
 main :: IO ()
 main = do
@@ -35,6 +36,7 @@ main = do
     testUnpackingAndWriting =<< getPackIndices ".git/objects"
     testReading objectTypes =<< allTypesObjects
     testJSON objectTypes    =<< allTypesObjects
+    testRefs
 
 instance Arbitrary PackObjectType where
     arbitrary = oneof $ map return
@@ -79,6 +81,17 @@ testJSON types partitionedObjects =
     hspec . parallel $ describe "decoding and encoding" $
         zipWithM_ describeDecodingEncodingAll types partitionedObjects
 
+testRefs :: IO ()
+testRefs = hspec . parallel $ describe "reading refs" $ do
+    refsOutput <- runIO allRefs
+    it "correctly reads refs" $
+        mapM_ (checkRef ".git") refsOutput
+    where checkRef repo (path, ref) = do
+            maybeRef <- withRepo repo (readRef path)
+            case maybeRef of
+                (Just hash) -> hash `shouldBe` ref
+                _           -> expectationFailure $ path ++ " not found"
+
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects = describe oType $
     readAll ("correctly decodes and encodes all " ++ oType ++ "s") objects
@@ -122,6 +135,12 @@ objectsOfType objectType = fmap lines $
     >|> ("grep '^[^ ]* " ++ objectType ++ "'")
     >|> "cut -d' ' -f1"
     >>= hGetContents
+
+allRefs :: IO [(FilePath, Ref)]
+allRefs = do
+    content  <- cmd "git show-ref" >>= hGetContents
+    let refs =  (map (split 32) . lines) content
+    return $ map (\sep -> (toString (head $ tail sep), head sep)) refs
 
 cmd :: String -> IO Handle
 cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
