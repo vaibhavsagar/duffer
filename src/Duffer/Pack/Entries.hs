@@ -163,8 +163,8 @@ encodeOffset n = let
 
 leftPadZeros :: [Int] -> Int -> [Int]
 leftPadZeros ints n
-    | length ints >= n = ints
-    | otherwise        = leftPadZeros (0:ints) n
+    | length ints < n = leftPadZeros (0:ints) n
+    | otherwise       = ints
 
 setMSBs :: [Int] -> [Int]
 setMSBs ints = let
