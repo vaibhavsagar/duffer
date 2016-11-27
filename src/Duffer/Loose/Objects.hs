@@ -135,8 +135,7 @@ showContent gitObject = case gitObject of
         , "tagger" ?       toBytes tagger
         , "\n"     , BB.byteString annotation
         ]
-    where (?) key value =
-            mconcat $ map BB.byteString [key, " ", value, "\n"]
+    where (?) key value = mconcat $ map BB.byteString [key, " ", value, "\n"]
 
 hash :: GitObject -> Ref
 hash = E.convertToBase E.Base16 . hashWith (undefined :: SHA1) . toBytes
