@@ -34,7 +34,7 @@ main = do
     testReading objectTypes =<< allTypesObjects
     testUnpackingAndWriting =<< getPackIndices ".git/objects"
     testReading objectTypes =<< allTypesObjects
-    testJSON objectTypes    =<< allTypesObjects
+    testJSON    objectTypes =<< allTypesObjects
     testRefs
 
 instance Arbitrary PackObjectType where
