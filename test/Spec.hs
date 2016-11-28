@@ -12,8 +12,11 @@ import Data.Digest.CRC32          (crc32)
 import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
 import System.FilePath            ()
-import System.Process
-import Test.Hspec
+import System.Process             (CreateProcess(..), StdStream(..)
+                                  ,createProcess, shell)
+import Test.Hspec                 (hspec, parallel, expectationFailure
+                                  ,describe, it, runIO, shouldBe
+                                  ,shouldMatchList, Expectation, SpecWith)
 import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
 
 import Prelude hiding (lines, readFile, split)
