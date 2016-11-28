@@ -2,19 +2,20 @@
 
 import qualified Data.Map.Strict as Map
 
-import Data.Aeson
+import Control.Monad              (zipWithM_)
+import Data.Aeson                 (encode, decode)
 import Data.Attoparsec.ByteString (parseOnly)
+import Data.ByteString            (readFile, hGetContents, split)
+import Data.ByteString.UTF8       (lines, toString)
 import Data.Byteable              (Byteable(..))
-import Data.ByteString (readFile, hGetContents, split)
-import Data.Digest.CRC32
-import Data.Maybe (fromJust)
-import Test.Hspec
-import Test.QuickCheck
-import Control.Monad (zipWithM_)
+import Data.Digest.CRC32          (crc32)
+import Data.Maybe                 (fromJust)
+import GHC.IO.Handle              (Handle)
+import System.FilePath            ()
 import System.Process
-import System.FilePath
-import Data.ByteString.UTF8 (lines, toString)
-import GHC.IO.Handle (Handle)
+import Test.Hspec
+import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
+
 import Prelude hiding (lines, readFile, split)
 
 import Duffer
