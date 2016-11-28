@@ -17,7 +17,8 @@ import qualified Data.Text.Encoding        as E
 import Control.Applicative    (empty)
 import Crypto.Hash            (hashWith)
 import Crypto.Hash.Algorithms (SHA1)
-import Data.Aeson
+import Data.Aeson             (ToJSON(..), FromJSON(..), KeyValue, Value(..)
+                              ,object, pairs, (.=), (.:))
 import Data.Bool              (bool)
 import Data.Byteable          (Byteable(..))
 import Data.ByteString.UTF8   (fromString, toString)
