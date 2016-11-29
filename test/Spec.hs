@@ -128,7 +128,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         objects' `shouldMatchList` objects
         refs     `shouldMatchList` map hash objects
     it "writes resolved objects out" $ do
-        let write = flip runReaderT ".git" . writeObject
+        let write = withRepo ".git" . writeObject
         mapM write objects >>= shouldMatchList refs
 
 objectsOfType :: String -> IO [Ref]
@@ -166,7 +166,7 @@ readHashObject path sha1 = do
 
 decodeEncodeObject :: FilePath -> Ref -> Expectation
 decodeEncodeObject path ref = do
-    maybeObject <- runReaderT (readObject ref) path
+    maybeObject <- withRepo path (readObject ref)
     case maybeObject of
         (Just object) -> let
             encoded = encode object
