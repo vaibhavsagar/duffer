@@ -21,14 +21,17 @@ import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
 
 import Prelude hiding (lines, readFile, split)
 
-import Duffer
-import Duffer.Loose.Objects
-import Duffer.Pack
-import Duffer.Pack.File (resolveEntry, resolveAll')
-import Duffer.Pack.Parser
-import Duffer.Pack.Streaming
+import Duffer.Unified        (readRef, readObject, writeObject)
+import Duffer.Loose.Objects  (GitObject, Ref, hash)
+import Duffer.Pack           (getPackIndices, indexedEntryMap
+                             ,indexedByteStringMap, packFile, combinedEntryMap
+                             ,resolveAll)
+import Duffer.Pack.File      (resolveEntry, resolveAll')
+import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
+                             ,parsedPackRegion)
+import Duffer.Pack.Streaming (indexPackFile)
 import Duffer.Pack.Entries
-import Duffer.WithRepo
+import Duffer.WithRepo       (withRepo)
 
 main :: IO ()
 main = do
