@@ -45,7 +45,7 @@ parsePackIndex = do
     crc32s    <- count total parse4Bytes
     offsets   <- count total parse4Bytes
     remaining <- takeByteString
-    let (fifth, checks) = B.splitAt (B.length remaining - 40) remaining
+    let (fifth, _) = B.splitAt (B.length remaining - 40) remaining
     let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
@@ -134,9 +134,9 @@ parseCopyInstruction byte = CopyInstruction
         return $ bool len 0x10000 (len == 0))
     where getVarInt bits shifts = foldr (.|.) 0 <$>
             zipWithM readShift (map (testBit byte) bits) shifts
-          readShift present shift = bool
+          readShift present shiftN = bool
             (return 0)
-            ((`shiftL` shift) <$> (fromIntegral <$> anyWord8))
+            ((`shiftL` shiftN) <$> (fromIntegral <$> anyWord8))
             present
 
 parseDelta :: Parser Delta
@@ -158,9 +158,9 @@ parseDecompressed = takeLazyByteString >>= \compressed ->
     in return $ PackDecompressed level decompressed
 
 parseFullObject :: PackObjectType -> Parser PackedObject
-parseFullObject objectType = parseDecompressed >>= \decompressed ->
-    let ref = hashResolved objectType decompressed
-    in return $ PackedObject objectType ref decompressed
+parseFullObject objType = parseDecompressed >>= \decompressed ->
+    let ref = hashResolved objType decompressed
+    in return $ PackedObject objType ref decompressed
 
 parseOfsDelta, parseRefDelta :: Parser PackDelta
 parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
@@ -172,9 +172,9 @@ parseDecompressedDelta = parseDecompressed >>= \packCompressed ->
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
-    (objectType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
-    case objectType of
-        t | fullObject t -> Resolved   <$> parseFullObject objectType
+    (objType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
+    case objType of
+        t | fullObject t -> Resolved   <$> parseFullObject objType
         OfsDeltaObject   -> UnResolved <$> parseOfsDelta
         RefDeltaObject   -> UnResolved <$> parseRefDelta
         _                -> error "unrecognised type"
