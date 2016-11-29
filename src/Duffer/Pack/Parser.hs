@@ -4,23 +4,29 @@ import qualified Data.ByteString      as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict      as M
 
-import Data.Attoparsec.ByteString
-import Data.Bits
 
 import Codec.Compression.Zlib           (decompress)
 import Control.Applicative              ((<|>))
 import Control.Monad                    (zipWithM)
+import Data.Attoparsec.ByteString       (Parser(..), parseOnly, count, word8
+                                        ,takeByteString, takeLazyByteString
+                                        ,take, anyWord8, many1, many')
 import Data.Attoparsec.ByteString.Char8 (char, space)
+import Data.Bits                        (Bits(..))
 import Data.Bool                        (bool)
 import Data.List                        (foldl')
 import GHC.Word                         (Word8)
 
 import Prelude hiding (take)
 
-import Duffer.Loose.Objects
-import Duffer.Loose.Parser (parseBinRef, parseBlob, parseTree, parseCommit
-                           ,parseTag, parseRestOfLine, parseHexRef)
-import Duffer.Pack.Entries
+import Duffer.Loose.Objects (GitObject(..), Ref, hash)
+import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
+                            ,parseTag, parseRestOfLine, parseHexRef)
+import Duffer.Pack.Entries  (PackObjectType(..), PackDecompressed(..)
+                            ,PackDelta(..), PackEntry(..), PackedObject(..)
+                            ,PackIndexEntry(..), DeltaInstruction(..)
+                            ,Delta(..), fixOffsets, fifthOffsets, fromBytes
+                            ,packObjectType, getCompressionLevel, fullObject)
 
 hashResolved :: PackObjectType -> PackDecompressed B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
