@@ -6,8 +6,7 @@ import qualified Codec.Compression.Zlib as Z (compress, decompress)
 import Control.Monad              (unless)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Bool                  (bool)
-import Data.ByteString            (ByteString, append, readFile, writeFile
-                                  ,init)
+import Data.ByteString            (ByteString, append, readFile, writeFile)
 import System.Directory           (doesFileExist, createDirectoryIfMissing
                                   ,getDirectoryContents)
 import System.FilePath            ((</>), takeDirectory)
