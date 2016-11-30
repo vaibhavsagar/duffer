@@ -19,11 +19,8 @@ import Duffer.WithRepo      (WithRepo, asks, localObjects, liftIO)
 
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (~~) object 0 = return (Just object)
-(~~) object n = do
-    parent <- readLooseObject (head $ parentRefs object)
-    case parent of
-        Just p  -> p ~~ (n-1)
-        Nothing -> return Nothing
+(~~) object n = readLooseObject (head $ parentRefs object)
+    >>= maybe (return Nothing) (~~ (n-1))
 
 (^^) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (^^) object n = readLooseObject $ parentRefs object !! (n-1)
