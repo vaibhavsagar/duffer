@@ -3,8 +3,8 @@ module Duffer.Unified where
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString            (init, readFile)
 import Data.Bool                  (bool)
-import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
-import Control.Applicative ((<|>))
+import Control.Monad.Trans.Maybe  (MaybeT(..), runMaybeT)
+import Control.Applicative        ((<|>))
 import System.FilePath            ((</>))
 
 import Prelude hiding (init, readFile)
