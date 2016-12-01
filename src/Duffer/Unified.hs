@@ -39,10 +39,5 @@ readLooseRef refPath = hasLooseRef refPath >>= bool
             Right newPath -> readRef newPath
             Left _        -> return $ Just (init content))
 
-resolveLooseRef' :: FilePath -> WithRepo (Maybe GitObject)
-resolveLooseRef' refPath = readLooseRef refPath >>=
-    maybe (return Nothing) readObject
-
-resolvePackRef' :: FilePath -> WithRepo (Maybe GitObject)
-resolvePackRef' refPath = readPackRef refPath >>=
-    maybe (return Nothing) readObject
+updateRef :: FilePath -> GitObject -> WithRepo Ref
+updateRef = updateLooseRef
