@@ -17,7 +17,7 @@ parseNull :: Parser Char
 parseNull = char '\NUL'
 
 parseHeader :: B.ByteString -> Parser String
-parseHeader = (*> digit `manyTill` parseNull) . (*> space) . string
+parseHeader = (*> digit `manyTill'` parseNull) . (*> space) . string
 
 parseRestOfLine :: Parser B.ByteString
 parseRestOfLine = takeTill (==10) <* endOfLine
@@ -39,14 +39,14 @@ parseTree = Tree . fromList <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry <$> parsePerms <*> parseName <*> parseBinRef
-    where parsePerms = fst . head . readOct <$> digit `manyTill` space
+    where parsePerms = fst . head . readOct <$> digit `manyTill'` space
           parseName  = takeTill (==0)       <*  parseNull
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
-    <$> (B.pack     <$> anyWord8 `manyTill` string " <")
-    <*> (B.pack     <$> anyWord8 `manyTill` string "> ")
-    <*> (fromString <$> digit    `manyTill` space)
+    <$> (B.pack     <$> anyWord8 `manyTill'` string " <")
+    <*> (B.pack     <$> anyWord8 `manyTill'` string "> ")
+    <*> (fromString <$> digit    `manyTill'` space)
     <*> parseRestOfLine
 
 parseCommit :: Parser GitObject
@@ -74,4 +74,4 @@ parseObject = choice
     ] where (?) oType parser = parseHeader oType >> parser
 
 parseSymRef :: Parser String
-parseSymRef = string "ref:" *> space *> anyChar `manyTill` endOfLine
+parseSymRef = string "ref:" *> space *> anyChar `manyTill'` endOfLine
