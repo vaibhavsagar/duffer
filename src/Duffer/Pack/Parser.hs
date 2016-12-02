@@ -133,11 +133,10 @@ parseCopyInstruction byte = CopyInstruction
     <*> (getVarInt [4..6] [0,8..16] >>= \len ->
         return $ bool len 0x10000 (len == 0))
     where getVarInt bits shifts = foldr (.|.) 0 <$>
-            zipWithM readShift (map (testBit byte) bits) shifts
-          readShift present shiftN = bool
+            zipWithM readShift shifts (map (testBit byte) bits)
+          readShift shiftN = bool
             (return 0)
             ((`shiftL` shiftN) <$> (fromIntegral <$> anyWord8))
-            present
 
 parseDelta :: Parser Delta
 parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction
