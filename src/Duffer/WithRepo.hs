@@ -1,12 +1,16 @@
 module Duffer.WithRepo
     ( WithRepo
-    , module Control.Monad.Trans.Reader
+    , ReaderT
+    , ask
+    , asks
+    , local
+    , runReaderT
     , liftIO
     , localObjects
     , withRepo
     ) where
 
-import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Reader (ReaderT, ask, asks, local, runReaderT)
 import Control.Monad.IO.Class     (liftIO)
 import System.FilePath            ((</>))
 
