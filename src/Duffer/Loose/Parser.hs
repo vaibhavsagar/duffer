@@ -2,16 +2,18 @@ module Duffer.Loose.Parser where
 
 import qualified Data.ByteString      as B
 
-import Data.Attoparsec.ByteString.Char8 hiding (takeTill)
 import Prelude                          hiding (take)
 
-import Data.Attoparsec.ByteString
-import Data.ByteString.Base16     (encode)
-import Data.ByteString.UTF8       (fromString)
-import Data.Set                   (fromList)
-import Numeric                    (readOct)
+import Data.Attoparsec.ByteString       (Parser, takeTill, anyWord8)
+import Data.Attoparsec.ByteString.Char8 (anyChar, char, choice, digit, space
+                                        ,string, manyTill', endOfLine
+                                        ,takeByteString, many', take)
+import Data.ByteString.Base16           (encode)
+import Data.ByteString.UTF8             (fromString)
+import Data.Set                         (fromList)
+import Numeric                          (readOct)
 
-import Duffer.Loose.Objects
+import Duffer.Loose.Objects (GitObject(..), TreeEntry(..), PersonTime(..), Ref)
 
 parseNull :: Parser Char
 parseNull = char '\NUL'
