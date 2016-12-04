@@ -88,9 +88,8 @@ instance Show PersonTime where
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
-        where components = [octMode, entryType, sha1', toString name]
+        where components = [octMode, entryType, toString sha1, toString name]
               octMode    = printf "%06o" (fromEnum mode) :: String
-              sha1'      = toString sha1
               entryType  = case mode of
                 Directory -> "tree"
                 SubModule -> "commit"
