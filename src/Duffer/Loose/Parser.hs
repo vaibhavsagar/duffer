@@ -4,7 +4,7 @@ import qualified Data.ByteString      as B
 
 import Prelude                          hiding (take)
 
-import Data.Attoparsec.ByteString       (Parser, takeTill, anyWord8)
+import Data.Attoparsec.ByteString       (Parser, takeTill, takeWhile1, anyWord8)
 import Data.Attoparsec.ByteString.Char8 (anyChar, char, choice, digit, space
                                         ,string, manyTill', endOfLine
                                         ,takeByteString, many', take)
@@ -42,7 +42,7 @@ parseTree = Tree . fromList <$> many' parseTreeEntry
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry <$> parsePerms <*> parseName <*> parseBinRef
     where parsePerms = toEnum . fst . head . readOct <$> digit `manyTill'` space
-          parseName  = takeTill (==0)                <*  parseNull
+          parseName  = takeWhile1 (/=0)              <*  parseNull
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
