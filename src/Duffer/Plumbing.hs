@@ -92,10 +92,10 @@ writeTree path = writeLooseObject . Tree . S.fromList =<< mapM (\entry -> do
     case (dirExists, fileExists) of
         (True, _) -> do
             tRef <- writeTree $ path </> entry
-            return $ TreeEntry 0o040000 (BU.fromString entry) tRef
+            return $ TreeEntry Directory (BU.fromString entry) tRef
         (_, True) -> do
             bContent <- liftIO $ B.readFile $ path </> entry
             bRef     <- writeLooseObject $ Blob bContent
-            return $ TreeEntry 0o100644 (BU.fromString entry) bRef
+            return $ TreeEntry Regular (BU.fromString entry) bRef
         (False, False) -> error "what even"
     ) =<< liftIO (listDirectory path)

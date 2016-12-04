@@ -50,7 +50,7 @@ data GitObject
 
 -- A tree entry has permissions, a file/directory name, and a ref.
 data TreeEntry = TreeEntry
-    { entryPerms :: Int
+    { entryPerms :: EntryPermission
     , entryName  :: B.ByteString
     , entryRef   :: Ref
     }
@@ -63,6 +63,14 @@ data PersonTime = PersonTime
     , personTZ   :: B.ByteString
     }
     deriving (Eq)
+
+data EntryPermission
+    = Directory
+    | Regular
+    | Executable
+    | SymbolicLink
+    | SubModule
+    deriving (Show, Eq)
 
 type Ref  = B.ByteString
 type Repo = FilePath
@@ -81,26 +89,41 @@ instance Show PersonTime where
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
         where components = [octMode, entryType, sha1', toString name]
-              octMode    = printf "%06o" mode :: String
+              octMode    = printf "%06o" (fromEnum mode) :: String
               sha1'      = toString sha1
               entryType  = case mode of
-                0o040000 -> "tree"
-                0o160000 -> "commit"
-                _        -> "blob"
+                Directory -> "tree"
+                SubModule -> "commit"
+                _         -> "blob"
 
 instance Ord TreeEntry where
     compare t1 t2 = compare (sortableName t1) (sortableName t2)
         where sortableName (TreeEntry mode name _) = name `B.append`
-                bool "" "/" (mode == 0o040000 || mode == 0o160000)
+                bool "" "/" (mode == Directory || mode == SubModule)
 
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
-        mode' = fromString $ printf "%o" mode
+        mode' = fromString $ printf "%o" (fromEnum mode)
         sha1' = fst $ B16.decode sha1
         in B.concat [mode', " ", name, "\NUL", sha1']
 
 instance Byteable GitObject where
     toBytes = L.toStrict . showObject
+
+instance Enum EntryPermission where
+    fromEnum p = case p of
+        Directory    -> 0o040000
+        Regular      -> 0o100644
+        Executable   -> 0o100755
+        SymbolicLink -> 0o120000
+        SubModule    -> 0o160000
+    toEnum i = case i of
+         0o040000 -> Directory
+         0o100644 -> Regular
+         0o100755 -> Executable
+         0o120000 -> SymbolicLink
+         0o160000 -> SubModule
+         _        -> error "invalid permission"
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
@@ -185,7 +208,7 @@ gitObjectPairs obj = case obj of
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
 treeEntryPairs TreeEntry {..} =
     ["mode" .= octMode, "name" .= dName, "ref" .= dRef]
-    where octMode = T.pack $ printf "%06o" entryPerms :: T.Text
+    where octMode = T.pack $ printf "%06o" (fromEnum entryPerms) :: T.Text
           dName   = E.decodeUtf8 entryName
           dRef    = decodeRef entryRef
 
@@ -233,7 +256,7 @@ instance FromJSON TreeEntry where
         <$> (readOctal    <$> v .: "mode")
         <*> (E.encodeUtf8 <$> v .: "name")
         <*> (E.encodeUtf8 <$> v .: "ref")
-        where readOctal = fst . head . readOct . T.unpack
+        where readOctal = toEnum . fst . head . readOct . T.unpack
     parseJSON _ = empty
 
 instance FromJSON PersonTime where
