@@ -5,7 +5,7 @@ import qualified Data.ByteString      as B
 import Prelude                          hiding (take)
 
 import Control.Applicative              ((<|>))
-import Data.Attoparsec.ByteString       (Parser, anyWord8)
+import Data.Attoparsec.ByteString       (Parser, anyWord8, notInClass)
 import Data.Attoparsec.ByteString.Char8 (anyChar, char, char8, choice, digit
                                         ,isDigit, space, string, manyTill'
                                         ,endOfLine, takeByteString, takeTill
@@ -32,11 +32,17 @@ parseMessage = endOfLine *> takeByteString
 parseTimeZone :: Parser B.ByteString
 parseTimeZone = B.cons <$> (char8 '+' <|> char8 '-') <*> takeWhile1 isDigit
 
+validateRef :: Monad m => B.ByteString -> m Ref
+validateRef possibleRef = maybe
+    (return possibleRef)
+    (const $ fail "invalid ref")
+    $ B.find (notInClass "0-9a-f") possibleRef
+
 parseHexRef :: Parser Ref
-parseHexRef = take 40
+parseHexRef = validateRef =<< take 40
 
 parseBinRef :: Parser Ref
-parseBinRef = encode <$> take 20
+parseBinRef = validateRef =<< encode <$> take 20
 
 parseBlob :: Parser GitObject
 parseBlob = Blob <$> takeByteString
