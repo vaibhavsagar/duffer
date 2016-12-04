@@ -118,12 +118,12 @@ instance Enum EntryPermission where
         SymbolicLink -> 0o120000
         SubModule    -> 0o160000
     toEnum i = case i of
-         0o040000 -> Directory
-         0o100644 -> Regular
-         0o100755 -> Executable
-         0o120000 -> SymbolicLink
-         0o160000 -> SubModule
-         _        -> error "invalid permission"
+        0o040000 -> Directory
+        0o100644 -> Regular
+        0o100755 -> Executable
+        0o120000 -> SymbolicLink
+        0o160000 -> SubModule
+        _        -> error "invalid permission"
 
 sha1Path :: Ref -> Repo -> FilePath
 sha1Path ref = let (sa:sb:suffix) = toString ref in
