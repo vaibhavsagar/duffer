@@ -4,10 +4,12 @@ import qualified Data.ByteString      as B
 
 import Prelude                          hiding (take)
 
-import Data.Attoparsec.ByteString       (Parser, takeTill, takeWhile1, anyWord8)
-import Data.Attoparsec.ByteString.Char8 (anyChar, char, choice, digit, space
-                                        ,string, manyTill', endOfLine
-                                        ,takeByteString, many', take)
+import Control.Applicative              ((<|>))
+import Data.Attoparsec.ByteString       (Parser, anyWord8)
+import Data.Attoparsec.ByteString.Char8 (anyChar, char, char8, choice, digit
+                                        ,isDigit, space, string, manyTill'
+                                        ,endOfLine, takeByteString, takeTill
+                                        ,takeWhile1, many', take)
 import Data.ByteString.Base16           (encode)
 import Data.ByteString.UTF8             (fromString)
 import Data.Set                         (fromList)
@@ -22,10 +24,13 @@ parseHeader :: B.ByteString -> Parser String
 parseHeader = (*> digit `manyTill'` parseNull) . (*> space) . string
 
 parseRestOfLine :: Parser B.ByteString
-parseRestOfLine = takeTill (==10) <* endOfLine
+parseRestOfLine = takeTill (=='\n') <* endOfLine
 
 parseMessage :: Parser B.ByteString
 parseMessage = endOfLine *> takeByteString
+
+parseTimeZone :: Parser B.ByteString
+parseTimeZone = B.cons <$> (char8 '+' <|> char8 '-') <*> takeWhile1 isDigit
 
 parseHexRef :: Parser Ref
 parseHexRef = take 40
@@ -42,29 +47,29 @@ parseTree = Tree . fromList <$> many' parseTreeEntry
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry <$> parsePerms <*> parseName <*> parseBinRef
     where parsePerms = toEnum . fst . head . readOct <$> digit `manyTill'` space
-          parseName  = takeWhile1 (/=0)              <*  parseNull
+          parseName  = takeWhile1 (/='\NUL')         <*  parseNull
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
-    <$> (B.pack     <$> anyWord8 `manyTill'` string " <")
-    <*> (B.pack     <$> anyWord8 `manyTill'` string "> ")
-    <*> (fromString <$> digit    `manyTill'` space)
-    <*> parseRestOfLine
+    <$> (B.pack        <$> anyWord8 `manyTill'` string " <")
+    <*> (B.pack        <$> anyWord8 `manyTill'` string "> ")
+    <*> (fromString    <$> digit    `manyTill'` space)
+    <*> parseTimeZone
 
 parseCommit :: Parser GitObject
 parseCommit = Commit
-    <$>        ("tree"      *> space *> parseHexRef <* endOfLine)
-    <*>  many' ("parent"    *> space *> parseHexRef <* endOfLine)
-    <*>        ("author"    *> space *> parsePersonTime)
-    <*>        ("committer" *> space *> parsePersonTime)
+    <$>        ("tree"      *> space *> parseHexRef     <* endOfLine)
+    <*>  many' ("parent"    *> space *> parseHexRef     <* endOfLine)
+    <*>        ("author"    *> space *> parsePersonTime <* endOfLine)
+    <*>        ("committer" *> space *> parsePersonTime <* endOfLine)
     <*>        parseMessage
 
 parseTag :: Parser GitObject
 parseTag = Tag
-    <$> ("object" *> space *> parseHexRef <* endOfLine)
+    <$> ("object" *> space *> parseHexRef     <* endOfLine)
     <*> ("type"   *> space *> parseRestOfLine)
     <*> ("tag"    *> space *> parseRestOfLine)
-    <*> ("tagger" *> space *> parsePersonTime)
+    <*> ("tagger" *> space *> parsePersonTime <* endOfLine)
     <*> parseMessage
 
 parseObject :: Parser GitObject
