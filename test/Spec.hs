@@ -44,8 +44,12 @@ main = do
     testJSON    objectTypes =<< allTypesObjects
     testRefs
 
-instance Arbitrary PackObjectType where
-    arbitrary = oneof $ map return
+newtype TestPackObjectType
+    = TestPackObjectType { innerPackObject :: PackObjectType }
+    deriving (Show)
+
+instance Arbitrary TestPackObjectType where
+    arbitrary = oneof $ map (return . TestPackObjectType)
         [ CommitObject
         , TreeObject
         , BlobObject
@@ -63,9 +67,9 @@ testEncodingAndParsing = hspec . parallel $ describe "integer encodings" $ do
             in decoded == (offset :: Int)
     it "encodes and decodes object types and lengths" $ property $
         \len objectType -> len >= 0 ==> let
-            encoded = encodeTypeLen objectType len
+            encoded = encodeTypeLen (innerPackObject objectType) len
             decoded = either error id $ parseOnly parseTypeLen encoded
-            in decoded == (objectType, len :: Int)
+            in decoded == (innerPackObject objectType, len :: Int)
 
 testUnpackingAndWriting :: [FilePath] -> IO ()
 testUnpackingAndWriting indices =
