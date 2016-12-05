@@ -128,7 +128,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     objects <- runIO $ resolveAll  indexPath
     let refs = map (snd . toAssoc) index
     it "resolves each object correctly" $ do
-        let resolvedRefs = map (hash . fromJust .resolveEntry combinedMap) refs
+        let resolvedRefs = map (hash . fromJust . resolveEntry combinedMap) refs
         resolvedRefs `shouldMatchList` refs
     it "resolves objects correctly" $ do
         let objects' = resolveAll' entryMap
