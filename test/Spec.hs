@@ -19,7 +19,7 @@ import Test.Hspec                 (hspec, parallel, expectationFailure
                                   ,shouldMatchList, Expectation, SpecWith)
 import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
 
-import Prelude hiding (lines, readFile, split)
+import Prelude hiding (lines, readFile)
 
 import Duffer.Unified        (readRef, readObject, writeObject)
 import Duffer.Loose.Objects  (GitObject, Ref, hash)
