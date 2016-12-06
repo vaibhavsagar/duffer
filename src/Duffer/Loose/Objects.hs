@@ -2,7 +2,6 @@
 
 module Duffer.Loose.Objects where
 
-import qualified Data.ByteArray.Encoding   as E
 import qualified Data.ByteString           as B
 import qualified Data.ByteString.Base16    as B16 (decode)
 import qualified Data.ByteString.Base64    as B64
@@ -14,20 +13,21 @@ import qualified Data.Set                  as S
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as E
 
-import Control.Applicative    (empty)
-import Crypto.Hash            (hashWith)
-import Crypto.Hash.Algorithms (SHA1)
-import Data.Aeson             (ToJSON(..), FromJSON(..), KeyValue, Value(..)
-                              ,object, pairs, (.=), (.:))
-import Data.Bool              (bool)
-import Data.Byteable          (Byteable(..))
-import Data.ByteString.UTF8   (fromString, toString)
-import Data.List              (intercalate)
-import Data.Monoid            ((<>))
-import Data.Set               (Set, toAscList)
-import Numeric                (readOct)
-import System.FilePath        ((</>))
-import Text.Printf            (printf)
+import Control.Applicative     (empty)
+import Crypto.Hash             (hashWith)
+import Crypto.Hash.Algorithms  (SHA1)
+import Data.Aeson              (ToJSON(..), FromJSON(..), KeyValue, Value(..)
+                               ,object, pairs, (.=), (.:))
+import Data.Bool               (bool)
+import Data.ByteArray.Encoding (Base(Base16), convertToBase)
+import Data.Byteable           (Byteable(..))
+import Data.ByteString.UTF8    (fromString, toString)
+import Data.List               (intercalate)
+import Data.Monoid             ((<>))
+import Data.Set                (Set, toAscList)
+import Numeric                 (readOct)
+import System.FilePath         ((</>))
+import Text.Printf             (printf)
 
 data GitObject
     = Blob {content :: B.ByteString}
@@ -161,7 +161,7 @@ showContent gitObject = case gitObject of
     where (?) key value = mconcat $ map BB.byteString [key, " ", value, "\n"]
 
 hash :: GitObject -> Ref
-hash = E.convertToBase E.Base16 . hashWith (undefined :: SHA1) . toBytes
+hash = convertToBase Base16 . hashWith (undefined :: SHA1) . toBytes
 
 b64encode :: B.ByteString -> T.Text
 b64encode = E.decodeUtf8 . B64.encode
