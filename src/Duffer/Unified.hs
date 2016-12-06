@@ -33,8 +33,7 @@ readLooseRef :: FilePath -> WithRepo (Maybe Ref)
 readLooseRef refPath = hasLooseRef refPath >>= bool
     (return Nothing)
     (do
-        path    <- asks (</> refPath)
-        content <- liftIO $ readFile path
+        content <- liftIO . readFile =<< asks (</> refPath)
         case parseOnly parseSymRef content of
             Right newPath -> readRef newPath
             Left _        -> return $ Just (init content))
