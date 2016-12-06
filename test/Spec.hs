@@ -99,8 +99,8 @@ testRefs = hspec . parallel $ describe "reading refs" $ do
     where checkRef repo (path, ref) = do
             maybeRef <- withRepo repo (readRef path)
             case maybeRef of
-                (Just hash) -> hash `shouldBe` ref
-                Nothing     -> expectationFailure $ path ++ " not found"
+                (Just someRef) -> someRef `shouldBe` ref
+                Nothing        -> expectationFailure $ path ++ " not found"
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects = describe oType $
@@ -157,10 +157,10 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
     \(_, Just handle, _, _) -> return handle
 
 (>|>) :: IO Handle -> String -> IO Handle
-(>|>) handle cmd = withPipe cmd =<< handle
-    where withPipe cmd pipe = createProcess (shell cmd)
+(>|>) handle command = withPipe =<< handle
+    where withPipe pipe = createProcess (shell command)
             {std_out = CreatePipe, std_in = UseHandle pipe} >>=
-            \(_, Just handle, _, _) -> return handle
+            \(_, Just handle', _, _) -> return handle'
 
 readHashObject :: String -> Ref -> Expectation
 readHashObject path sha1 = do
