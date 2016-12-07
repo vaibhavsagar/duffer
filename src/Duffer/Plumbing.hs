@@ -6,6 +6,7 @@ import qualified Data.Set             as S
 
 import Control.Applicative        ((<|>))
 import Control.Monad              (unless)
+import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
                                   ,doesFileExist, getDirectoryContents)
 import System.FilePath            ((</>))
@@ -20,15 +21,14 @@ import Duffer.Loose.Parser
 import Duffer.WithRepo
 
 fuzzyReadObject :: String -> WithRepo (Maybe GitObject)
-fuzzyReadObject search = do
-    symRef     <- resolveSymRef search
-    branchRef  <- resolveGitRef $ "refs/heads"   </> search
-    remoteRef  <- resolveGitRef $ "refs/remotes" </> search
-    tagRef     <- resolveGitRef $ "refs/tags"    </> search
-    partialRef <- resolvePartialRef search
-    let result = foldl' (<|>) Nothing
-            [symRef, branchRef, remoteRef, tagRef, partialRef]
-    maybe (return Nothing) readLooseObject result
+fuzzyReadObject search =
+    let maybeRef = runMaybeT
+            $   MaybeT (readRef search)
+            <|> MaybeT (readRef $ "refs/heads"   </> search)
+            <|> MaybeT (readRef $ "refs/remotes" </> search)
+            <|> MaybeT (readRef $ "refs/tags"    </> search)
+            <|> MaybeT (resolvePartialRef search)
+    in maybe (return Nothing) readObject =<< maybeRef
 
 resolveSymRef :: FilePath -> WithRepo (Maybe Ref)
 resolveSymRef path = do
