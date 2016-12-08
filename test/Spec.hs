@@ -37,11 +37,11 @@ main :: IO ()
 main = do
     testEncodingAndParsing
     let objectTypes = ["blob", "tree", "commit", "tag"]
-    let allTypesObjects = mapM objectsOfType objectTypes
-    testReading objectTypes =<< allTypesObjects
+    allTypesObjects <- mapM objectsOfType objectTypes
+    testReading objectTypes allTypesObjects
     testUnpackingAndWriting =<< getPackIndices ".git/objects"
-    testReading objectTypes =<< allTypesObjects
-    testJSON    objectTypes =<< allTypesObjects
+    testReading objectTypes allTypesObjects
+    testJSON    objectTypes allTypesObjects
     testRefs
 
 newtype TestPackObjectType
