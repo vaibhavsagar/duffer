@@ -18,6 +18,7 @@ import Data.List                  (isPrefixOf, foldl')
 import Duffer.Loose
 import Duffer.Loose.Objects
 import Duffer.Loose.Parser
+import Duffer.Unified
 import Duffer.WithRepo
 
 fuzzyReadObject :: String -> WithRepo (Maybe GitObject)
