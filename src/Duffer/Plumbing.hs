@@ -22,14 +22,12 @@ import Duffer.Unified
 import Duffer.WithRepo
 
 fuzzyReadObject :: String -> WithRepo (Maybe GitObject)
-fuzzyReadObject search =
-    let maybeRef = runMaybeT
-            $   MaybeT (readRef search)
-            <|> MaybeT (readRef $ "refs/heads"   </> search)
-            <|> MaybeT (readRef $ "refs/remotes" </> search)
-            <|> MaybeT (readRef $ "refs/tags"    </> search)
-            <|> MaybeT (resolvePartialRef search)
-    in maybe (return Nothing) readObject =<< maybeRef
+fuzzyReadObject search = maybe (return Nothing) readObject =<< runMaybeT
+    (   MaybeT (readRef                      search)
+    <|> MaybeT (readRef $ "refs/heads"   </> search)
+    <|> MaybeT (readRef $ "refs/remotes" </> search)
+    <|> MaybeT (readRef $ "refs/tags"    </> search)
+    <|> MaybeT (resolvePartialRef            search))
 
 resolveSymRef :: FilePath -> WithRepo (Maybe Ref)
 resolveSymRef path = do
