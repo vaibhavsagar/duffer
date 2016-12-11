@@ -22,32 +22,12 @@ import Duffer.Unified
 import Duffer.WithRepo
 
 fuzzyReadObject :: String -> WithRepo (Maybe GitObject)
-fuzzyReadObject search = maybe (return Nothing) readObject =<< runMaybeT
-    (   MaybeT (readRef                      search)
-    <|> MaybeT (readRef $ "refs/heads"   </> search)
-    <|> MaybeT (readRef $ "refs/remotes" </> search)
-    <|> MaybeT (readRef $ "refs/tags"    </> search)
-    <|> MaybeT (resolvePartialRef            search))
-
-resolveSymRef :: FilePath -> WithRepo (Maybe Ref)
-resolveSymRef path = do
-    symRefPath <- asks (</> path)
-    liftIO (doesFileExist symRefPath) >>= bool
-        (return Nothing)
-        (do
-            symRefContents <- liftIO $ readFile symRefPath
-            let refPath = init $ drop 5 symRefContents
-            resolveGitRef refPath)
-
-resolveGitRef :: FilePath -> WithRepo (Maybe Ref)
-resolveGitRef path = do
-    refPath <- asks (</> path)
-    liftIO (doesFileExist refPath) >>= bool
-        (return Nothing)
-        (do
-            gitRefContents <- liftIO $ B.readFile refPath
-            return $ either (const Nothing) Just $
-                    parseOnly parseHexRef gitRefContents)
+fuzzyReadObject search = maybe (return Nothing) readObject =<< runMaybeT (
+    MaybeT (readRef                      search) <|>
+    MaybeT (readRef $ "refs/heads"   </> search) <|>
+    MaybeT (readRef $ "refs/remotes" </> search) <|>
+    MaybeT (readRef $ "refs/tags"    </> search) <|>
+    MaybeT (resolvePartialRef            search))
 
 resolvePartialRef :: String -> WithRepo (Maybe Ref)
 resolvePartialRef search = do
