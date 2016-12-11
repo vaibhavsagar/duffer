@@ -8,7 +8,7 @@ import qualified Data.Map.Strict      as M
 import Codec.Compression.Zlib           (decompress)
 import Control.Applicative              ((<|>))
 import Control.Monad                    (zipWithM)
-import Data.Attoparsec.ByteString       (Parser(..), parseOnly, count, word8
+import Data.Attoparsec.ByteString       (Parser, parseOnly, count, word8
                                         ,takeByteString, takeLazyByteString
                                         ,take, anyWord8, many1, many')
 import Data.Attoparsec.ByteString.Char8 (char, space)
