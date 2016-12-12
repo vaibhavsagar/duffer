@@ -7,7 +7,11 @@ import Data.Bool            (bool)
 import Data.Tuple           (swap)
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
-import Duffer.Pack.Entries
+import Duffer.Pack.Entries  (PackDecompressed(..), PackDelta(..), PackEntry(..)
+                            ,PackedObject(..), DeltaInstruction(..), Delta(..)
+                            ,CombinedMap(..), RefIndex, OffsetMap, ObjectMap(..)
+                            ,fullObject, toAssoc, emptyObjectMap
+                            ,isResolved, insertObject)
 
 applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
 applyInstructions source = B.concat . map (`applyInstruction` source)
