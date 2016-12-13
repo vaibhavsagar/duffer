@@ -9,11 +9,12 @@ import System.FilePath            ((</>))
 
 import Prelude hiding (init, readFile)
 
-import Duffer.Loose
+import Duffer.Loose         (readLooseObject, writeLooseObject
+                            ,hasLooseRef, updateLooseRef)
 import Duffer.Loose.Objects (Ref, GitObject)
-import Duffer.Pack
+import Duffer.Pack          (readPackObject, readPackRef)
 import Duffer.Loose.Parser  (parseSymRef)
-import Duffer.WithRepo
+import Duffer.WithRepo      (WithRepo, asks, liftIO)
 
 readObject :: Ref -> WithRepo (Maybe GitObject)
 readObject ref = runMaybeT $
