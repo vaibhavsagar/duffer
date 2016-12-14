@@ -30,19 +30,29 @@ fuzzyReadObject search = maybe (return Nothing) readObject =<< runMaybeT (
     MaybeT (resolvePartialRef            search))
 
 resolvePartialRef :: String -> WithRepo (Maybe Ref)
-resolvePartialRef search = do
+resolvePartialRef search = runMaybeT
+    $   MaybeT (localObjects $ resolvePartialLooseRef' search)
+    <|> MaybeT (localObjects $ resolvePartialPackRef'  search)
+
+resolvePartialLooseRef' :: String -> WithRepo (Maybe Ref)
+resolvePartialLooseRef' search = do
     let dir = take 2 search
-    objectDir <- asks (</> "objects" </> dir)
+    objectDir <- asks (</> dir)
     liftIO (doesDirectoryExist objectDir) >>= bool
         (return Nothing)
         (do
-            let rest = drop 2 search
-            possible <- liftIO (listDirectory objectDir)
-            let filtered = filter (isPrefixOf rest) possible
+            filtered <- filter (isPrefixOf (drop 2 search)) <$>
+                liftIO (listDirectory objectDir)
             return $ bool
                 Nothing
                 (Just $ fromString $ dir ++ head filtered)
                 (length filtered == 1))
+
+resolvePartialPackRef' :: String -> WithRepo (Maybe Ref)
+resolvePartialPackRef' search = do
+    matching <- S.filter (B.isPrefixOf (fromString search)) <$>
+        getPackObjectRefs
+    return $ bool Nothing (Just $ S.elemAt 0 matching) (S.size matching == 1)
 
 initRepo :: WithRepo ()
 initRepo = do
