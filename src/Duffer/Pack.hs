@@ -108,10 +108,3 @@ readPackRef refPath = do
         (return Nothing)
         (Map.lookup (BU.fromString refPath) . parsedPackRefs <$>
             liftIO (B.readFile refsPath))
-
-resolvePackRef :: FilePath -> WithRepo (Maybe GitObject)
-resolvePackRef refPath = do
-    maybeRef <- readPackRef refPath
-    case maybeRef of
-        Nothing  -> return Nothing
-        Just ref -> readPackObject ref
