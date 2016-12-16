@@ -91,8 +91,8 @@ indexedByteStringMap indexPath = do
 
 combinedEntryMap :: FilePath -> IO CombinedMap
 combinedEntryMap indexPath = CombinedMap
-    <$> indexedEntryMap              indexPath
-    <*> (makeRefIndex <$> B.readFile indexPath)
+    <$> indexedEntryMap               indexPath
+    <*> fmap makeRefIndex (B.readFile indexPath)
 
 resolveAll :: FilePath -> IO [GitObject]
 resolveAll indexPath = do
