@@ -7,12 +7,13 @@ import qualified Data.ByteString.UTF8 as BU
 import qualified Data.Map.Strict      as Map
 import qualified Data.Set             as Set
 
-import Data.Bool                  (bool)
-import Control.Monad              (filterM)
-import GHC.Int                    (Int64)
-import System.IO.MMap             (mmapFileByteString)
-import System.FilePath            ((</>), (-<.>), combine, takeExtension)
-import System.Directory           (getDirectoryContents, doesFileExist)
+import Data.Bool        (bool)
+import Data.Maybe       (fromJust)
+import Control.Monad    (filterM)
+import GHC.Int          (Int64)
+import System.IO.MMap   (mmapFileByteString)
+import System.FilePath  ((</>), (-<.>), combine, takeExtension)
+import System.Directory (getDirectoryContents, doesFileExist)
 
 import Duffer.Loose.Objects (GitObject, Ref)
 import Duffer.Pack.Entries
@@ -26,8 +27,8 @@ packIndex = (-<.> "idx")
 
 region :: Map.Map Int a -> Int -> Maybe (Int64, Int)
 region offsetMap offset = let
-    (Just nextOffset) = Map.lookupGT offset offsetMap
-    len               = fst nextOffset - offset
+    nextOffset = fromJust $ Map.lookupGT offset offsetMap
+    len        = fst nextOffset - offset
     in Just (fromIntegral offset, len)
 
 getPackIndices :: FilePath -> IO [FilePath]
