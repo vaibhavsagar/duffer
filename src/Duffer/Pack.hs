@@ -38,8 +38,8 @@ getPackIndices path = let packFilePath = path </> "pack" in
 
 getPackObjectRefs :: WithRepo (Set.Set Ref)
 getPackObjectRefs = do
-    path <- ask
-    indices <- liftIO (mapM B.readFile =<< getPackIndices path)
+    paths   <- asks getPackIndices
+    indices <- liftIO (mapM B.readFile =<< paths)
     return $ Set.fromList $ concatMap parsedPackIndexRefs indices
 
 hasPacked :: Ref -> FilePath -> IO Bool
