@@ -38,10 +38,8 @@ validateRef possibleRef = maybe
     (const $ fail "invalid ref")
     $ B.find (notInClass "0-9a-f") possibleRef
 
-parseHexRef :: Parser Ref
+parseHexRef, parseBinRef :: Parser Ref
 parseHexRef = validateRef =<< take 40
-
-parseBinRef :: Parser Ref
 parseBinRef = validateRef =<< encode <$> take 20
 
 parseBlob :: Parser GitObject
