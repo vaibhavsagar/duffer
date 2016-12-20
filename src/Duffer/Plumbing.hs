@@ -4,16 +4,15 @@ import qualified Data.ByteString      as B
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.Set             as S
 
-import Control.Applicative        ((<|>))
-import Control.Monad              (unless)
+import Control.Applicative       ((<|>))
+import Control.Monad             (unless)
 import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
-import System.Directory           (createDirectoryIfMissing, doesDirectoryExist
-                                  ,doesFileExist, getDirectoryContents)
-import System.FilePath            ((</>))
-import Data.Attoparsec.ByteString (parseOnly)
-import Data.Bool                  (bool)
-import Data.ByteString.UTF8       (fromString)
-import Data.List                  (isPrefixOf, foldl')
+import System.Directory          (createDirectoryIfMissing, doesDirectoryExist
+                                 ,doesFileExist)
+import System.FilePath           ((</>))
+import Data.Bool                 (bool)
+import Data.ByteString.UTF8      (fromString)
+import Data.List                 (isPrefixOf)
 
 import Duffer.Loose
 import Duffer.Loose.Objects
@@ -70,8 +69,8 @@ initRepo = do
             , path </> "refs"    </> "tags"
             ]
         mapM_ (uncurry writeFile)
-            [ (path </> "HEAD",   "ref: refs/heads/master\n")
-            , (path </> "config", "")
+            [ (path </> "HEAD",        "ref: refs/heads/master\n")
+            , (path </> "config",      "")
             , (path </> "description", "")
             ]
 
