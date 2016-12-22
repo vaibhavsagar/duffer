@@ -21,15 +21,13 @@ data PackIndexEntry = PackIndexEntry Int Ref Word32
     deriving (Show, Eq)
 
 data PackObjectType
-    = UnusedPackObjectType0
-    | CommitObject
+    = CommitObject
     | TreeObject
     | BlobObject
     | TagObject
-    | UnusedPackObjectType5
     | OfsDeltaObject
     | RefDeltaObject
-    deriving (Enum, Eq, Show)
+    deriving (Eq, Show)
 
 data PackDelta
     = OfsDelta Int (PackDecompressed Delta)
@@ -74,6 +72,22 @@ data ObjectMap = ObjectMap
 type OffsetMap = Map.Map Int PackEntry
 type RefMap    = Map.Map Ref PackEntry
 type RefIndex  = Map.Map Ref Int
+
+instance Enum PackObjectType where
+    fromEnum CommitObject   = 1
+    fromEnum TreeObject     = 2
+    fromEnum BlobObject     = 3
+    fromEnum TagObject      = 4
+    fromEnum OfsDeltaObject = 6
+    fromEnum RefDeltaObject = 7
+
+    toEnum 1 = CommitObject
+    toEnum 2 = TreeObject
+    toEnum 3 = BlobObject
+    toEnum 4 = TagObject
+    toEnum 6 = OfsDeltaObject
+    toEnum 7 = RefDeltaObject
+    toEnum _ = error "invalid"
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject) = toBytes packedObject
