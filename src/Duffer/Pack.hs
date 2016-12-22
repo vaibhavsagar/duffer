@@ -16,10 +16,13 @@ import System.FilePath  ((</>), (-<.>), combine, takeExtension)
 import System.Directory (getDirectoryContents, doesFileExist)
 
 import Duffer.Loose.Objects (GitObject, Ref)
-import Duffer.Pack.Entries
-import Duffer.Pack.Parser
-import Duffer.Pack.File
-import Duffer.WithRepo
+import Duffer.Pack.Entries  (CombinedMap(..), OffsetMap, PackEntry
+                            ,getRefIndex)
+import Duffer.Pack.Parser   (parsedPackIndexRefs, parsedPackRegion
+                            ,parsedPackRefs)
+import Duffer.Pack.File     (resolveDelta, resolveEntry, unpackObject
+                            ,makeRefIndex, makeOffsetMap)
+import Duffer.WithRepo      (WithRepo, ask, asks, liftIO, localObjects)
 
 packFile, packIndex :: FilePath -> FilePath
 packFile  = (-<.> "pack")
