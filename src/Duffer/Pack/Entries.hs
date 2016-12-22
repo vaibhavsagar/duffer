@@ -125,8 +125,7 @@ getCompressionLevel levelByte = case levelByte of
         _   -> error "I can't make sense of this compression level"
 
 instance Functor PackDecompressed where
-    fmap f (PackDecompressed level content) =
-        PackDecompressed level (f content)
+    fmap f (PackDecompressed level content) = PackDecompressed level (f content)
 
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjType len = let
@@ -148,11 +147,9 @@ packEntryLenList n = let
     in (last4', B.pack $ reverse restL')
 
 instance Byteable PackDelta where
-    toBytes packDelta = let
-        (encoded, compressed) = case packDelta of
-            (RefDelta ref delta) -> (fst $ decode ref, toBytes delta)
-            (OfsDelta off delta) -> (encodeOffset off, toBytes delta)
-        in B.append encoded compressed
+    toBytes packDelta = uncurry B.append $ case packDelta of
+        (RefDelta ref delta) -> (fst $ decode ref, toBytes delta)
+        (OfsDelta off delta) -> (encodeOffset off, toBytes delta)
 
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
@@ -182,16 +179,15 @@ leftPadZeros ints n
 
 setMSBs :: [Int] -> [Int]
 setMSBs ints = let
-    ints'  = reverse ints
-    ints'' = head ints' : map (`setBit` 7) ( tail ints')
-    in reverse ints''
+    ints' = reverse ints
+    in reverse $ head ints' : map (`setBit` 7) ( tail ints')
 
 instance Byteable Delta where
-    toBytes (Delta source dest instructions) = let
-        sourceEncoded = toLittleEndian $ to7BitList source
-        destEncoded   = toLittleEndian $ to7BitList dest
-        instrsBS      = B.concat (map toBytes instructions)
-        in B.concat [sourceEncoded, destEncoded, instrsBS]
+    toBytes (Delta source dest instructions) = B.concat
+        [ toLittleEndian $ to7BitList source
+        , toLittleEndian $ to7BitList dest
+        , B.concat (map toBytes instructions)
+        ]
 
 toLittleEndian :: (Bits t, Integral t) => [t] -> B.ByteString
 toLittleEndian nums = case nums of
