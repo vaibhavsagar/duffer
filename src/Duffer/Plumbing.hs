@@ -14,11 +14,12 @@ import Data.Bool                 (bool)
 import Data.ByteString.UTF8      (fromString)
 import Data.List                 (isPrefixOf)
 
-import Duffer.Loose
-import Duffer.Loose.Objects
-import Duffer.Pack
-import Duffer.Unified
-import Duffer.WithRepo
+import Duffer.Loose         (listDirectory)
+import Duffer.Loose.Objects (GitObject(..), TreeEntry(..), EntryPermission(..)
+                            ,Ref)
+import Duffer.Pack          (getPackObjectRefs)
+import Duffer.Unified       (readRef, readObject, writeObject)
+import Duffer.WithRepo      (WithRepo, liftIO, ask, asks, localObjects)
 
 fuzzyReadObject :: String -> WithRepo (Maybe GitObject)
 fuzzyReadObject search = maybe (return Nothing) readObject =<< runMaybeT (
