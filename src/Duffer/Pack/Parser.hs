@@ -22,7 +22,7 @@ import Prelude hiding (take)
 import Duffer.Loose.Objects (GitObject(..), Ref, hash)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
-import Duffer.Pack.Entries  (PackObjectType(..), PackDecompressed(..)
+import Duffer.Pack.Entries  (PackObjectType(..), WithCompressionLevel(..)
                             ,PackDelta(..), PackEntry(..), PackedObject(..)
                             ,PackIndexEntry(..), DeltaInstruction(..)
                             ,Delta(..), fixOffsets, fifthOffsets, fromBytes
@@ -31,11 +31,11 @@ import Duffer.Pack.Entries  (PackObjectType(..), PackDecompressed(..)
 parsedOnly :: Parser c -> B.ByteString -> c
 parsedOnly parser content = either error id $ parseOnly parser content
 
-hashResolved :: PackObjectType -> PackDecompressed B.ByteString -> Ref
+hashResolved :: PackObjectType -> WithCompressionLevel B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
-parseResolved :: PackObjectType -> PackDecompressed B.ByteString -> GitObject
-parseResolved t (PackDecompressed _ source) =
+parseResolved :: PackObjectType -> WithCompressionLevel B.ByteString -> GitObject
+parseResolved t (WithCompressionLevel _ source) =
     parsedOnly (parseObjectContent t) source
 
 word8s :: [Word8] -> Parser [Word8]
@@ -152,11 +152,11 @@ parseObjectContent t = case t of
     TagObject    -> parseTag
     _            -> error "deltas must be resolved first"
 
-parseDecompressed :: Parser (PackDecompressed B.ByteString)
+parseDecompressed :: Parser (WithCompressionLevel B.ByteString)
 parseDecompressed = takeLazyByteString >>= \compressed ->
     let level        = getCompressionLevel $ L.head $ L.drop 1 compressed
         decompressed = L.toStrict $ decompress compressed
-    in return $ PackDecompressed level decompressed
+    in return $ WithCompressionLevel level decompressed
 
 parseFullObject :: PackObjectType -> Parser PackedObject
 parseFullObject objType = parseDecompressed >>= \decompressed ->
@@ -167,7 +167,7 @@ parseOfsDelta, parseRefDelta :: Parser PackDelta
 parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
 parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
-parseDecompressedDelta :: Parser (PackDecompressed Delta)
+parseDecompressedDelta :: Parser (WithCompressionLevel Delta)
 parseDecompressedDelta = fmap (parsedOnly parseDelta) <$> parseDecompressed
 
 parsePackRegion :: Parser PackEntry
