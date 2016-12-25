@@ -28,12 +28,15 @@ import Duffer.Pack.Entries  (PackObjectType(..), PackDecompressed(..)
                             ,Delta(..), fixOffsets, fifthOffsets, fromBytes
                             ,packObjectType, getCompressionLevel, fullObject)
 
+parsedOnly :: Parser c -> B.ByteString -> c
+parsedOnly parser content = either error id $ parseOnly parser content
+
 hashResolved :: PackObjectType -> PackDecompressed B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
 parseResolved :: PackObjectType -> PackDecompressed B.ByteString -> GitObject
 parseResolved t (PackDecompressed _ source) =
-    either error id $ parseOnly (parseObjectContent t) source
+    parsedOnly (parseObjectContent t) source
 
 word8s :: [Word8] -> Parser [Word8]
 word8s = mapM word8
@@ -68,13 +71,12 @@ parse4Bytes :: (Bits t, Integral t) => Parser t
 parse4Bytes = fromBytes <$> take 4
 
 parsedIndex :: B.ByteString -> [PackIndexEntry]
-parsedIndex = either error id . parseOnly parsePackIndex
+parsedIndex = parsedOnly parsePackIndex
 
 parseVarInt :: (Bits t, Integral t) => Parser [t]
 parseVarInt = anyWord8 >>= \byte ->
     let value = fromIntegral $ byte .&. 127
-        more  = testMSB byte
-    in (value:) <$> bool (return []) parseVarInt more
+    in (:) value <$> bool (return []) parseVarInt (testMSB byte)
 
 testMSB :: Bits t => t -> Bool
 testMSB = flip testBit 7
@@ -166,8 +168,7 @@ parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
 parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
 
 parseDecompressedDelta :: Parser (PackDecompressed Delta)
-parseDecompressedDelta = parseDecompressed >>= \packCompressed ->
-    return $ (either error id . parseOnly parseDelta) <$> packCompressed
+parseDecompressedDelta = fmap (parsedOnly parseDelta) <$> parseDecompressed
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = do
@@ -179,10 +180,10 @@ parsePackRegion = do
         _                -> error "unrecognised type"
 
 parsedPackRegion :: B.ByteString -> PackEntry
-parsedPackRegion = either error id . parseOnly parsePackRegion
+parsedPackRegion = parsedOnly parsePackRegion
 
 parsedPackIndexRefs :: B.ByteString -> [Ref]
-parsedPackIndexRefs = either error id . parseOnly parsePackIndexUptoRefs
+parsedPackIndexRefs = parsedOnly parsePackIndexUptoRefs
 
 parsePackFileHeader :: Parser Int
 parsePackFileHeader =
@@ -199,4 +200,4 @@ parsePackRefs = parsePackRefsHeader
     >> foldr M.union M.empty <$> many' (parseCaret <|> parsePackRef)
 
 parsedPackRefs :: B.ByteString -> M.Map B.ByteString Ref
-parsedPackRefs = either error id . parseOnly parsePackRefs
+parsedPackRefs = parsedOnly parsePackRefs
