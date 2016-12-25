@@ -7,9 +7,8 @@ import Data.Bool            (bool)
 import Data.Tuple           (swap)
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
-import Duffer.Pack.Entries  (WithCompressionLevel(..), PackDelta(..)
-                            ,PackEntry(..), PackedObject(..)
-                            ,DeltaInstruction(..), Delta(..)
+import Duffer.Pack.Entries  (WCL(..), PackDelta(..), PackEntry(..)
+                            ,PackedObject(..), DeltaInstruction(..), Delta(..)
                             ,CombinedMap(..), RefIndex, OffsetMap, ObjectMap(..)
                             ,fullObject, toAssoc, emptyObjectMap
                             ,isResolved, insertObject)
@@ -32,7 +31,7 @@ resolveDelta combinedMap index = case getOffsetMap combinedMap Map.! index of
         | fullObject t -> object
         | otherwise    -> error "PackedObject cannot contain deltas"
     -- An OfsDelta needs to be resolved against a base object
-    UnResolved (OfsDelta o (WithCompressionLevel l (Delta _ _ instructions))) -> let
+    UnResolved (OfsDelta o (WCL l (Delta _ _ instructions))) -> let
         -- Find base object type and source.
         PackedObject t _ source = resolveDelta combinedMap (index-o)
         -- Interpret the delta instructions with the provided source.
@@ -40,15 +39,15 @@ resolveDelta combinedMap index = case getOffsetMap combinedMap Map.! index of
         -- The resulting ByteString can be parsed to yield an object.
         resultingHash           = hashResolved t resolvedDelta
         -- We now have an object of type t with a hash and a ByteString.
-        in PackedObject t resultingHash (resolvedDelta {packLevel = l})
-    UnResolved (RefDelta r (WithCompressionLevel l (Delta _ _ instructions))) -> let
+        in PackedObject t resultingHash (resolvedDelta {wclLevel = l})
+    UnResolved (RefDelta r (WCL l (Delta _ _ instructions))) -> let
         refIndex                = (Map.!) (getRefIndex combinedMap) r
         PackedObject t _ source = resolveDelta combinedMap refIndex
         -- Resolve the delta against this source.
         resolvedDelta           = (`applyInstructions` instructions) <$> source
         -- Compute the hash of this object.
         resultingHash           = hashResolved t resolvedDelta
-        in PackedObject t resultingHash (resolvedDelta {packLevel = l})
+        in PackedObject t resultingHash (resolvedDelta {wclLevel = l})
 
 resolveEntry :: CombinedMap -> Ref -> Maybe GitObject
 resolveEntry combinedMap ref = case Map.lookup ref (getRefIndex combinedMap) of
@@ -99,8 +98,7 @@ resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
         base = oMap Map.! (oIndex Map.! r')
         in resolve base delta
     _ -> entry
-    where resolve (PackedObject t _ source) (WithCompressionLevel l (Delta _ _ is)) =
-            let
-                resolved = (`applyInstructions` is) <$> source
-                r        = hashResolved t resolved
-                in Resolved $ PackedObject t r (resolved {packLevel = l})
+    where resolve (PackedObject t _ source) (WCL l (Delta _ _ is)) = let
+            resolved = (`applyInstructions` is) <$> source
+            r        = hashResolved t resolved
+            in Resolved $ PackedObject t r (resolved {wclLevel = l})
