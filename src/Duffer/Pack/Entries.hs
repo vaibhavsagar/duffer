@@ -30,12 +30,12 @@ data PackObjectType
     deriving (Eq, Show)
 
 data PackDelta
-    = OfsDelta Int (PackDecompressed Delta)
-    | RefDelta Ref (PackDecompressed Delta)
+    = OfsDelta Int (WCL Delta)
+    | RefDelta Ref (WCL Delta)
     deriving (Show, Eq)
 
 data PackedObject =
-    PackedObject PackObjectType Ref (PackDecompressed B.ByteString)
+    PackedObject PackObjectType Ref (WCL B.ByteString)
     deriving (Show, Eq)
 
 data PackEntry = Resolved PackedObject | UnResolved PackDelta
@@ -47,9 +47,9 @@ data PackEntry = Resolved PackedObject | UnResolved PackDelta
  - compressed content. For generating our own packfiles, this is not as
  - important.
  -}
-data PackDecompressed a = PackDecompressed
-    { packLevel   :: Z.CompressionLevel
-    , packContent :: a
+data WCL a = WCL
+    { wclLevel   :: Z.CompressionLevel
+    , wclContent :: a
     } deriving (Show, Eq)
 
 data DeltaInstruction
@@ -91,21 +91,21 @@ instance Enum PackObjectType where
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject) = toBytes packedObject
-    toBytes (UnResolved ofsD@(OfsDelta _ (PackDecompressed _ d))) = let
+    toBytes (UnResolved ofsD@(OfsDelta _ (WCL _ d))) = let
         header = encodeTypeLen OfsDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes ofsD
-    toBytes (UnResolved refD@(RefDelta _ (PackDecompressed _ d))) = let
+    toBytes (UnResolved refD@(RefDelta _ (WCL _ d))) = let
         header = encodeTypeLen RefDeltaObject $ B.length (toBytes d)
         in header `B.append` toBytes refD
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ packed) = let
-        header     = encodeTypeLen t $ B.length $ packContent packed
+        header     = encodeTypeLen t $ B.length $ wclContent packed
         compressed = toBytes packed
         in header `B.append` compressed
 
-instance (Byteable a) => Byteable (PackDecompressed a) where
-    toBytes (PackDecompressed level content) =
+instance (Byteable a) => Byteable (WCL a) where
+    toBytes (WCL level content) =
         compressToLevel level $ toBytes content
 
 isResolved :: PackEntry -> Bool
@@ -124,8 +124,8 @@ getCompressionLevel levelByte = case levelByte of
         156 -> Z.defaultCompression
         _   -> error "I can't make sense of this compression level"
 
-instance Functor PackDecompressed where
-    fmap f (PackDecompressed level content) = PackDecompressed level (f content)
+instance Functor WCL where
+    fmap f (WCL l a) = WCL l (f a)
 
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjType len = let
