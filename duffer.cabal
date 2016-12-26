@@ -28,28 +28,28 @@ library
                        Duffer.Unified
                        Duffer.WithRepo
   build-depends:       base >= 4.7 && < 5
+                     , aeson
+                     , attoparsec
+                     , base16-bytestring
+                     , base64-bytestring
                      , byteable
                      , bytestring
                      , containers
                      , cryptonite
                      , digest
+                     , directory
                      , filepath
                      , memory
                      , mmap
-                     , utf8-string
-                     , zlib
-                     , base16-bytestring
-                     , attoparsec
-                     , directory
-                     , transformers
                      , pipes
                      , pipes-attoparsec
                      , pipes-bytestring
                      , pipes-zlib
-                     , aeson
                      , text
-                     , base64-bytestring
+                     , transformers
                      , unordered-containers
+                     , utf8-string
+                     , zlib
   default-extensions:  OverloadedStrings
   ghc-options:       -fwarn-unused-imports
                      -fwarn-tabs
@@ -62,20 +62,20 @@ test-suite duffer-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
+                     , QuickCheck
+                     , aeson
+                     , attoparsec
                      , byteable
+                     , bytestring
                      , containers
                      , digest
-                     , duffer
-                     , attoparsec
                      , directory
+                     , duffer
                      , filepath
                      , hspec
-                     , QuickCheck
                      , process
-                     , bytestring
                      , transformers
                      , utf8-string
-                     , aeson
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
