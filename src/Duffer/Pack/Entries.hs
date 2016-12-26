@@ -2,10 +2,12 @@
 
 module Duffer.Pack.Entries where
 
-import qualified Codec.Compression.Zlib as Z
 import qualified Data.ByteString        as B
 import qualified Data.Map.Strict        as Map
 
+import Codec.Compression.Zlib (CompressionLevel, compressLevel, bestSpeed
+                              ,compressWith, defaultCompressParams
+                              ,defaultCompression)
 import Data.Byteable          (Byteable(..))
 import Data.ByteString.Base16 (decode)
 import Data.ByteString.Lazy   (fromStrict, toStrict)
@@ -45,7 +47,7 @@ data PackEntry = Resolved PackedObject | UnResolved PackDelta
  - important.
  -}
 data WCL a = WCL
-    { wclLevel   :: Z.CompressionLevel
+    { wclLevel   :: CompressionLevel
     , wclContent :: a
     } deriving (Show, Eq)
 
@@ -109,16 +111,15 @@ isResolved :: PackEntry -> Bool
 isResolved (Resolved _)   = True
 isResolved (UnResolved _) = False
 
-compressToLevel :: Z.CompressionLevel -> B.ByteString -> B.ByteString
+compressToLevel :: CompressionLevel -> B.ByteString -> B.ByteString
 compressToLevel level content = toStrict $
-    Z.compressWith Z.defaultCompressParams
-      { Z.compressLevel = level }
-      $ fromStrict content
+    compressWith defaultCompressParams {compressLevel = level}
+        $ fromStrict content
 
-getCompressionLevel :: Word8 -> Z.CompressionLevel
+getCompressionLevel :: Word8 -> CompressionLevel
 getCompressionLevel levelByte = case levelByte of
-        1   -> Z.bestSpeed
-        156 -> Z.defaultCompression
+        1   -> bestSpeed
+        156 -> defaultCompression
         _   -> error "I can't make sense of this compression level"
 
 instance Functor WCL where
