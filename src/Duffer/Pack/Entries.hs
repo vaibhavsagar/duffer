@@ -29,13 +29,10 @@ data PackObjectType
     | RefDeltaObject
     deriving (Eq, Show)
 
-data PackDelta
-    = OfsDelta Int (WCL Delta)
-    | RefDelta Ref (WCL Delta)
+data PackDelta = OfsDelta Int (WCL Delta) | RefDelta Ref (WCL Delta)
     deriving (Show, Eq)
 
-data PackedObject =
-    PackedObject PackObjectType Ref (WCL B.ByteString)
+data PackedObject = PackedObject PackObjectType Ref (WCL B.ByteString)
     deriving (Show, Eq)
 
 data PackEntry = Resolved PackedObject | UnResolved PackDelta
