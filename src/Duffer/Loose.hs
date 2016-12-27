@@ -19,11 +19,11 @@ import Duffer.WithRepo      (WithRepo, asks, localObjects, liftIO)
 
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
 (~~) object 0 = return (Just object)
-(~~) object n = readLooseObject (head $ parentRefs object)
+(~~) object n = readLooseObject (head $ commitParentRefs object)
     >>= maybe (return Nothing) (~~ (n-1))
 
 (^^) :: GitObject -> Int -> WithRepo (Maybe GitObject)
-(^^) object n = readLooseObject $ parentRefs object !! (n-1)
+(^^) object n = readLooseObject $ commitParentRefs object !! (n-1)
 
 decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict

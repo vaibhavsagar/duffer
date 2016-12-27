@@ -30,21 +30,21 @@ import System.FilePath         ((</>))
 import Text.Printf             (printf)
 
 data GitObject
-    = Blob {content :: B.ByteString}
-    | Tree {entries :: Set TreeEntry}
+    = Blob {blobContent :: B.ByteString}
+    | Tree {treeEntries :: Set TreeEntry}
     | Commit
-        { treeRef       :: Ref
-        , parentRefs    :: [Ref]
-        , authorTime    :: PersonTime
-        , committerTime :: PersonTime
-        , message       :: B.ByteString
+        { commitTreeRef       :: Ref
+        , commitParentRefs    :: [Ref]
+        , commitAuthorTime    :: PersonTime
+        , commitCommitterTime :: PersonTime
+        , commitMessage       :: B.ByteString
         }
     | Tag
-        { objectRef  :: Ref
-        , objectType :: B.ByteString
-        , tagName    :: B.ByteString
-        , tagger     :: PersonTime
-        , annotation :: B.ByteString
+        { tagObjectRef  :: Ref
+        , tagObjectType :: B.ByteString
+        , tagName       :: B.ByteString
+        , tagTagger     :: PersonTime
+        , tagAnnotation :: B.ByteString
         }
     deriving (Eq)
 
@@ -145,18 +145,18 @@ showContent gitObject = case gitObject of
     Blob content -> BB.byteString content
     Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
-        [                "tree"      ?  treeRef
-        , mconcat $ map ("parent"    ?) parentRefs
-        ,                "author"    ?  toBytes authorTime
-        ,                "committer" ?  toBytes committerTime
-        ,                "\n"        ,  BB.byteString message
+        [                "tree"      ?  commitTreeRef
+        , mconcat $ map ("parent"    ?) commitParentRefs
+        ,                "author"    ?  toBytes commitAuthorTime
+        ,                "committer" ?  toBytes commitCommitterTime
+        ,                "\n"        ,  BB.byteString commitMessage
         ]
     Tag {..} -> mconcat
-        [ "object" ?               objectRef
-        , "type"   ?               objectType
+        [ "object" ?               tagObjectRef
+        , "type"   ?               tagObjectType
         , "tag"    ?               tagName
-        , "tagger" ?       toBytes tagger
-        , "\n"     , BB.byteString annotation
+        , "tagger" ?       toBytes tagTagger
+        , "\n"     , BB.byteString tagAnnotation
         ]
     where (?) key value = mconcat $ map BB.byteString [key, " ", value, "\n"]
 
@@ -181,27 +181,27 @@ gitObjectPairs :: KeyValue t => GitObject -> [t]
 gitObjectPairs obj = case obj of
     Blob {..} ->
         [ "object_type" .= String "blob"
-        , "content"     .= b64encode content
+        , "content"     .= b64encode blobContent
         ]
     Tree {..} ->
         [ "object_type" .= String "tree"
-        , "entries"     .= S.toList entries
+        , "entries"     .= S.toList treeEntries
         ]
     Commit {..} ->
         [ "object_type" .= String "commit"
-        , "tree"        .= decodeRef treeRef
-        , "parents"     .= map decodeRef parentRefs
-        , "author"      .= authorTime
-        , "committer"   .= committerTime
-        , "message"     .= decodeBS message
+        , "tree"        .= decodeRef commitTreeRef
+        , "parents"     .= map decodeRef commitParentRefs
+        , "author"      .= commitAuthorTime
+        , "committer"   .= commitCommitterTime
+        , "message"     .= decodeBS commitMessage
         ]
     Tag {..} ->
         [ "object_type" .= String "tag"
-        , "object"      .= decodeRef objectRef
-        , "type"        .= decodeBS objectType
+        , "object"      .= decodeRef tagObjectRef
+        , "type"        .= decodeBS tagObjectType
         , "name"        .= decodeBS tagName
-        , "tagger"      .= tagger
-        , "annotation"  .= decodeBS annotation
+        , "tagger"      .= tagTagger
+        , "annotation"  .= decodeBS tagAnnotation
         ]
 
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
