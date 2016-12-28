@@ -28,22 +28,18 @@ import Duffer.Pack.Entries  (PackObjectType(..), WCL(..)
                             ,Delta(..), fixOffsets, fifthOffsets, fromBytes
                             ,packObjectType, getCompressionLevel, fullObject)
 
-parsedOnly :: Parser c -> B.ByteString -> c
+parsedOnly :: Parser a -> B.ByteString -> a
 parsedOnly parser content = either error id $ parseOnly parser content
 
 hashResolved :: PackObjectType -> WCL B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
 parseResolved :: PackObjectType -> WCL B.ByteString -> GitObject
-parseResolved t (WCL _ source) =
-    parsedOnly (parseObjectContent t) source
-
-word8s :: [Word8] -> Parser [Word8]
-word8s = mapM word8
+parseResolved t (WCL _ source) = parsedOnly (parseObjectContent t) source
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
-    total     <- parsePackIndexHeader *> fmap last parsePackIndexTotals
+    total     <- parsePackIndexTotal
     refs      <- parsePackIndexRefs total
     crc32s    <- count total parse4Bytes
     offsets   <- count total parse4Bytes
@@ -53,13 +49,15 @@ parsePackIndex = do
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
 parsePackIndexUptoRefs :: Parser [Ref]
-parsePackIndexUptoRefs = parsePackIndexHeader
-    *> fmap last parsePackIndexTotals >>= parsePackIndexRefs
+parsePackIndexUptoRefs = parsePackIndexTotal >>= parsePackIndexRefs
 
 parsePackIndexHeader :: Parser ()
-parsePackIndexHeader = word8s start *> word8s version *> pure ()
+parsePackIndexHeader = mapM word8 start *> mapM word8 version *> pure ()
     where start   = [255, 116, 79, 99]
           version = [0, 0, 0, 2]
+
+parsePackIndexTotal :: Parser Int
+parsePackIndexTotal = parsePackIndexHeader *> fmap last parsePackIndexTotals
 
 parsePackIndexTotals :: Parser [Int]
 parsePackIndexTotals = count 256 parse4Bytes
@@ -186,8 +184,7 @@ parsedPackIndexRefs :: B.ByteString -> [Ref]
 parsedPackIndexRefs = parsedOnly parsePackIndexUptoRefs
 
 parsePackFileHeader :: Parser Int
-parsePackFileHeader =
-    word8s (B.unpack "PACK") *> take 4 *> (fromBytes <$> take 4)
+parsePackFileHeader = mapM word8 (B.unpack "PACK") *> take 4 *> parse4Bytes
 
 parsePackRefsHeader, parseCaret, parsePackRef :: Parser (M.Map B.ByteString Ref)
 parsePackRefsHeader = char '#' *> parseRestOfLine *> return M.empty
