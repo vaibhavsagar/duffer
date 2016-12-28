@@ -33,11 +33,11 @@ data GitObject
     = Blob {blobContent :: B.ByteString}
     | Tree {treeEntries :: Set TreeEntry}
     | Commit
-        { commitTreeRef       :: Ref
-        , commitParentRefs    :: [Ref]
-        , commitAuthorTime    :: PersonTime
-        , commitCommitterTime :: PersonTime
-        , commitMessage       :: B.ByteString
+        { commitTreeRef    :: Ref
+        , commitParentRefs :: [Ref]
+        , commitAuthor     :: PersonTime
+        , commitCommitter  :: PersonTime
+        , commitMessage    :: B.ByteString
         }
     | Tag
         { tagObjectRef  :: Ref
@@ -147,8 +147,8 @@ showContent gitObject = case gitObject of
     Commit {..}  -> mconcat
         [                "tree"      ?  commitTreeRef
         , mconcat $ map ("parent"    ?) commitParentRefs
-        ,                "author"    ?  toBytes commitAuthorTime
-        ,                "committer" ?  toBytes commitCommitterTime
+        ,                "author"    ?  toBytes commitAuthor
+        ,                "committer" ?  toBytes commitCommitter
         ,                "\n"        ,  BB.byteString commitMessage
         ]
     Tag {..} -> mconcat
@@ -191,8 +191,8 @@ gitObjectPairs obj = case obj of
         [ "object_type" .= String "commit"
         , "tree"        .= decodeRef commitTreeRef
         , "parents"     .= map decodeRef commitParentRefs
-        , "author"      .= commitAuthorTime
-        , "committer"   .= commitCommitterTime
+        , "author"      .= commitAuthor
+        , "committer"   .= commitCommitter
         , "message"     .= decodeBS commitMessage
         ]
     Tag {..} ->
