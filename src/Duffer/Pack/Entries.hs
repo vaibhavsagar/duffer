@@ -138,11 +138,8 @@ packEntryLenList n = let
     last4  = fromIntegral n .&. 15
     last4' = bool last4 (setBit last4 7) (rest > 0)
     restL  = to7BitList rest
-    restL' = bool
-        []
-        (map fromIntegral $ head restL:map (`setBit` 7) (tail restL))
-        (restL /= [0])
-    in (last4', B.pack $ reverse restL')
+    restL' = bool B.empty (toLittleEndian restL) (restL /= [0])
+    in (last4', restL')
 
 instance Byteable PackDelta where
     toBytes packDelta = uncurry B.append $ case packDelta of
@@ -167,18 +164,20 @@ encodeOffset n = let
     remove      = sum $ take noTerms powers128 :: Integer
     remainder   = n - fromIntegral remove :: Int
     varInt      = to7BitList remainder
-    encodedInts = setMSBs $ leftPadZeros varInt (noTerms + 1)
-    in B.pack $ map fromIntegral encodedInts
+    encodedInts = toLittleEndian . reverse $ leftPadZeros varInt (noTerms + 1)
+    in encodedInts
 
 leftPadZeros :: [Int] -> Int -> [Int]
 leftPadZeros ints n
     | length ints < n = leftPadZeros (0:ints) n
     | otherwise       = ints
 
-setMSBs :: [Int] -> [Int]
-setMSBs ints = let
-    ints' = reverse ints
-    in reverse $ head ints' : map (`setBit` 7) ( tail ints')
+setMSB :: (Bits t, Integral t) => t -> t
+setMSB = (`setBit` 7)
+
+setMSBs :: (Bits t, Integral t) => [t] -> [Word8]
+setMSBs []     = []
+setMSBs (i:is) = reverse . map fromIntegral $ i : map setMSB is
 
 instance Byteable Delta where
     toBytes (Delta source dest instructions) = B.concat
@@ -188,9 +187,7 @@ instance Byteable Delta where
         ]
 
 toLittleEndian :: (Bits t, Integral t) => [t] -> B.ByteString
-toLittleEndian nums = case nums of
-    (n:ns) -> B.pack $ map fromIntegral $ reverse $ n:map (`setBit` 7) ns
-    []     -> ""
+toLittleEndian = B.pack . setMSBs
 
 instance Byteable DeltaInstruction where
     toBytes (InsertInstruction content) =
