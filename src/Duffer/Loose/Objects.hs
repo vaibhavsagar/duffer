@@ -193,19 +193,19 @@ gitObjectPairs obj = case obj of
         ]
     Commit {..} ->
         [ "object_type" .= String "commit"
-        , "tree"        .= decodeRef commitTreeRef
+        , "tree"        .=     decodeRef commitTreeRef
         , "parents"     .= map decodeRef commitParentRefs
-        , "author"      .= commitAuthor
-        , "committer"   .= commitCommitter
-        , "message"     .= decodeBS commitMessage
+        , "author"      .=               commitAuthor
+        , "committer"   .=               commitCommitter
+        , "message"     .=     decodeBS  commitMessage
         ]
     Tag {..} ->
         [ "object_type" .= String "tag"
         , "object"      .= decodeRef tagObjectRef
-        , "type"        .= decodeBS tagObjectType
-        , "name"        .= decodeBS tagName
-        , "tagger"      .= tagTagger
-        , "annotation"  .= decodeBS tagAnnotation
+        , "type"        .= decodeBS  tagObjectType
+        , "name"        .= decodeBS  tagName
+        , "tagger"      .=           tagTagger
+        , "annotation"  .= decodeBS  tagAnnotation
         ]
 
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
