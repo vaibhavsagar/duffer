@@ -169,12 +169,16 @@ b64encode = E.decodeUtf8 . B64.encode
 b64decode :: T.Text -> B.ByteString
 b64decode = B64.decodeLenient . E.encodeUtf8
 
-decodeRef, decodeBS :: Ref -> T.Text
+decodeRef :: Ref -> T.Text
 decodeRef = E.decodeUtf8
+
+decodeBS :: B.ByteString -> T.Text
 decodeBS  = E.decodeUtf8
 
-encodeRef, encodeBS :: T.Text -> B.ByteString
+encodeRef :: T.Text -> Ref
 encodeRef = E.encodeUtf8
+
+encodeBS :: T.Text -> B.ByteString
 encodeBS  = E.encodeUtf8
 
 gitObjectPairs :: KeyValue t => GitObject -> [t]
