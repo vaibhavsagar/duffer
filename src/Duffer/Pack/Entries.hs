@@ -177,7 +177,7 @@ setMSB = (`setBit` 7)
 
 setMSBs :: (Bits t, Integral t) => [t] -> [Word8]
 setMSBs []     = []
-setMSBs (i:is) = reverse . map fromIntegral $ i : map setMSB is
+setMSBs (i:is) = map fromIntegral $ i : map setMSB is
 
 instance Byteable Delta where
     toBytes (Delta source dest instructions) = B.concat
@@ -187,7 +187,7 @@ instance Byteable Delta where
         ]
 
 toLittleEndian :: (Bits t, Integral t) => [t] -> B.ByteString
-toLittleEndian = B.pack . setMSBs
+toLittleEndian = B.pack . reverse . setMSBs
 
 instance Byteable DeltaInstruction where
     toBytes (InsertInstruction content) =
