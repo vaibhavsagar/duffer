@@ -19,7 +19,11 @@ import Data.Word              (Word8, Word32)
 
 import Duffer.Loose.Objects (Ref)
 
-data PackIndexEntry = PackIndexEntry Int Ref Word32
+data PackIndexEntry = PackIndexEntry
+    { pieOffset :: Int
+    , pieRef    :: Ref
+    , pieCRC    :: Word32
+    }
     deriving (Show, Eq)
 
 data PackObjectType
