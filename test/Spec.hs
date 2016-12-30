@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-
-import qualified Data.Map.Strict as Map
+{-# LANGUAGE LambdaCase #-}
 
 import Control.Monad              (zipWithM_)
 import Data.Aeson                 (encode, decode)
@@ -9,6 +8,7 @@ import Data.ByteString            (readFile, hGetContents, split)
 import Data.ByteString.UTF8       (lines, toString)
 import Data.Byteable              (Byteable(..))
 import Data.Digest.CRC32          (crc32)
+import Data.Map.Strict            (elems)
 import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
 import System.FilePath            ()
@@ -96,11 +96,9 @@ testRefs = hspec . parallel $ describe "reading refs" $ do
     refsOutput <- runIO allRefs
     it "correctly reads refs" $
         mapM_ (checkRef ".git") refsOutput
-    where checkRef repo (path, ref) = do
-            maybeRef <- withRepo repo (readRef path)
-            case maybeRef of
-                (Just someRef) -> someRef `shouldBe` ref
-                Nothing        -> expectationFailure $ path ++ " not found"
+    where checkRef repo (path, ref) = withRepo repo (readRef path) >>= \case
+            (Just someRef) -> someRef `shouldBe` ref
+            Nothing        -> expectationFailure $ path ++ " not found"
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects = describe oType $
@@ -113,12 +111,12 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     entryMap       <- runIO $ indexedEntryMap indexPath
     byteStringMap  <- runIO $ indexedByteStringMap indexPath
     it "decodes and encodes correctly" $ do
-        let encodedMap =  Map.map toBytes entryMap
+        let encodedMap =  fmap toBytes entryMap
         encodedMap `shouldBe` byteStringMap
-        let decodedMap = Map.map parsedPackRegion encodedMap
+        let decodedMap = fmap parsedPackRegion encodedMap
         decodedMap `shouldBe` entryMap
-        let crcMap = Map.map crc32 encodedMap
-        Map.elems crcMap `shouldMatchList` map getCRC index
+        let crcMap = fmap crc32 encodedMap
+        elems crcMap `shouldMatchList` map pieCRC index
     it "can separate a streamed packfile" $ do
         indexedPackFile <- indexPackFile $ packFile indexPath
         indexedPackFile `shouldBe` byteStringMap
@@ -149,8 +147,8 @@ objectsOfType objectType = fmap lines $
 allRefs :: IO [(FilePath, Ref)]
 allRefs = do
     content  <- cmd "git show-ref" >>= hGetContents
-    let refs =  (map (split 32) . lines) content
-    return $ map (\sep -> (toString (head $ tail sep), head sep)) refs
+    let refs =  split 32 <$> lines content
+    return $ map (\[p, h] -> (toString h, p)) refs
 
 cmd :: String -> IO Handle
 cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
@@ -163,22 +161,18 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
             \(_, Just handle', _, _) -> return handle'
 
 readHashObject :: String -> Ref -> Expectation
-readHashObject path sha1 = do
-    maybeObject <- withRepo path (readObject sha1)
-    case maybeObject of
-        (Just object) -> hash object `shouldBe` sha1
-        Nothing       -> let
-            sha1String = toString sha1
-            in expectationFailure $ sha1String ++ " not found"
+readHashObject path sha1 = withRepo path (readObject sha1) >>= \case
+    (Just object) -> hash object `shouldBe` sha1
+    Nothing       -> let
+        sha1String = toString sha1
+        in expectationFailure $ sha1String ++ " not found"
 
 decodeEncodeObject :: FilePath -> Ref -> Expectation
-decodeEncodeObject path ref = do
-    maybeObject <- withRepo path (readObject ref)
-    case maybeObject of
-        (Just object) -> let
-            encoded = encode object
-            decoded = fromJust $ decode encoded :: GitObject
-            in decoded `shouldBe` object
-        Nothing       -> let
-            sha1String = toString ref
-            in expectationFailure $ sha1String ++ " not found"
+decodeEncodeObject path ref = withRepo path (readObject ref) >>= \case
+    (Just object) -> let
+        encoded = encode object
+        decoded = fromJust $ decode encoded :: GitObject
+        in decoded `shouldBe` object
+    Nothing       -> let
+        sha1String = toString ref
+        in expectationFailure $ sha1String ++ " not found"
