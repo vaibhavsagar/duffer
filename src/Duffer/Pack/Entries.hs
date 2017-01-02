@@ -3,7 +3,6 @@
 module Duffer.Pack.Entries where
 
 import qualified Data.ByteString        as B
-import qualified Data.Map.Strict        as Map
 
 import Codec.Compression.Zlib (CompressionLevel, compressLevel, bestSpeed
                               ,compressWith, defaultCompressParams
@@ -15,6 +14,7 @@ import Data.Bits              (Bits(..))
 import Data.Bool              (bool)
 import Data.Digest.CRC32      (crc32)
 import Data.List              (foldl')
+import Data.Map.Strict        (Map, insert, empty, (!), foldrWithKey)
 import Data.Word              (Word8, Word32)
 
 import Duffer.Loose.Objects (Ref)
@@ -68,13 +68,13 @@ data CombinedMap = CombinedMap
     } deriving (Show)
 
 data ObjectMap = ObjectMap
-    { getObjectMap   :: Map.Map Int PackedObject
+    { getObjectMap   :: Map Int PackedObject
     , getObjectIndex :: RefIndex
     }
 
-type OffsetMap = Map.Map Int PackEntry
-type RefMap    = Map.Map Ref PackEntry
-type RefIndex  = Map.Map Ref Int
+type OffsetMap = Map Int PackEntry
+type RefMap    = Map Ref PackEntry
+type RefIndex  = Map Ref Int
 
 instance Enum PackObjectType where
     fromEnum CommitObject   = 1
@@ -103,15 +103,14 @@ instance Byteable PackEntry where
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ packed) = let
-        header     = encodeTypeLen t $ B.length $ wclContent packed
-        compressed = toBytes packed
-        in header `B.append` compressed
+        header = encodeTypeLen t $ B.length $ wclContent packed
+        in header `B.append` toBytes packed
 
 instance (Byteable a) => Byteable (WCL a) where
     toBytes WCL{..} = compressToLevel wclLevel $ toBytes wclContent
 
 isResolved :: PackEntry -> Bool
-isResolved (Resolved _)   = True
+isResolved (Resolved   _) = True
 isResolved (UnResolved _) = False
 
 compressToLevel :: CompressionLevel -> B.ByteString -> B.ByteString
@@ -131,36 +130,36 @@ instance Functor WCL where
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjType len = let
     (last4, rest) = packEntryLenList len
-    firstByte     = (fromEnum packObjType `shiftL` 4) .|. last4
-    firstByte'    = bool firstByte (setBit firstByte 7) (rest /= "")
+    firstByte     = fromEnum packObjType `shiftL` 4 .|. last4
+    firstByte'    = bool firstByte (setMSB firstByte) (rest /= B.empty)
     in B.cons (fromIntegral firstByte') rest
 
 packEntryLenList :: Int -> (Int, B.ByteString)
 packEntryLenList n = let
     rest   = fromIntegral n `shiftR` 4 :: Int
     last4  = fromIntegral n .&. 15
-    last4' = bool last4 (setBit last4 7) (rest > 0)
+    last4' = bool last4 (setMSB last4) (rest > 0)
     restL  = to7BitList rest
     restL' = bool B.empty (toLittleEndian restL) (restL /= [0])
     in (last4', restL')
 
 instance Byteable PackDelta where
     toBytes packDelta = uncurry B.append $ case packDelta of
-        (RefDelta ref delta) -> (fst $ decode ref, toBytes delta)
-        (OfsDelta off delta) -> (encodeOffset off, toBytes delta)
+        RefDelta ref delta -> (fst $ decode ref, toBytes delta)
+        OfsDelta off delta -> (encodeOffset off, toBytes delta)
 
+{- Given a = r = 2^7:
+ - x           = a((1 - r^n)/(1-r))
+ - x - xr      = a - ar^n
+ - x + ar^n    = a + xr
+ - x + r^(n+1) = r + xr
+ - r^(n+1)     = r + xr -x
+ - r^(n+1)     = x(r-1) + r
+ - n+1         = log128 x(r-1) + r
+ - n           = floor ((log128 x(2^7-1) + 2^7) - 1)
+ -}
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
-    {- Given a = r = 2^7:
-     - x           = a((1 - r^n)/(1-r))
-     - x - xr      = a - ar^n
-     - x + ar^n    = a + xr
-     - x + r^(n+1) = r + xr
-     - r^(n+1)     = r + xr -x
-     - r^(n+1)     = x(r-1) + r
-     - n+1         = log128 x(r-1) + r
-     - n           = floor ((log128 x(2^7-1) + 2^7) - 1)
-     -}
     noTermsLog  = logBase 128 (fromIntegral n * (128 - 1) + 128) :: Double
     noTerms     = floor noTermsLog - 1
     powers128   = map (128^) ([1..] :: [Integer])
@@ -224,20 +223,16 @@ packObjectType header = toEnum . fromIntegral $ (header `shiftR` 4) .&. 7
 toAssoc :: PackIndexEntry -> (Int, Ref)
 toAssoc (PackIndexEntry o r _) = (o, r)
 
-getCRC :: PackIndexEntry -> Word32
-getCRC (PackIndexEntry _ _ c) = c
-
 emptyCombinedMap :: CombinedMap
-emptyCombinedMap = CombinedMap Map.empty Map.empty
+emptyCombinedMap = CombinedMap empty empty
 
 emptyObjectMap :: ObjectMap
-emptyObjectMap = ObjectMap Map.empty Map.empty
+emptyObjectMap = ObjectMap empty empty
 
 insertObject :: Int -> PackedObject -> ObjectMap -> ObjectMap
-insertObject offset object@(PackedObject _ r _) ObjectMap {..} = let
-    getObjectMap'   = Map.insert offset object getObjectMap
-    getObjectIndex' = Map.insert r      offset getObjectIndex
-    in ObjectMap getObjectMap' getObjectIndex'
+insertObject offset object@(PackedObject _ r _) ObjectMap {..} = ObjectMap
+    (insert offset object getObjectMap)
+    (insert r      offset getObjectIndex)
 
 fromBytes :: (Bits t, Integral t) => B.ByteString -> t
 fromBytes = B.foldl' (\a b -> (a `shiftL` 8) + fromIntegral b) 0
@@ -264,6 +259,6 @@ fixOffsets fOffsets offset
 
 packIndexEntries :: CombinedMap -> [PackIndexEntry]
 packIndexEntries CombinedMap {..} = let
-    crc32s     = Map.map (crc32 . toBytes) getOffsetMap
-    offsetRefs = Map.toList getRefIndex
-    in map (\(r, o) -> PackIndexEntry o r (crc32s Map.! o)) offsetRefs
+    crc32s = (crc32 . toBytes) <$> getOffsetMap
+    op r o = (:) (PackIndexEntry o r (crc32s ! o))
+    in foldrWithKey op [] getRefIndex
