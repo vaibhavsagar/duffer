@@ -6,6 +6,9 @@ This is a learning exercise and an API for `git`, in that order. Please do not
 use this code in production. Instead I would recommend Vincent Hanquez's
 excellent and very educational [hs-git](https://github.com/vincenthz/hs-git/).
 
+I [gave a presentation](https://www.youtube.com/watch?v=wsNnP3we_R4) on this
+project.
+
 # What this library does
 
 - Reads and writes loose blobs, trees, commits, and tags.
@@ -40,7 +43,7 @@ library:
 
 1. [Set up `stack`](https://docs.haskellstack.org/en/stable/README/) if you
    haven't already.
-1. Clone this repository: `git clone git@github.com:vaibhavsagar/duffer.git`
-1. `cd duffer`
-1. `stack test`
-1. Tests should all pass. If they don't, please open an issue.
+2. Clone this repository: `git clone git@github.com:vaibhavsagar/duffer.git`
+3. `cd duffer`
+4. `stack test`
+5. Tests should all pass. If they don't, please open an issue.
