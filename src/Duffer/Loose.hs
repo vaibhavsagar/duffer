@@ -57,10 +57,13 @@ hasLooseObject :: Ref -> WithRepo Bool
 hasLooseObject = localObjects . hasLooseObject'
 
 hasLooseObject' :: Ref -> WithRepo Bool
-hasLooseObject' ref = asks (sha1Path ref) >>= liftIO . doesFileExist
+hasLooseObject' = hasFile sha1Path
 
 hasLooseRef :: FilePath -> WithRepo Bool
-hasLooseRef refPath = asks (</> refPath) >>= liftIO . doesFileExist
+hasLooseRef = hasFile (flip (</>))
+
+hasFile :: (a -> FilePath -> FilePath) -> a -> WithRepo Bool
+hasFile f path = asks (f path) >>= liftIO . doesFileExist
 
 updateLooseRef :: FilePath -> GitObject -> WithRepo Ref
 updateLooseRef refPath object = let sha1 = hash object in do
