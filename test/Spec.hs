@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BangPatterns #-}
+
+import qualified Data.Map.Strict as M
 
 import Control.Monad              (zipWithM_)
 import Data.Aeson                 (encode, decode)
@@ -110,7 +113,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     index          <- runIO $ parsedIndex <$> readFile indexPath
     entryMap       <- runIO $ indexedEntryMap indexPath
     byteStringMap  <- runIO $ indexedByteStringMap indexPath
-    it "decodes and encodes correctly" $ do
+    it "decodes and encodes pack entries correctly" $ do
         let encodedMap =  fmap toBytes entryMap
         encodedMap `shouldBe` byteStringMap
         let decodedMap = fmap parsedPackRegion encodedMap
