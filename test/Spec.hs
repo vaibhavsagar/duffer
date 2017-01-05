@@ -31,7 +31,8 @@ import Duffer.Pack.File      (resolveEntry, resolveAll')
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
 import Duffer.Pack.Streaming (indexPackFile)
-import Duffer.Pack.Entries
+import Duffer.Pack.Entries   (PackObjectType(..), encodeOffset, encodeTypeLen
+                             ,PackIndexEntry(..), packIndexEntries, toAssoc)
 import Duffer.WithRepo       (withRepo)
 
 main :: IO ()
