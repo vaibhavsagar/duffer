@@ -44,8 +44,8 @@ parsePackIndex = do
     crc32s    <- count total parse4Bytes
     offsets   <- count total parse4Bytes
     remaining <- takeByteString
-    let (fifth, _) = B.splitAt (B.length remaining - 40) remaining
-    let fixedOffsets    = map (fixOffsets (fifthOffsets fifth)) offsets
+    let (fifth, _)   = B.splitAt (B.length remaining - 40) remaining
+        fixedOffsets = map (fixOffsets (fifthOffsets fifth)) offsets
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
 parsePackIndexUptoRefs :: Parser [Ref]
@@ -84,10 +84,9 @@ littleEndian = foldr  (\a b -> a + (b `shiftL` 7)) 0
 bigEndian    = foldl' (\a b -> (a `shiftL` 7) + b) 0
 
 parseOffset :: (Bits t, Integral t) => Parser t
-parseOffset = parseVarInt >>= \values ->
-    let len          = length values - 1
-        concatenated = bigEndian values
-    in return $ concatenated + bool
+parseOffset = parseVarInt >>= \values -> let
+    len = length values - 1
+    in return $ bigEndian values + bool
         -- I think the addition reinstates the MSBs that are otherwise
         -- used to indicate whether there is more of the variable length
         -- integer to parse.
@@ -99,12 +98,11 @@ parseTypeLen :: (Bits t, Integral t) => Parser (PackObjectType, t)
 parseTypeLen = do
     header <- anyWord8
     let initial  = fromIntegral $ header .&. 15
-    let packType = packObjectType header
     size <- (+) initial <$> bool
         (return 0)
         ((`shiftL` 4) <$> (littleEndian <$> parseVarInt))
         (testMSB header)
-    return (packType, size)
+    return (packObjectType header, size)
 
 parseDeltaInstruction :: Parser DeltaInstruction
 parseDeltaInstruction = fromIntegral <$> anyWord8 >>= \instruction ->
