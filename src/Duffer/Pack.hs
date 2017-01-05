@@ -5,6 +5,7 @@ module Duffer.Pack where
 import qualified Data.ByteString      as B
 import qualified Data.ByteString.UTF8 as BU
 import qualified Data.Map.Strict      as Map
+import qualified Data.IntMap.Strict   as IntMap
 import qualified Data.Set             as Set
 
 import Data.Bool        (bool)
@@ -81,9 +82,9 @@ packFileRegion :: FilePath -> Maybe (Int64, Int) -> IO B.ByteString
 packFileRegion = mmapFileByteString
 
 indexedEntryMap :: FilePath -> IO OffsetMap
-indexedEntryMap = fmap (Map.map parsedPackRegion) . indexedByteStringMap
+indexedEntryMap = fmap (fmap parsedPackRegion) . indexedByteStringMap
 
-indexedByteStringMap :: FilePath -> IO (Map.Map Int B.ByteString)
+indexedByteStringMap :: FilePath -> IO (IntMap.IntMap B.ByteString)
 indexedByteStringMap indexPath = do
     offsetMap    <- makeOffsetMap <$> B.readFile indexPath
     let filePath =  packFile indexPath
@@ -91,7 +92,7 @@ indexedByteStringMap indexPath = do
     let indices  =  Map.keys offsetMap
     let rangeMap =  Map.insert (contentEnd - 20) "" offsetMap
     entries      <- mapM (getPackRegion filePath rangeMap) indices
-    return $ Map.fromAscList $ zip indices entries
+    return $ IntMap.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
 combinedEntryMap indexPath = CombinedMap

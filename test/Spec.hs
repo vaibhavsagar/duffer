@@ -2,8 +2,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BangPatterns #-}
 
-import qualified Data.Map.Strict as M
-
 import Control.Monad              (zipWithM_)
 import Data.Aeson                 (encode, decode)
 import Data.Attoparsec.ByteString (parseOnly)
@@ -11,7 +9,7 @@ import Data.ByteString            (readFile, hGetContents, split)
 import Data.ByteString.UTF8       (lines, toString)
 import Data.Byteable              (Byteable(..))
 import Data.Digest.CRC32          (crc32)
-import Data.Map.Strict            (elems)
+import Data.IntMap.Strict         (elems)
 import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
 import System.FilePath            ()
