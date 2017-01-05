@@ -2,8 +2,9 @@
 
 module Duffer.Pack.File where
 
-import qualified Data.ByteString as B
-import qualified Data.Map.Strict as Map
+import qualified Data.ByteString    as B
+import qualified Data.Map.Strict    as Map
+import qualified Data.IntMap.Strict as IntMap
 
 import Data.Bool            (bool)
 import Data.Tuple           (swap)
@@ -33,7 +34,7 @@ resolve (PackedObject t _ source) (WCL l (Delta _ _ is)) = let
     in PackedObject t r (resolved {wclLevel = l})
 
 resolveDelta :: CombinedMap -> Int -> PackedObject
-resolveDelta combinedMap index = case getOffsetMap combinedMap Map.! index of
+resolveDelta combinedMap index = case getOffsetMap combinedMap IntMap.! index of
     Resolved object@(PackedObject t _ _)
         -- If we find a commit, tree, blob, or tag, our work is done.
         | fullObject t -> object
@@ -65,21 +66,21 @@ resolveAll' =
     map unpackObject . Map.elems . getObjectMap . resolveIter emptyObjectMap
 
 resolveIter :: ObjectMap -> OffsetMap -> ObjectMap
-resolveIter objectMap offsetMap | Map.null offsetMap = objectMap
+resolveIter objectMap offsetMap | IntMap.null offsetMap = objectMap
 resolveIter objectMap offsetMap = let
     (objectMap', offsetMap') = separateResolved objectMap offsetMap
     possiblyResolved         = resolveIfPossible objectMap'
-    offsetMap''              = Map.mapWithKey possiblyResolved offsetMap'
+    offsetMap''              = IntMap.mapWithKey possiblyResolved offsetMap'
     in bool
         (error "cannot progress")
         (resolveIter objectMap' offsetMap'')
-        (Map.size offsetMap' < Map.size offsetMap)
+        (IntMap.size offsetMap' < IntMap.size offsetMap)
 
 separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
 separateResolved objectMap offsetMap = let
-    (objects, deltas) = Map.partition isResolved offsetMap
-    objects'          = Map.map (\(Resolved o) -> o) objects
-    objectMap'        = Map.foldrWithKey insertObject objectMap objects'
+    (objects, deltas) = IntMap.partition isResolved offsetMap
+    objects'          = IntMap.map (\(Resolved o) -> o) objects
+    objectMap'        = IntMap.foldrWithKey insertObject objectMap objects'
     in (objectMap', deltas)
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry

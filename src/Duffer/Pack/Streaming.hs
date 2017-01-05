@@ -7,7 +7,7 @@ import Codec.Compression.Zlib           (CompressionLevel)
 import Control.Arrow                    (first)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, runStateT, gets)
 import Data.ByteString.Base16           (decode)
-import Data.Map.Strict                  (Map, empty, insert)
+import Data.IntMap.Strict               (IntMap, empty, insert)
 import Data.Maybe                       (fromJust)
 import Pipes                            (Producer, next)
 import Pipes.Attoparsec                 (parse, parseL)
@@ -22,7 +22,7 @@ import Duffer.Pack.Entries (PackObjectType(..), compressToLevel, encodeOffset
                            ,getCompressionLevel, encodeTypeLen)
 
 type Prod a   = Producer ByteString IO a
-type IntBSMap = Map Int ByteString
+type IntBSMap = IntMap ByteString
 
 indexPackFile :: FilePath -> IO IntBSMap
 indexPackFile path = do
