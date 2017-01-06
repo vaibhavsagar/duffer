@@ -36,5 +36,3 @@ extra-package-dbs: []
 # compiler-check: newer-minor
 
 apply-ghc-options: everything
-ghc-options:
-      # cryptonite: -opta-Wa
