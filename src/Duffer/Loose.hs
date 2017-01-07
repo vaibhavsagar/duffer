@@ -63,7 +63,7 @@ hasLooseRef :: FilePath -> WithRepo Bool
 hasLooseRef = hasFile (flip (</>))
 
 hasFile :: (a -> FilePath -> FilePath) -> a -> WithRepo Bool
-hasFile f path = asks (f path) >>= liftIO . doesFileExist
+hasFile f path = liftIO . doesFileExist =<< asks (f path)
 
 updateLooseRef :: FilePath -> GitObject -> WithRepo Ref
 updateLooseRef refPath object = let sha1 = hash object in do
