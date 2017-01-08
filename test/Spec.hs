@@ -30,7 +30,7 @@ import Duffer.Pack           (getPackIndices, indexedEntryMap
 import Duffer.Pack.File      (resolveEntry, resolveAll')
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
-import Duffer.Pack.Streaming (indexPackFile)
+import Duffer.Pack.Streaming (separatePackFile)
 import Duffer.Pack.Entries   (PackObjectType(..), encodeOffset, encodeTypeLen
                              ,PackIndexEntry(..), packIndexEntries, toAssoc)
 import Duffer.WithRepo       (withRepo)
@@ -109,10 +109,10 @@ describeDecodingEncodingAll oType objects = describe oType $
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
-    index          <- runIO $ parsedIndex <$> readFile indexPath
-    entryMap       <- runIO $ indexedEntryMap indexPath
-    byteStringMap  <- runIO $ indexedByteStringMap indexPath
+    index    <- runIO $ parsedIndex <$> readFile indexPath
+    entryMap <- runIO $ indexedEntryMap indexPath
     it "decodes and encodes pack entries correctly" $ do
+        byteStringMap  <- indexedByteStringMap indexPath
         let encodedMap =  fmap toBytes entryMap
         encodedMap `shouldBe` byteStringMap
         let decodedMap = fmap parsedPackRegion encodedMap
@@ -120,8 +120,8 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         let crcMap = fmap crc32 encodedMap
         elems crcMap `shouldMatchList` map pieCRC index
     it "can separate a streamed packfile" $ do
-        indexedPackFile <- indexPackFile $ packFile indexPath
-        indexedPackFile `shouldBe` byteStringMap
+        separatedPackFile <- separatePackFile $ packFile indexPath
+        separatedPackFile `shouldBe` entryMap
     combinedMap <- runIO $ combinedEntryMap indexPath
     it "can reconstruct the pack index entries" $
         packIndexEntries combinedMap `shouldMatchList` index

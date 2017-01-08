@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Duffer.Pack.Streaming (indexPackFile) where
+module Duffer.Pack.Streaming (separatePackFile) where
 
 import Data.ByteString                  (ByteString, append, concat, length)
 import Codec.Compression.Zlib           (CompressionLevel)
@@ -17,29 +17,30 @@ import Prelude hiding                   (length, concat)
 import System.IO                        (openFile, IOMode(ReadMode))
 
 import Duffer.Loose.Parser (parseBinRef)
-import Duffer.Pack.Parser  (parseOffset, parsePackFileHeader, parseTypeLen)
-import Duffer.Pack.Entries (PackObjectType(..), compressToLevel, encodeOffset
-                           ,getCompressionLevel, encodeTypeLen)
+import Duffer.Pack.Parser  (parseOffset, parsePackFileHeader, parseTypeLen
+                           ,parsedPackRegion)
+import Duffer.Pack.Entries (PackObjectType(..), PackEntry(..), compressToLevel
+                           ,encodeOffset, getCompressionLevel, encodeTypeLen)
 
 type Prod a   = Producer ByteString IO a
-type IntBSMap = IntMap ByteString
+type EntryMap = IntMap PackEntry
 
-indexPackFile :: FilePath -> IO IntBSMap
-indexPackFile path = do
+separatePackFile :: FilePath -> IO EntryMap
+separatePackFile path = do
     ((start, count), entries) <- runStateT parsePackFileStart =<<
         fromHandle <$> openFile path ReadMode
     fst <$> loop entries start count empty
     where parsePackFileStart =
             fromRight . fromJust <$> parseL parsePackFileHeader
 
-loop :: Prod a -> Int -> Int -> IntBSMap -> IO (IntBSMap, Prod a)
+loop :: Prod a -> Int -> Int -> EntryMap -> IO (EntryMap, Prod a)
 loop producer _      0         indexedMap = return (indexedMap, producer)
 loop producer offset remaining indexedMap = do
     (headerRef, decompressedP, level) <- evalStateT getNextEntry producer
     (output, producer')               <- uncurry advanceToCompletion =<<
         either ((,) "" . return) id <$> next decompressedP
     let content     = headerRef `append` compressToLevel level (concat output)
-        indexedMap' = insert offset content indexedMap
+        indexedMap' = insert offset (parsedPackRegion content) indexedMap
         offset'     = offset + length content
         remaining'  = remaining - 1
     indexedMap' `seq` loop producer' offset' remaining' indexedMap'
