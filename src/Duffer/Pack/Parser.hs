@@ -53,7 +53,7 @@ parsePackIndexUptoRefs :: Parser [Ref]
 parsePackIndexUptoRefs = parsePackIndexTotal >>= parsePackIndexRefs
 
 parsePackIndexHeader :: Parser ()
-parsePackIndexHeader = mapM word8 start *> mapM word8 version *> pure ()
+parsePackIndexHeader = traverse word8 start *> traverse word8 version *> pure ()
     where start   = [255, 116, 79, 99]
           version = [0, 0, 0, 2]
 
@@ -148,22 +148,22 @@ parseObjectContent = \case
     BlobType   -> parseBlob
     TagType    -> parseTag
 
-parseDecompressed :: Parser (WCL B.ByteString)
-parseDecompressed = takeLazyByteString >>= \compressed -> return $ WCL
+parseWCL :: Parser (WCL B.ByteString)
+parseWCL = takeLazyByteString >>= \compressed -> return $ WCL
     (getCompressionLevel $ L.head $ L.drop 1 compressed)
     (L.toStrict $ decompress compressed)
 
 parseFullObject :: FullObjectType -> Parser PackedObject
-parseFullObject objType = parseDecompressed >>= \decompressed ->
+parseFullObject objType = parseWCL >>= \decompressed ->
     let ref = hashResolved objType decompressed
     in return $ PackedObject objType ref decompressed
 
 parseOfsDelta, parseRefDelta :: Parser PackDelta
-parseOfsDelta = OfsDelta <$> parseOffset <*> parseDecompressedDelta
-parseRefDelta = RefDelta <$> parseBinRef <*> parseDecompressedDelta
+parseOfsDelta = OfsDelta <$> parseOffset <*> parseWCLDelta
+parseRefDelta = RefDelta <$> parseBinRef <*> parseWCLDelta
 
-parseDecompressedDelta :: Parser (WCL Delta)
-parseDecompressedDelta = fmap (parsedOnly parseDelta) <$> parseDecompressed
+parseWCLDelta :: Parser (WCL Delta)
+parseWCLDelta = fmap (parsedOnly parseDelta) <$> parseWCL
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion =
