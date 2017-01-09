@@ -96,10 +96,12 @@ instance Enum PackObjectType where
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject) = toBytes packedObject
     toBytes (UnResolved ofsD@(OfsDelta _ WCL{..})) = let
-        header = encodeTypeLen (DeltaType OfsDeltaType) $ B.length (toBytes wclContent)
+        header = encodeTypeLen (DeltaType OfsDeltaType)
+            $ B.length (toBytes wclContent)
         in header `B.append` toBytes ofsD
     toBytes (UnResolved refD@(RefDelta _ WCL{..})) = let
-        header = encodeTypeLen (DeltaType RefDeltaType) $ B.length (toBytes wclContent)
+        header = encodeTypeLen (DeltaType RefDeltaType)
+            $ B.length (toBytes wclContent)
         in header `B.append` toBytes refD
 
 instance Byteable PackedObject where
