@@ -27,19 +27,27 @@ data PackIndexEntry = PackIndexEntry
     }
     deriving (Show, Eq)
 
+data FullObjectType
+    = CommitType
+    | TreeType
+    | BlobType
+    | TagType
+    deriving (Eq, Show)
+
+data DeltaObjectType
+    = OfsDeltaType
+    | RefDeltaType
+    deriving (Eq, Show)
+
 data PackObjectType
-    = CommitObject
-    | TreeObject
-    | BlobObject
-    | TagObject
-    | OfsDeltaObject
-    | RefDeltaObject
+    = FullType  FullObjectType
+    | DeltaType DeltaObjectType
     deriving (Eq, Show)
 
 data PackDelta = OfsDelta Int (WCL Delta) | RefDelta Ref (WCL Delta)
     deriving (Show, Eq)
 
-data PackedObject = PackedObject PackObjectType Ref (WCL B.ByteString)
+data PackedObject = PackedObject FullObjectType Ref (WCL B.ByteString)
     deriving (Show, Eq)
 
 data PackEntry = Resolved PackedObject | UnResolved PackDelta
@@ -78,33 +86,33 @@ type RefMap    = Map Ref PackEntry
 type RefIndex  = Map Ref Int
 
 instance Enum PackObjectType where
-    fromEnum CommitObject   = 1
-    fromEnum TreeObject     = 2
-    fromEnum BlobObject     = 3
-    fromEnum TagObject      = 4
-    fromEnum OfsDeltaObject = 6
-    fromEnum RefDeltaObject = 7
+    fromEnum (FullType  CommitType)   = 1
+    fromEnum (FullType  TreeType)     = 2
+    fromEnum (FullType  BlobType)     = 3
+    fromEnum (FullType  TagType)      = 4
+    fromEnum (DeltaType OfsDeltaType) = 6
+    fromEnum (DeltaType RefDeltaType) = 7
 
-    toEnum 1 = CommitObject
-    toEnum 2 = TreeObject
-    toEnum 3 = BlobObject
-    toEnum 4 = TagObject
-    toEnum 6 = OfsDeltaObject
-    toEnum 7 = RefDeltaObject
+    toEnum 1 = FullType  CommitType
+    toEnum 2 = FullType  TreeType
+    toEnum 3 = FullType  BlobType
+    toEnum 4 = FullType  TagType
+    toEnum 6 = DeltaType OfsDeltaType
+    toEnum 7 = DeltaType RefDeltaType
     toEnum _ = error "invalid"
 
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject) = toBytes packedObject
     toBytes (UnResolved ofsD@(OfsDelta _ WCL{..})) = let
-        header = encodeTypeLen OfsDeltaObject $ B.length (toBytes wclContent)
+        header = encodeTypeLen (DeltaType OfsDeltaType) $ B.length (toBytes wclContent)
         in header `B.append` toBytes ofsD
     toBytes (UnResolved refD@(RefDelta _ WCL{..})) = let
-        header = encodeTypeLen RefDeltaObject $ B.length (toBytes wclContent)
+        header = encodeTypeLen (DeltaType RefDeltaType) $ B.length (toBytes wclContent)
         in header `B.append` toBytes refD
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ packed) = let
-        header = encodeTypeLen t $ B.length $ wclContent packed
+        header = encodeTypeLen (FullType t) $ B.length $ wclContent packed
         in header `B.append` toBytes packed
 
 instance (Byteable a) => Byteable (WCL a) where
@@ -214,9 +222,6 @@ instance Byteable DeltaInstruction where
                 in bool bits (replicate pad False ++ bits) (pad > 0)
               boolsToByte :: [Bool] -> Int
               boolsToByte = foldl' (\acc b -> shiftL acc 1 + fromEnum b) 0
-
-fullObject :: PackObjectType -> Bool
-fullObject t = t `elem` [CommitObject, TreeObject, BlobObject, TagObject]
 
 packObjectType :: (Bits t, Integral t) => t -> PackObjectType
 packObjectType header = toEnum . fromIntegral $ (header `shiftR` 4) .&. 7
