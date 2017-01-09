@@ -32,7 +32,8 @@ import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
 import Duffer.Pack.Streaming (separatePackFile)
 import Duffer.Pack.Entries   (PackObjectType(..), encodeOffset, encodeTypeLen
-                             ,PackIndexEntry(..), packIndexEntries, toAssoc)
+                             ,PackIndexEntry(..), packIndexEntries, toAssoc
+                             ,FullObjectType(..), DeltaObjectType(..))
 import Duffer.WithRepo       (withRepo)
 
 main :: IO ()
@@ -52,12 +53,12 @@ newtype TestPackObjectType
 
 instance Arbitrary TestPackObjectType where
     arbitrary = oneof $ map (return . TestPackObjectType)
-        [ CommitObject
-        , TreeObject
-        , BlobObject
-        , TagObject
-        , OfsDeltaObject
-        , RefDeltaObject
+        [ FullType  CommitType
+        , FullType  TreeType
+        , FullType  BlobType
+        , FullType  TagType
+        , DeltaType OfsDeltaType
+        , DeltaType RefDeltaType
         ]
 
 testEncodingAndParsing :: IO ()

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Duffer.Pack.Parser where
 
 import qualified Data.ByteString      as B
@@ -15,26 +17,25 @@ import Data.Attoparsec.ByteString.Char8 (char, space)
 import Data.Bits                        (Bits(..))
 import Data.Bool                        (bool)
 import Data.List                        (foldl')
-import GHC.Word                         (Word8)
 
 import Prelude hiding (take)
 
 import Duffer.Loose.Objects (GitObject(..), Ref, hash)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
-import Duffer.Pack.Entries  (PackObjectType(..), WCL(..)
-                            ,PackDelta(..), PackEntry(..), PackedObject(..)
-                            ,PackIndexEntry(..), DeltaInstruction(..)
-                            ,Delta(..), fixOffsets, fifthOffsets, fromBytes
-                            ,packObjectType, getCompressionLevel, fullObject)
+import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
+                            ,PackEntry(..), PackedObject(..), PackIndexEntry(..)
+                            ,DeltaInstruction(..), Delta(..), fixOffsets
+                            ,fifthOffsets, fromBytes,packObjectType
+                            ,getCompressionLevel, FullObjectType(..), DeltaObjectType(..))
 
 parsedOnly :: Parser a -> B.ByteString -> a
 parsedOnly parser content = either error id $ parseOnly parser content
 
-hashResolved :: PackObjectType -> WCL B.ByteString -> Ref
+hashResolved :: FullObjectType -> WCL B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
-parseResolved :: PackObjectType -> WCL B.ByteString -> GitObject
+parseResolved :: FullObjectType -> WCL B.ByteString -> GitObject
 parseResolved t (WCL _ source) = parsedOnly (parseObjectContent t) source
 
 parsePackIndex :: Parser [PackIndexEntry]
@@ -140,21 +141,19 @@ parseDelta :: Parser Delta
 parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction
     where len = littleEndian <$> parseVarInt
 
-parseObjectContent :: PackObjectType -> Parser GitObject
-parseObjectContent t = case t of
-    CommitObject -> parseCommit
-    TreeObject   -> parseTree
-    BlobObject   -> parseBlob
-    TagObject    -> parseTag
-    _            -> error "deltas must be resolved first"
+parseObjectContent :: FullObjectType -> Parser GitObject
+parseObjectContent = \case
+    CommitType -> parseCommit
+    TreeType   -> parseTree
+    BlobType   -> parseBlob
+    TagType    -> parseTag
 
 parseDecompressed :: Parser (WCL B.ByteString)
-parseDecompressed = takeLazyByteString >>= \compressed ->
-    let level        = getCompressionLevel $ L.head $ L.drop 1 compressed
-        decompressed = L.toStrict $ decompress compressed
-    in return $ WCL level decompressed
+parseDecompressed = takeLazyByteString >>= \compressed -> return $ WCL
+    (getCompressionLevel $ L.head $ L.drop 1 compressed)
+    (L.toStrict $ decompress compressed)
 
-parseFullObject :: PackObjectType -> Parser PackedObject
+parseFullObject :: FullObjectType -> Parser PackedObject
 parseFullObject objType = parseDecompressed >>= \decompressed ->
     let ref = hashResolved objType decompressed
     in return $ PackedObject objType ref decompressed
@@ -167,13 +166,11 @@ parseDecompressedDelta :: Parser (WCL Delta)
 parseDecompressedDelta = fmap (parsedOnly parseDelta) <$> parseDecompressed
 
 parsePackRegion :: Parser PackEntry
-parsePackRegion = do
-    (objType, _) <- parseTypeLen :: Parser (PackObjectType, Int)
-    case objType of
-        t | fullObject t -> Resolved   <$> parseFullObject objType
-        OfsDeltaObject   -> UnResolved <$> parseOfsDelta
-        RefDeltaObject   -> UnResolved <$> parseRefDelta
-        _                -> error "unrecognised type"
+parsePackRegion =
+    fst <$> (parseTypeLen :: Parser (PackObjectType, Int)) >>= \case
+        DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta
+        DeltaType RefDeltaType -> UnResolved <$> parseRefDelta
+        FullType fullType      -> Resolved   <$> parseFullObject fullType
 
 parsedPackRegion :: B.ByteString -> PackEntry
 parsedPackRegion = parsedOnly parsePackRegion

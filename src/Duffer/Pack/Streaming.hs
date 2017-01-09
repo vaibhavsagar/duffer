@@ -19,8 +19,9 @@ import System.IO                        (openFile, IOMode(ReadMode))
 import Duffer.Loose.Parser (parseBinRef)
 import Duffer.Pack.Parser  (parseOffset, parsePackFileHeader, parseTypeLen
                            ,parsedPackRegion)
-import Duffer.Pack.Entries (PackObjectType(..), PackEntry(..), compressToLevel
-                           ,encodeOffset, getCompressionLevel, encodeTypeLen)
+import Duffer.Pack.Entries (PackObjectType(..), DeltaObjectType(..)
+                           ,PackEntry(..), compressToLevel, encodeOffset
+                           ,getCompressionLevel, encodeTypeLen)
 
 type Prod a   = Producer ByteString IO a
 type EntryMap = IntMap PackEntry
@@ -50,8 +51,8 @@ getNextEntry :: StateT (Prod a) IO
 getNextEntry = do
     tLen    <- parse' id parseTypeLen
     baseRef <- case fst tLen of
-        OfsDeltaObject -> parse'  encodeOffset  parseOffset
-        RefDeltaObject -> parse' (fst . decode) parseBinRef
+        DeltaType OfsDeltaType -> parse'  encodeOffset  parseOffset
+        DeltaType RefDeltaType -> parse' (fst . decode) parseBinRef
         _              -> return ""
     decompressed <- gets (decompress' defaultWindowBits)
     _            <- drawByte -- The compression level is in the second byte.

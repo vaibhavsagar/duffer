@@ -13,8 +13,7 @@ import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
 import Duffer.Pack.Entries  (WCL(..), PackDelta(..), PackEntry(..)
                             ,PackedObject(..), DeltaInstruction(..), Delta(..)
                             ,CombinedMap(..), RefIndex, OffsetMap, ObjectMap(..)
-                            ,fullObject, toAssoc, emptyObjectMap ,isResolved
-                            ,insertObject)
+                            ,toAssoc, emptyObjectMap, isResolved, insertObject)
 
 applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
 applyInstructions source = B.concat . map (`applyInstruction` source)
@@ -35,10 +34,7 @@ resolve (PackedObject t _ source) (WCL l (Delta _ _ is)) = let
 
 resolveDelta :: CombinedMap -> Int -> PackedObject
 resolveDelta combinedMap index = case getOffsetMap combinedMap IntMap.! index of
-    Resolved object@(PackedObject t _ _)
-        -- If we find a commit, tree, blob, or tag, our work is done.
-        | fullObject t -> object
-        | otherwise    -> error "PackedObject cannot contain deltas"
+    Resolved object -> object
     -- An OfsDelta needs to be resolved against a base object
     UnResolved (OfsDelta o delta) -> let
         source = resolveDelta combinedMap (index-o)
