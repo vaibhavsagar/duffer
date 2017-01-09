@@ -27,21 +27,13 @@ data PackIndexEntry = PackIndexEntry
     }
     deriving (Show, Eq)
 
-data FullObjectType
-    = CommitType
-    | TreeType
-    | BlobType
-    | TagType
+data FullObjectType = CommitType | TreeType | BlobType | TagType
     deriving (Eq, Show)
 
-data DeltaObjectType
-    = OfsDeltaType
-    | RefDeltaType
+data DeltaObjectType = OfsDeltaType | RefDeltaType
     deriving (Eq, Show)
 
-data PackObjectType
-    = FullType  FullObjectType
-    | DeltaType DeltaObjectType
+data PackObjectType = FullType FullObjectType | DeltaType DeltaObjectType
     deriving (Eq, Show)
 
 data PackDelta = OfsDelta Int (WCL Delta) | RefDelta Ref (WCL Delta)
