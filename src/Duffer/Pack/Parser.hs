@@ -153,24 +153,28 @@ parseWCL = takeLazyByteString >>= \compressed -> return $ WCL
     (getCompressionLevel $ L.head $ L.drop 1 compressed)
     (L.toStrict $ decompress compressed)
 
-parseFullObject :: FullObjectType -> Parser PackedObject
-parseFullObject objType = parseWCL >>= \decompressed ->
+parseFullObject
+    :: Parser (WCL B.ByteString) -> FullObjectType -> Parser PackedObject
+parseFullObject parser objType = parser >>= \decompressed ->
     let ref = hashResolved objType decompressed
     in return $ PackedObject objType ref decompressed
 
-parseOfsDelta, parseRefDelta :: Parser PackDelta
-parseOfsDelta = OfsDelta <$> parseOffset <*> parseWCLDelta
-parseRefDelta = RefDelta <$> parseBinRef <*> parseWCLDelta
+parseOfsDelta, parseRefDelta :: Parser (WCL B.ByteString) -> Parser PackDelta
+parseOfsDelta parser = OfsDelta <$> parseOffset <*> parseWCLDelta parser
+parseRefDelta parser = RefDelta <$> parseBinRef <*> parseWCLDelta parser
 
-parseWCLDelta :: Parser (WCL Delta)
-parseWCLDelta = fmap (parsedOnly parseDelta) <$> parseWCL
+parseWCLDelta :: Parser (WCL B.ByteString) -> Parser (WCL Delta)
+parseWCLDelta parser = fmap (parsedOnly parseDelta) <$> parser
 
 parsePackRegion :: Parser PackEntry
-parsePackRegion =
+parsePackRegion = parsePackRegion' parseWCL
+
+parsePackRegion' :: Parser (WCL B.ByteString) -> Parser PackEntry
+parsePackRegion' parser =
     fst <$> (parseTypeLen :: Parser (PackObjectType, Int)) >>= \case
-        DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta
-        DeltaType RefDeltaType -> UnResolved <$> parseRefDelta
-        FullType fullType      -> Resolved   <$> parseFullObject fullType
+        DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta   parser
+        DeltaType RefDeltaType -> UnResolved <$> parseRefDelta   parser
+        FullType fType         -> Resolved   <$> parseFullObject parser fType
 
 parsedPackRegion :: B.ByteString -> PackEntry
 parsedPackRegion = parsedOnly parsePackRegion
