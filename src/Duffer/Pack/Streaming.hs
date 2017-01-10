@@ -2,7 +2,7 @@
 
 module Duffer.Pack.Streaming (separatePackFile) where
 
-import Data.Attoparsec.ByteString       (Parser, takeByteString)
+import Data.Attoparsec.ByteString       (takeByteString)
 import Data.ByteString                  (ByteString, append, length)
 import Codec.Compression.Zlib           (CompressionLevel)
 import Control.Arrow                    (first)
@@ -42,7 +42,7 @@ loop producer offset remaining indexedMap = do
     (output, producer')                 <- uncurry advanceToCompletion =<<
         either ((,) "" . return) id <$> next decompressedP
     let len         = length $ headerRef `append` compressToLevel level output
-        parser      = parsePackRegion' (parseWCL' level)
+        parser      = parsePackRegion' (WCL level <$> takeByteString)
         entry       = headerRef `append` output
         indexedMap' = insert offset (parsedOnly parser entry) indexedMap
         offset'     = offset + len
@@ -72,6 +72,3 @@ advanceToCompletion decompressed producer = next producer >>= \case
 
 fromRight :: Either a b -> b
 fromRight = either (const $ error "Found Left, Right expected") id
-
-parseWCL' :: CompressionLevel -> Parser (WCL ByteString)
-parseWCL' level = WCL level <$> takeByteString
