@@ -91,9 +91,7 @@ parseOffset = parseVarInt >>= \values -> let
         -- I think the addition reinstates the MSBs that are otherwise
         -- used to indicate whether there is more of the variable length
         -- integer to parse.
-        0
-        (sum $ map (\i -> 2^(7*i)) [1..len])
-        (len > 0)
+        0 (sum $ map (\i -> 2^(7*i)) [1..len]) (len > 0)
 
 parseTypeLen :: (Bits t, Integral t) => Parser (PackObjectType, t)
 parseTypeLen = do
