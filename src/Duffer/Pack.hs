@@ -32,8 +32,7 @@ packIndex = (-<.> "idx")
 region :: Map.Map Int a -> Int -> Maybe (Int64, Int)
 region offsetMap offset = let
     nextOffset = fromJust $ Map.lookupGT offset offsetMap
-    len        = fst nextOffset - offset
-    in Just (fromIntegral offset, len)
+    in Just (fromIntegral offset, fst nextOffset - offset)
 
 getPackIndices :: FilePath -> IO [FilePath]
 getPackIndices path = let packFilePath = path </> "pack" in
