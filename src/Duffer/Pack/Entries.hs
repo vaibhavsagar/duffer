@@ -3,7 +3,7 @@
 module Duffer.Pack.Entries where
 
 import qualified Data.ByteString        as B
-import qualified Data.IntMap.Strict     as IM
+import qualified Data.IntMap.Strict     as IntMap
 
 import Codec.Compression.Zlib (CompressionLevel, compressLevel, bestSpeed
                               ,compressWith, defaultCompressParams
@@ -73,7 +73,7 @@ data ObjectMap = ObjectMap
     , getObjectIndex :: RefIndex
     }
 
-type OffsetMap = IM.IntMap PackEntry
+type OffsetMap = IntMap.IntMap PackEntry
 type RefMap    = Map Ref PackEntry
 type RefIndex  = Map Ref Int
 
@@ -224,7 +224,7 @@ toAssoc :: PackIndexEntry -> (Int, Ref)
 toAssoc (PackIndexEntry o r _) = (o, r)
 
 emptyCombinedMap :: CombinedMap
-emptyCombinedMap = CombinedMap IM.empty empty
+emptyCombinedMap = CombinedMap IntMap.empty empty
 
 emptyObjectMap :: ObjectMap
 emptyObjectMap = ObjectMap empty empty
@@ -260,5 +260,5 @@ fixOffsets fOffsets offset
 packIndexEntries :: CombinedMap -> [PackIndexEntry]
 packIndexEntries CombinedMap {..} = let
     crc32s = (crc32 . toBytes) <$> getOffsetMap
-    op r o = (:) (PackIndexEntry o r (crc32s IM.! o))
+    op r o = (:) (PackIndexEntry o r (crc32s IntMap.! o))
     in foldrWithKey op [] getRefIndex
