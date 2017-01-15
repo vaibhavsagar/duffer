@@ -1,6 +1,7 @@
 duffer
 =========
 [![Build Status](https://travis-ci.org/vaibhavsagar/duffer.svg?branch=master)](https://travis-ci.org/vaibhavsagar/duffer)
+[![made at Recurse Center](https://cdn.rawgit.com/heatherbooker/made_at_rc/master/made_at_RC.svg)](https://www.recurse.com)
 
 This is a learning exercise and an API for `git`, in that order. Please do not
 use this code in production. Instead I would recommend Vincent Hanquez's
