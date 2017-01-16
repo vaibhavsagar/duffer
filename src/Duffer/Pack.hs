@@ -93,11 +93,9 @@ combinedEntryMap indexPath = CombinedMap
     <$> indexedEntryMap               indexPath
     <*> fmap makeRefIndex (B.readFile indexPath)
 
-resolveAll :: FilePath -> IO [GitObject]
-resolveAll indexPath = do
-    combined         <- combinedEntryMap indexPath
-    let reconstitute =  unpackObject . resolveDelta combined
-    return $ map reconstitute $ Map.elems (getRefIndex combined)
+resolveAll :: CombinedMap -> [GitObject]
+resolveAll cMap =
+    map (fromJust . resolveEntry cMap) $ Map.keys (getRefIndex cMap)
 
 readPackRef :: FilePath -> WithRepo (Maybe Ref)
 readPackRef refPath = do

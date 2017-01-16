@@ -27,7 +27,7 @@ import Duffer.Loose.Objects  (GitObject, Ref, hash)
 import Duffer.Pack           (getPackIndices, indexedEntryMap
                              ,indexedByteStringMap, packFile, combinedEntryMap
                              ,resolveAll)
-import Duffer.Pack.File      (resolveEntry, resolveAll')
+import Duffer.Pack.File      (resolveAll')
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
 import Duffer.Pack.Streaming (separatePackFile)
@@ -126,11 +126,8 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     combinedMap <- runIO $ combinedEntryMap indexPath
     it "can reconstruct the pack index entries" $
         packIndexEntries combinedMap `shouldMatchList` index
-    objects <- runIO $ resolveAll  indexPath
+    let objects = resolveAll combinedMap
     let refs = map (snd . toAssoc) index
-    it "resolves each object correctly" $ do
-        let resolvedRefs = map (hash . fromJust . resolveEntry combinedMap) refs
-        resolvedRefs `shouldMatchList` refs
     it "resolves objects correctly" $ do
         let objects' = resolveAll' entryMap
         objects' `shouldMatchList` objects
