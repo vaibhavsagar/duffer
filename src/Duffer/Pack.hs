@@ -46,8 +46,7 @@ getPackObjectRefs = do
     return $ Set.fromList $ concatMap parsedPackIndexRefs indices
 
 hasPacked :: Ref -> FilePath -> IO Bool
-hasPacked ref indexPath =
-    (elem ref . parsedPackIndexRefs) <$> B.readFile indexPath
+hasPacked ref = fmap (elem ref . parsedPackIndexRefs) . B.readFile
 
 hasPackObject :: Ref -> WithRepo Bool
 hasPackObject = localObjects . hasPackObject'
