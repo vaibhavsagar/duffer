@@ -69,10 +69,6 @@ readPacked ref path =
         []      -> return Nothing
         index:_ -> flip resolveEntry ref <$> combinedEntryMap index
 
-getPackFileEntry :: FilePath -> Map.Map Int B.ByteString -> Int -> IO PackEntry
-getPackFileEntry packFilePath rangeMap index =
-    parsedPackRegion <$> getPackRegion packFilePath rangeMap index
-
 getPackRegion :: FilePath -> Map.Map Int B.ByteString -> Int -> IO B.ByteString
 getPackRegion packFilePath rangeMap =
     packFileRegion packFilePath . region rangeMap
