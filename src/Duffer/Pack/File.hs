@@ -51,12 +51,12 @@ unpackObject (PackedObject t _ content) = parseResolved t content
 makeRefIndex :: B.ByteString -> RefIndex
 makeRefIndex = Map.fromList . map (swap . toAssoc) . parsedIndex
 
-makeOffsetMap :: B.ByteString -> Map.Map Int Ref
-makeOffsetMap = Map.fromList . map toAssoc . parsedIndex
+makeOffsetMap :: B.ByteString -> IntMap.IntMap Ref
+makeOffsetMap = IntMap.fromList . map toAssoc . parsedIndex
 
 resolveAll' :: OffsetMap -> [GitObject]
 resolveAll' =
-    map unpackObject . Map.elems . getObjectMap . resolveIter emptyObjectMap
+    map unpackObject . IntMap.elems . getObjectMap . resolveIter emptyObjectMap
 
 resolveIter :: ObjectMap -> OffsetMap -> ObjectMap
 resolveIter objectMap offsetMap | IntMap.null offsetMap = objectMap
@@ -78,8 +78,8 @@ separateResolved objectMap offsetMap = let
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry
 resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
-    UnResolved (OfsDelta o' delta) | Just base <- Map.lookup (o-o') oMap ->
-        Resolved $ resolve base              delta
-    UnResolved (RefDelta r' delta) | Just offs <- Map.lookup r' oIndex   ->
-        Resolved $ resolve (oMap Map.! offs) delta
+    UnResolved (OfsDelta o' delta) | Just base <- IntMap.lookup (o-o') oMap ->
+        Resolved $ resolve base                 delta
+    UnResolved (RefDelta r' delta) | Just offs <- Map.lookup r' oIndex      ->
+        Resolved $ resolve (oMap IntMap.! offs) delta
     _ -> entry

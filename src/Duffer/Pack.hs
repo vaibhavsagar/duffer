@@ -9,6 +9,7 @@ import qualified Data.IntMap.Strict   as IntMap
 import qualified Data.Set             as Set
 
 import Data.Bool        (bool)
+import Data.IntMap.Strict (IntMap)
 import Data.Maybe       (fromJust)
 import Control.Monad    (filterM)
 import GHC.Int          (Int64)
@@ -29,9 +30,9 @@ packFile, packIndex :: FilePath -> FilePath
 packFile  = (-<.> "pack")
 packIndex = (-<.> "idx")
 
-region :: Map.Map Int a -> Int -> Maybe (Int64, Int)
+region :: IntMap a -> Int -> Maybe (Int64, Int)
 region offsetMap offset = let
-    nextOffset = fromJust $ Map.lookupGT offset offsetMap
+    nextOffset = fromJust $ IntMap.lookupGT offset offsetMap
     in Just (fromIntegral offset, fst nextOffset - offset)
 
 getPackIndices :: FilePath -> IO [FilePath]
@@ -68,9 +69,9 @@ readPacked ref path =
         []      -> return Nothing
         index:_ -> flip resolveEntry ref <$> combinedEntryMap index
 
-getPackRegion :: FilePath -> Map.Map Int B.ByteString -> Int -> IO B.ByteString
+getPackRegion :: FilePath -> IntMap B.ByteString -> Int -> IO B.ByteString
 getPackRegion packFilePath rangeMap =
-    packFileRegion packFilePath . region rangeMap
+    mmapFileByteString packFilePath . region rangeMap
 
 packFileRegion :: FilePath -> Maybe (Int64, Int) -> IO B.ByteString
 packFileRegion = mmapFileByteString
@@ -78,13 +79,13 @@ packFileRegion = mmapFileByteString
 indexedEntryMap :: FilePath -> IO OffsetMap
 indexedEntryMap = fmap (fmap parsedPackRegion) . indexedByteStringMap
 
-indexedByteStringMap :: FilePath -> IO (IntMap.IntMap B.ByteString)
+indexedByteStringMap :: FilePath -> IO (IntMap B.ByteString)
 indexedByteStringMap indexPath = do
     offsetMap    <- makeOffsetMap <$> B.readFile indexPath
     let filePath =  packFile indexPath
     contentEnd   <- B.length <$> B.readFile filePath
-    let indices  =  Map.keys offsetMap
-    let rangeMap =  Map.insert (contentEnd - 20) "" offsetMap
+    let indices  =  IntMap.keys offsetMap
+    let rangeMap =  IntMap.insert (contentEnd - 20) "" offsetMap
     entries      <- mapM (getPackRegion filePath rangeMap) indices
     return $ IntMap.fromAscList $ zip indices entries
 

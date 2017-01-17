@@ -2,8 +2,8 @@
 
 module Duffer.Pack.Entries where
 
-import qualified Data.ByteString        as B
-import qualified Data.IntMap.Strict     as IntMap
+import qualified Data.ByteString    as B
+import qualified Data.IntMap.Strict as IntMap
 
 import Codec.Compression.Zlib (CompressionLevel, compressLevel, bestSpeed
                               ,compressWith, defaultCompressParams
@@ -69,7 +69,7 @@ data CombinedMap = CombinedMap
     } deriving (Show)
 
 data ObjectMap = ObjectMap
-    { getObjectMap   :: Map Int PackedObject
+    { getObjectMap   :: IntMap.IntMap PackedObject
     , getObjectIndex :: RefIndex
     }
 
@@ -227,11 +227,11 @@ emptyCombinedMap :: CombinedMap
 emptyCombinedMap = CombinedMap IntMap.empty empty
 
 emptyObjectMap :: ObjectMap
-emptyObjectMap = ObjectMap empty empty
+emptyObjectMap = ObjectMap IntMap.empty empty
 
 insertObject :: Int -> PackedObject -> ObjectMap -> ObjectMap
 insertObject offset object@(PackedObject _ r _) ObjectMap {..} = ObjectMap
-    (insert offset object getObjectMap)
+    (IntMap.insert offset object getObjectMap)
     (insert r      offset getObjectIndex)
 
 fromBytes :: (Bits t, Integral t) => B.ByteString -> t
