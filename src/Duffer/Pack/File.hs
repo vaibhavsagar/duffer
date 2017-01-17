@@ -17,7 +17,7 @@ applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
 applyInstructions source = B.concat . map (`applyInstruction` source)
 
 substring :: Int -> Int -> B.ByteString -> B.ByteString
-substring offset len bytestring = B.take len (B.drop offset bytestring)
+substring offset len = B.take len . B.drop offset
 
 applyInstruction :: DeltaInstruction -> B.ByteString -> B.ByteString
 applyInstruction (CopyInstruction offset len) = substring offset len
