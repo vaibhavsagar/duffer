@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Duffer.Pack.File where
 
 import qualified Data.ByteString    as B
@@ -22,9 +20,8 @@ substring :: Int -> Int -> B.ByteString -> B.ByteString
 substring offset len bytestring = B.take len (B.drop offset bytestring)
 
 applyInstruction :: DeltaInstruction -> B.ByteString -> B.ByteString
-applyInstruction = \case
-    (CopyInstruction offset len) -> substring offset len
-    (InsertInstruction content)  -> const content
+applyInstruction (CopyInstruction offset len) = substring offset len
+applyInstruction (InsertInstruction content)  = const content
 
 resolve :: PackedObject -> WCL Delta -> PackedObject
 resolve (PackedObject t _ source) (WCL l (Delta _ _ is)) = let
