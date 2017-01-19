@@ -113,8 +113,8 @@ instance (Byteable a) => Byteable (WCL a) where
     toBytes WCL{..} = compressToLevel wclLevel $ toBytes wclContent
 
 isResolved :: PackEntry -> Bool
-isResolved (Resolved   _) = True
-isResolved (UnResolved _) = False
+isResolved Resolved{}   = True
+isResolved UnResolved{} = False
 
 compressToLevel :: CompressionLevel -> B.ByteString -> B.ByteString
 compressToLevel level content = toStrict $
@@ -185,9 +185,9 @@ setMSBs []     = []
 setMSBs (i:is) = map fromIntegral $ i : map setMSB is
 
 instance Byteable Delta where
-    toBytes (Delta source dest instructions) = B.concat
+    toBytes (Delta source destination instructions) = B.concat
         [ toLittleEndian $ to7BitList source
-        , toLittleEndian $ to7BitList dest
+        , toLittleEndian $ to7BitList destination
         , B.concat (map toBytes instructions)
         ]
 
