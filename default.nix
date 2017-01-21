@@ -27,6 +27,7 @@ mkDerivation {
     directory filepath hspec process QuickCheck transformers
     utf8-string
   ];
+  doCheck = false;
   homepage = "http://github.com/vaibhavsagar/duffer#readme";
   description = "Initial project template from stack";
   license = stdenv.lib.licenses.bsd3;
