@@ -2,8 +2,10 @@
 *.o
 .stack-work
 .ipynb_checkpoints
+dist
 presentation/reveal.js
 presentation/*.html
+result
 create_docset.sh
 target.docset
 packfiles
