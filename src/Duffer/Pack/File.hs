@@ -1,10 +1,12 @@
 module Duffer.Pack.File where
 
-import qualified Data.ByteString    as B
 import qualified Data.Map.Strict    as Map
 import qualified Data.IntMap.Strict as IntMap
 
+import Prelude hiding       (concat, take, drop)
+
 import Data.Bool            (bool)
+import Data.ByteString      (ByteString, concat, take, drop)
 import Data.Tuple           (swap)
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
@@ -13,32 +15,30 @@ import Duffer.Pack.Entries  (WCL(..), PackDelta(..), PackEntry(..)
                             ,CombinedMap(..), RefIndex, OffsetMap, ObjectMap(..)
                             ,toAssoc, emptyObjectMap, isResolved, insertObject)
 
-applyInstructions :: B.ByteString -> [DeltaInstruction] -> B.ByteString
-applyInstructions source = B.concat . map (`applyInstruction` source)
+applyInstructions :: ByteString -> [DeltaInstruction] -> ByteString
+applyInstructions source = concat . map (`applyInstruction` source)
 
-substring :: Int -> Int -> B.ByteString -> B.ByteString
-substring offset len = B.take len . B.drop offset
+substring :: Int -> Int -> ByteString -> ByteString
+substring offset len = take len . drop offset
 
-applyInstruction :: DeltaInstruction -> B.ByteString -> B.ByteString
+applyInstruction :: DeltaInstruction -> ByteString -> ByteString
 applyInstruction (CopyInstruction offset len) = substring offset len
 applyInstruction (InsertInstruction content)  = const content
 
 resolve :: PackedObject -> WCL Delta -> PackedObject
-resolve (PackedObject t _ source) (WCL l (Delta _ _ is)) = let
-    resolved = (`applyInstructions` is) <$> source
-    r        = hashResolved t resolved
-    in PackedObject t r (resolved {wclLevel = l})
+resolve (PackedObject t _ (WCL _ source)) (WCL l (Delta _ _ is)) = let
+    resolved = applyInstructions source is
+    r        = hashResolved t (WCL l resolved)
+    in PackedObject t r (WCL l resolved)
 
 resolveDelta :: CombinedMap -> Int -> PackedObject
 resolveDelta combinedMap index = case getOffsetMap combinedMap IntMap.! index of
     Resolved object -> object
-    -- An OfsDelta needs to be resolved against a base object
     UnResolved (OfsDelta o delta) -> let
-        source = resolveDelta combinedMap (index-o)
+        source = resolveDelta combinedMap $ index-o
         in resolve source delta
     UnResolved (RefDelta r delta) -> let
-        refIndex = getRefIndex combinedMap Map.! r
-        source   = resolveDelta combinedMap refIndex
+        source = resolveDelta combinedMap $ getRefIndex combinedMap Map.! r
         in resolve source delta
 
 resolveEntry :: CombinedMap -> Ref -> Maybe GitObject
@@ -48,10 +48,10 @@ resolveEntry combinedMap ref = unpackObject . resolveDelta combinedMap <$>
 unpackObject :: PackedObject -> GitObject
 unpackObject (PackedObject t _ content) = parseResolved t content
 
-makeRefIndex :: B.ByteString -> RefIndex
+makeRefIndex :: ByteString -> RefIndex
 makeRefIndex = Map.fromList . map (swap . toAssoc) . parsedIndex
 
-makeOffsetMap :: B.ByteString -> IntMap.IntMap Ref
+makeOffsetMap :: ByteString -> IntMap.IntMap Ref
 makeOffsetMap = IntMap.fromList . map toAssoc . parsedIndex
 
 resolveAll' :: OffsetMap -> [GitObject]
