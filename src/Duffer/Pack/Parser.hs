@@ -27,7 +27,8 @@ import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
                             ,PackEntry(..), PackedObject(..), PackIndexEntry(..)
                             ,DeltaInstruction(..), Delta(..), fixOffsets
                             ,fifthOffsets, fromBytes,packObjectType
-                            ,getCompressionLevel, FullObjectType(..), DeltaObjectType(..))
+                            ,getCompressionLevel, FullObjectType(..)
+                            ,DeltaObjectType(..))
 
 parsedOnly :: Parser a -> B.ByteString -> a
 parsedOnly parser content = either error id $ parseOnly parser content
