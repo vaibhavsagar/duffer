@@ -2,9 +2,9 @@
 
 module Duffer.Pack.Parser where
 
-import qualified Data.ByteString      as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict      as M
+import qualified Prelude              as P
 
 
 import Codec.Compression.Zlib           (decompress)
@@ -15,10 +15,11 @@ import Data.Attoparsec.ByteString       (Parser, parseOnly, count, word8
                                         ,take, anyWord8, many1, many')
 import Data.Attoparsec.ByteString.Char8 (char, space)
 import Data.Bits                        (Bits(..))
+import Data.ByteString                  (ByteString, length, splitAt, unpack)
 import Data.Bool                        (bool)
 import Data.List                        (foldl')
 
-import Prelude hiding (take)
+import Prelude hiding (take, length, splitAt)
 
 import Duffer.Loose.Objects (GitObject(..), Ref, hash)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
@@ -30,13 +31,13 @@ import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
                             ,getCompressionLevel, FullObjectType(..)
                             ,DeltaObjectType(..))
 
-parsedOnly :: Parser a -> B.ByteString -> a
+parsedOnly :: Parser a -> ByteString -> a
 parsedOnly parser content = either error id $ parseOnly parser content
 
-hashResolved :: FullObjectType -> B.ByteString -> Ref
+hashResolved :: FullObjectType -> ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
-parseResolved :: FullObjectType -> B.ByteString -> GitObject
+parseResolved :: FullObjectType -> ByteString -> GitObject
 parseResolved t = parsedOnly (parseObjectContent t)
 
 parsePackIndex :: Parser [PackIndexEntry]
@@ -46,7 +47,7 @@ parsePackIndex = do
     crc32s    <- count total parse4Bytes
     offsets   <- count total parse4Bytes
     remaining <- takeByteString
-    let (fifth, _)   = B.splitAt (B.length remaining - 40) remaining
+    let (fifth, _)   = splitAt (length remaining - 40) remaining
         fixedOffsets = map (fixOffsets (fifthOffsets fifth)) offsets
     return $ zipWith3 PackIndexEntry fixedOffsets refs crc32s
 
@@ -70,7 +71,7 @@ parsePackIndexRefs = flip count parseBinRef
 parse4Bytes :: (Bits t, Integral t) => Parser t
 parse4Bytes = fromBytes <$> take 4
 
-parsedIndex :: B.ByteString -> [PackIndexEntry]
+parsedIndex :: ByteString -> [PackIndexEntry]
 parsedIndex = parsedOnly parsePackIndex
 
 parseVarInt :: (Bits t, Integral t) => Parser [t]
@@ -86,13 +87,12 @@ littleEndian = foldr  (\a b -> a + (b `shiftL` 7)) 0
 bigEndian    = foldl' (\a b -> (a `shiftL` 7) + b) 0
 
 parseOffset :: (Bits t, Integral t) => Parser t
-parseOffset = parseVarInt >>= \values -> let
-    len = length values - 1
-    in return $ bigEndian values + bool
-        -- I think the addition reinstates the MSBs that are otherwise
-        -- used to indicate whether there is more of the variable length
-        -- integer to parse.
-        0 (sum $ map (\i -> 2^(7*i)) [1..len]) (len > 0)
+parseOffset = parseVarInt >>= \values -> let len = P.length values - 1 in
+    return $ bigEndian values + bool
+    -- I think the addition reinstates the MSBs that are otherwise
+    -- used to indicate whether there is more of the variable length
+    -- integer to parse.
+    0 (sum $ map (\i -> 2^(7*i)) [1..len]) (len > 0)
 
 parseTypeLen :: (Bits t, Integral t) => Parser (PackObjectType, t)
 parseTypeLen = do
@@ -147,52 +147,52 @@ parseObjectContent = \case
     BlobType   -> parseBlob
     TagType    -> parseTag
 
-parseWCL :: Parser (WCL B.ByteString)
+parseWCL :: Parser (WCL ByteString)
 parseWCL = takeLazyByteString >>= \compressed -> return $ WCL
     (getCompressionLevel $ L.head $ L.drop 1 compressed)
     (L.toStrict $ decompress compressed)
 
 parseFullObject
-    :: Parser (WCL B.ByteString) -> FullObjectType -> Parser PackedObject
+    :: Parser (WCL ByteString) -> FullObjectType -> Parser PackedObject
 parseFullObject parser objType = parser >>= \decompressed ->
     let ref = hashResolved objType $ wclContent decompressed
     in return $ PackedObject objType ref decompressed
 
-parseOfsDelta, parseRefDelta :: Parser (WCL B.ByteString) -> Parser PackDelta
+parseOfsDelta, parseRefDelta :: Parser (WCL ByteString) -> Parser PackDelta
 parseOfsDelta parser = OfsDelta <$> parseOffset <*> parseWCLDelta parser
 parseRefDelta parser = RefDelta <$> parseBinRef <*> parseWCLDelta parser
 
-parseWCLDelta :: Parser (WCL B.ByteString) -> Parser (WCL Delta)
+parseWCLDelta :: Parser (WCL ByteString) -> Parser (WCL Delta)
 parseWCLDelta parser = fmap (parsedOnly parseDelta) <$> parser
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = parsePackRegion' parseWCL
 
-parsePackRegion' :: Parser (WCL B.ByteString) -> Parser PackEntry
+parsePackRegion' :: Parser (WCL ByteString) -> Parser PackEntry
 parsePackRegion' parser =
     fst <$> (parseTypeLen :: Parser (PackObjectType, Int)) >>= \case
         DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta   parser
         DeltaType RefDeltaType -> UnResolved <$> parseRefDelta   parser
         FullType fType         -> Resolved   <$> parseFullObject parser fType
 
-parsedPackRegion :: B.ByteString -> PackEntry
+parsedPackRegion :: ByteString -> PackEntry
 parsedPackRegion = parsedOnly parsePackRegion
 
-parsedPackIndexRefs :: B.ByteString -> [Ref]
+parsedPackIndexRefs :: ByteString -> [Ref]
 parsedPackIndexRefs = parsedOnly parsePackIndexUptoRefs
 
 parsePackFileHeader :: Parser Int
-parsePackFileHeader = mapM word8 (B.unpack "PACK") *> take 4 *> parse4Bytes
+parsePackFileHeader = mapM word8 (unpack "PACK") *> take 4 *> parse4Bytes
 
-parsePackRefsHeader, parseCaret, parsePackRef :: Parser (M.Map B.ByteString Ref)
+parsePackRefsHeader, parseCaret, parsePackRef :: Parser (M.Map ByteString Ref)
 parsePackRefsHeader = char '#' *> parseRestOfLine *> return M.empty
 parseCaret          = char '^' *> parseRestOfLine *> return M.empty
 parsePackRef        =
     flip M.singleton <$> (parseHexRef <* space) <*> parseRestOfLine
 
-parsePackRefs :: Parser (M.Map B.ByteString Ref)
+parsePackRefs :: Parser (M.Map ByteString Ref)
 parsePackRefs = parsePackRefsHeader
     >> foldr M.union M.empty <$> many' (parseCaret <|> parsePackRef)
 
-parsedPackRefs :: B.ByteString -> M.Map B.ByteString Ref
+parsedPackRefs :: ByteString -> M.Map ByteString Ref
 parsedPackRefs = parsedOnly parsePackRefs
