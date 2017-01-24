@@ -2,8 +2,7 @@
 
 module Duffer.Pack.Parser where
 
-import qualified Data.ByteString.Lazy as L
-import qualified Data.Map.Strict      as M
+import qualified Data.ByteString.Lazy as L (head, drop, toStrict)
 import qualified Prelude              as P
 
 
@@ -18,6 +17,7 @@ import Data.Bits                        (Bits(..))
 import Data.ByteString                  (ByteString, length, splitAt, unpack)
 import Data.Bool                        (bool)
 import Data.List                        (foldl')
+import Data.Map.Strict                  (Map, singleton, union, empty)
 
 import Prelude hiding (take, length, splitAt)
 
@@ -184,15 +184,15 @@ parsedPackIndexRefs = parsedOnly parsePackIndexUptoRefs
 parsePackFileHeader :: Parser Int
 parsePackFileHeader = mapM word8 (unpack "PACK") *> take 4 *> parse4Bytes
 
-parsePackRefsHeader, parseCaret, parsePackRef :: Parser (M.Map ByteString Ref)
-parsePackRefsHeader = char '#' *> parseRestOfLine *> return M.empty
-parseCaret          = char '^' *> parseRestOfLine *> return M.empty
+parsePackRefsHeader, parseCaret, parsePackRef :: Parser (Map ByteString Ref)
+parsePackRefsHeader = char '#' *> parseRestOfLine *> return empty
+parseCaret          = char '^' *> parseRestOfLine *> return empty
 parsePackRef        =
-    flip M.singleton <$> (parseHexRef <* space) <*> parseRestOfLine
+    flip singleton <$> (parseHexRef <* space) <*> parseRestOfLine
 
-parsePackRefs :: Parser (M.Map ByteString Ref)
+parsePackRefs :: Parser (Map ByteString Ref)
 parsePackRefs = parsePackRefsHeader
-    >> foldr M.union M.empty <$> many' (parseCaret <|> parsePackRef)
+    >> foldr union empty <$> many' (parseCaret <|> parsePackRef)
 
-parsedPackRefs :: ByteString -> M.Map ByteString Ref
+parsedPackRefs :: ByteString -> Map ByteString Ref
 parsedPackRefs = parsedOnly parsePackRefs
