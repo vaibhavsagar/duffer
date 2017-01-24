@@ -28,7 +28,7 @@ applyInstruction (InsertInstruction content)  = const content
 resolve :: PackedObject -> WCL Delta -> PackedObject
 resolve (PackedObject t _ (WCL _ source)) (WCL l (Delta _ _ is)) = let
     resolved = applyInstructions source is
-    r        = hashResolved t (WCL l resolved)
+    r        = hashResolved t resolved
     in PackedObject t r (WCL l resolved)
 
 resolveDelta :: CombinedMap -> Int -> PackedObject
@@ -46,7 +46,7 @@ resolveEntry combinedMap ref = unpackObject . resolveDelta combinedMap <$>
     Map.lookup ref (getRefIndex combinedMap)
 
 unpackObject :: PackedObject -> GitObject
-unpackObject (PackedObject t _ content) = parseResolved t content
+unpackObject (PackedObject t _ content) = parseResolved t $ wclContent content
 
 makeRefIndex :: ByteString -> RefIndex
 makeRefIndex = Map.fromList . map (swap . toAssoc) . parsedIndex

@@ -32,11 +32,11 @@ import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
 parsedOnly :: Parser a -> B.ByteString -> a
 parsedOnly parser content = either error id $ parseOnly parser content
 
-hashResolved :: FullObjectType -> WCL B.ByteString -> Ref
+hashResolved :: FullObjectType -> B.ByteString -> Ref
 hashResolved t = hash . parseResolved t
 
-parseResolved :: FullObjectType -> WCL B.ByteString -> GitObject
-parseResolved t (WCL _ source) = parsedOnly (parseObjectContent t) source
+parseResolved :: FullObjectType -> B.ByteString -> GitObject
+parseResolved t = parsedOnly (parseObjectContent t)
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
@@ -154,7 +154,7 @@ parseWCL = takeLazyByteString >>= \compressed -> return $ WCL
 parseFullObject
     :: Parser (WCL B.ByteString) -> FullObjectType -> Parser PackedObject
 parseFullObject parser objType = parser >>= \decompressed ->
-    let ref = hashResolved objType decompressed
+    let ref = hashResolved objType $ wclContent decompressed
     in return $ PackedObject objType ref decompressed
 
 parseOfsDelta, parseRefDelta :: Parser (WCL B.ByteString) -> Parser PackDelta
