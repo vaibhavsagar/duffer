@@ -36,7 +36,7 @@ separatePackFile path = do
             fromRight . fromJust <$> parseL parsePackFileHeader
 
 loop :: Prod a -> Int -> Int -> EntryMap -> IO (EntryMap, Prod a)
-loop producer _      0         indexedMap = return (indexedMap, producer)
+loop producer _end   0         indexedMap = return (indexedMap, producer)
 loop producer offset remaining indexedMap = do
     (decompressedP, (headerRef, level)) <- evalStateT getNextEntry producer
     (output, producer')                 <- uncurry advanceToCompletion =<<
@@ -56,9 +56,9 @@ getNextEntry = do
     baseRef <- case fst tLen of
         DeltaType OfsDeltaType -> parse'  encodeOffset  parseOffset
         DeltaType RefDeltaType -> parse' (fst . decode) parseBinRef
-        _              -> return ""
+        _fullType              -> return ""
     decompressed <- gets (decompress' defaultWindowBits)
-    _            <- drawByte -- The compression level is in the second byte.
+    _firstByte   <- drawByte -- The compression level is in the second byte.
     level        <- getCompressionLevel . fromJust <$> peekByte
     let headerRef = append (uncurry encodeTypeLen tLen) baseRef
     return (decompressed, (headerRef, level))
