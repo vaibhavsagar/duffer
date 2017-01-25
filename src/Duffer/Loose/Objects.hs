@@ -22,6 +22,7 @@ import Data.Bool               (bool)
 import Data.ByteArray.Encoding (Base(Base16), convertToBase)
 import Data.Byteable           (Byteable(..))
 import Data.ByteString.UTF8    (fromString, toString)
+import Data.Function           (on)
 import Data.List               (intercalate)
 import Data.Monoid             ((<>))
 import Data.Set                (Set, toAscList)
@@ -54,7 +55,6 @@ data TreeEntry = TreeEntry
     , entryName  :: B.ByteString
     , entryRef   :: Ref
     }
-    deriving (Eq)
 
 data PersonTime = PersonTime
     { personName :: B.ByteString
@@ -94,6 +94,9 @@ instance Show TreeEntry where
                 Directory -> "tree"
                 SubModule -> "commit"
                 _         -> "blob"
+
+instance Eq TreeEntry where
+    (==) = (==) `on` entryName
 
 instance Ord TreeEntry where
     compare t1 t2 = compare (sortableName t1) (sortableName t2)
