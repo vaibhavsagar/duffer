@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Duffer.WorkTree where
 
@@ -6,7 +6,6 @@ import qualified Data.Map.Strict as Map
 import qualified Data.ByteString as B
 import qualified Data.Set as S
 import Duffer.Loose.Objects
-import Data.Maybe (fromJust)
 import Duffer (readObject)
 import Duffer.WithRepo
 
@@ -20,18 +19,22 @@ data WorkTreeEntry
 newtype WorkTree = WorkTree (Map.Map B.ByteString WorkTreeEntry)
     deriving (Show)
 
-workTree :: Ref -> WithRepo (Either WorkTreeBlob WorkTree)
-workTree ref = do
-    obj <- fromJust <$> readObject ref
-    case obj of
-        Blob content -> return $ Left (WorkTreeBlob content)
-        Tree entries -> Right <$> workTreeEntries (Tree entries)
 
-workTreeEntries :: GitObject -> WithRepo WorkTree
-workTreeEntries (Tree entries) = do
+workTree :: Ref -> WithRepo (Maybe (Either WorkTreeBlob WorkTree))
+workTree ref = readObject ref >>= \case
+        Nothing             -> return Nothing
+        Just (Blob content) -> return . Just $ Left (WorkTreeBlob content)
+        Just (Tree entries) -> workTreeEntries entries >>= \case
+            Just e  -> return . Just $ Right e
+            Nothing -> return Nothing
+        Just _              -> error "Commit or Tag found."
+
+workTreeEntries :: S.Set TreeEntry -> WithRepo (Maybe WorkTree)
+workTreeEntries entries = do
     let entriesList = S.toList entries
-    let filenames   = map entryName entriesList
+    let filenames = map entryName entriesList
     let permissions = map entryPerms entriesList
-    children        <- mapM (workTree . entryRef) entriesList
-    let workTreeEntryValues = zipWith WorkTreeEntry children permissions
-    return $ WorkTree $ Map.fromList $ zip filenames workTreeEntryValues
+    children <- mapM (workTree . entryRef) entriesList
+    let childrenS = sequence children
+    let wtEntries = zipWith WorkTreeEntry <$> childrenS <*> pure permissions
+    return $ WorkTree . Map.fromList . zip filenames <$> wtEntries
