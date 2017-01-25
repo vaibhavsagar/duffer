@@ -1,11 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Duffer.WorkTree where
+module Duffer.WorkObject where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.ByteString as B
-import qualified Data.Set        as S (Set, toList)
+import qualified Data.Set        as S (Set, toList, insert, empty)
 import Duffer.Loose.Objects
 import Duffer (readObject)
 import Duffer.WithRepo
@@ -32,3 +32,21 @@ workTreeEntries entries = do
     children <- sequence <$> traverse (workObject . entryRef) entriesList
     let wtEntries   = zipWith WorkTreeEntry <$> children <*> pure permissions
     return $ Tree . Map.fromList . zip filenames <$> wtEntries
+
+hashWorkObject :: WorkObject -> Ref
+hashWorkObject = hash . toGitObject
+
+toGitObject :: WorkObject -> GitObject
+toGitObject = \case
+    Commit{..} -> Commit{..}
+    Tag{..}    -> Tag{..}
+    Blob{..}   -> Blob{..}
+    Tree{..}   -> let
+        entries = Map.foldrWithKey
+            (\k e -> S.insert $ makeTreeEntry k e) S.empty treeEntries
+        in Tree entries
+
+makeTreeEntry :: B.ByteString -> WorkTreeEntry -> TreeEntry
+makeTreeEntry entryName (WorkTreeEntry wo entryPerms) = let
+    entryRef = hashWorkObject wo
+    in TreeEntry{..}

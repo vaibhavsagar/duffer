@@ -27,7 +27,7 @@ library
                        Duffer.Plumbing
                        Duffer.Unified
                        Duffer.WithRepo
-                       Duffer.WorkTree
+                       Duffer.WorkObject
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , attoparsec

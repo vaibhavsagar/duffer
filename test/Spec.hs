@@ -35,6 +35,7 @@ import Duffer.Pack.Entries   (PackObjectType(..), encodeOffset, encodeTypeLen
                              ,PackIndexEntry(..), packIndexEntries, toAssoc
                              ,FullObjectType(..), DeltaObjectType(..))
 import Duffer.WithRepo       (withRepo)
+import Duffer.WorkObject
 
 main :: IO ()
 main = do
@@ -46,6 +47,7 @@ main = do
     testReading objectTypes allTypesObjects
     testJSON    objectTypes allTypesObjects
     testRefs
+    testWorkTrees =<< objectsOfType "tree"
 
 newtype TestPackObjectType
     = TestPackObjectType { innerPackObject :: PackObjectType }
@@ -93,6 +95,10 @@ testJSON :: [String] -> [[Ref]] -> IO ()
 testJSON types partitionedObjects =
     hspec . parallel $ describe "decoding and encoding" $
         zipWithM_ describeDecodingEncodingAll types partitionedObjects
+
+testWorkTrees :: [Ref] -> IO ()
+testWorkTrees refs = hspec . parallel $ describe "work trees" $
+    it "reads and hashes WorkObjects" (mapM_ (readHashWorkObject ".git") refs)
 
 testRefs :: IO ()
 testRefs = hspec . parallel $ describe "reading refs" $ do
@@ -176,3 +182,10 @@ decodeEncodeObject path ref = withRepo path (readObject ref) >>= \case
     Nothing       -> let
         sha1String = toString ref
         in expectationFailure $ sha1String ++ " not found"
+
+readHashWorkObject :: FilePath -> Ref -> Expectation
+readHashWorkObject path sha1 = withRepo path (workObject sha1) >>= \case
+  (Just object) -> hashWorkObject object `shouldBe` sha1
+  Nothing       -> let
+    sha1String = toString sha1
+    in expectationFailure $ sha1String ++ " not found"
