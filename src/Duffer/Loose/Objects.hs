@@ -32,18 +32,18 @@ import Numeric                 (readOct)
 import System.FilePath         ((</>))
 import Text.Printf             (printf)
 
-data GitObjectGeneric entries
+data GitObjectGeneric ref entries
     = Blob {blobContent :: B.ByteString}
     | Tree {treeEntries :: entries}
     | Commit
-        { commitTreeRef    :: Ref
-        , commitParentRefs :: [Ref]
+        { commitTreeRef    :: ref
+        , commitParentRefs :: [ref]
         , commitAuthor     :: PersonTime
         , commitCommitter  :: PersonTime
         , commitMessage    :: B.ByteString
         }
     | Tag
-        { tagObjectRef  :: Ref
+        { tagObjectRef  :: ref
         , tagObjectType :: B.ByteString
         , tagName       :: B.ByteString
         , tagTagger     :: PersonTime
@@ -51,7 +51,7 @@ data GitObjectGeneric entries
         }
     deriving (Eq)
 
-type GitObject = GitObjectGeneric (Set TreeEntry)
+type GitObject = GitObjectGeneric Ref (Set TreeEntry)
 
 -- A tree entry has permissions, a file/directory name, and a ref.
 data TreeEntry = TreeEntry

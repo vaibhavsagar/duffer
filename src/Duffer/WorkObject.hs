@@ -10,7 +10,7 @@ import Duffer.Loose.Objects
 import Duffer (readObject)
 import Duffer.WithRepo
 
-type WorkObject = GitObjectGeneric (Map.Map B.ByteString WorkTreeEntry)
+type WorkObject = GitObjectGeneric Ref (Map.Map B.ByteString WorkTreeEntry)
 
 data WorkTreeEntry = WorkTreeEntry WorkObject EntryPermission
 
