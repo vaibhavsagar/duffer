@@ -15,7 +15,7 @@ import Data.ByteString.UTF8      (fromString)
 import Data.List                 (isPrefixOf)
 
 import Duffer.Loose         (listDirectory)
-import Duffer.Loose.Objects (GitObject(..), TreeEntry(..), EntryPermission(..)
+import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..), EntryPermission(..)
                             ,Ref)
 import Duffer.Pack          (getPackObjectRefs)
 import Duffer.Unified       (readRef, readObject, writeObject)

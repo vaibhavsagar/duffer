@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Duffer.Loose.Objects where
 
@@ -30,9 +32,9 @@ import Numeric                 (readOct)
 import System.FilePath         ((</>))
 import Text.Printf             (printf)
 
-data GitObject
+data GitObjectGeneric entries
     = Blob {blobContent :: B.ByteString}
-    | Tree {treeEntries :: Set TreeEntry}
+    | Tree {treeEntries :: entries}
     | Commit
         { commitTreeRef    :: Ref
         , commitParentRefs :: [Ref]
@@ -48,6 +50,8 @@ data GitObject
         , tagAnnotation :: B.ByteString
         }
     deriving (Eq)
+
+type GitObject = GitObjectGeneric (Set TreeEntry)
 
 -- A tree entry has permissions, a file/directory name, and a ref.
 data TreeEntry = TreeEntry
