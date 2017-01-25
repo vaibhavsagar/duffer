@@ -28,6 +28,7 @@ import Data.Function           (on)
 import Data.List               (intercalate)
 import Data.Monoid             ((<>))
 import Data.Set                (Set, toAscList)
+import Data.String             (IsString)
 import Numeric                 (readOct)
 import System.FilePath         ((</>))
 import Text.Printf             (printf)
@@ -139,13 +140,15 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
 showObject :: GitObject -> L.ByteString
 showObject gitObject = header `L.append` content
     where content    = BB.toLazyByteString $ showContent gitObject
-          header     = L.concat [objectType, " ", len, "\NUL"]
-          objectType = case gitObject of
-            Blob{}   -> "blob"
-            Tree{}   -> "tree"
-            Commit{} -> "commit"
-            Tag{}    -> "tag"
+          header     = L.concat [objectType gitObject, " ", len, "\NUL"]
           len        = L.fromStrict $ fromString . show $ L.length content
+
+objectType :: IsString a => GitObjectGeneric r e -> a
+objectType someObject = case someObject of
+    Blob{}   -> "blob"
+    Tree{}   -> "tree"
+    Commit{} -> "commit"
+    Tag{}    -> "tag"
 
 showContent :: GitObject -> BB.Builder
 showContent gitObject = case gitObject of
