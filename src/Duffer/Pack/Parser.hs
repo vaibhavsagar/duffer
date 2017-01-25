@@ -20,7 +20,7 @@ import Data.Map.Strict                  (Map, singleton, union, empty)
 
 import Prelude hiding (take, drop, head, length, splitAt)
 
-import Duffer.Loose.Objects (GitObject(..), Ref, hash)
+import Duffer.Loose.Objects (GitObject, Ref, hash)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
 import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
