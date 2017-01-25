@@ -103,7 +103,7 @@ instance Eq TreeEntry where
     (==) = (==) `on` entryName
 
 instance Ord TreeEntry where
-    compare t1 t2 = compare (sortableName t1) (sortableName t2)
+    compare = compare `on` sortableName
         where sortableName (TreeEntry mode name _) = name `B.append`
                 bool "" "/" (mode == Directory || mode == SubModule)
 
