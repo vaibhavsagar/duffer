@@ -9,32 +9,27 @@ import Duffer.Loose.Objects
 import Duffer (readObject)
 import Duffer.WithRepo
 
-newtype WorkTreeBlob = WorkTreeBlob {wtBlobContent :: B.ByteString}
+data WorkObject
+    = WorkBlob {wBlobContent :: B.ByteString}
+    | WorkTree {wTreeEntries :: Map.Map B.ByteString WorkTreeEntry}
     deriving (Show)
 
-data WorkTreeEntry
-   = WorkTreeEntry (Either WorkTreeBlob WorkTree) EntryPermission
+data WorkTreeEntry = WorkTreeEntry WorkObject EntryPermission
     deriving (Show)
 
-newtype WorkTree = WorkTree (Map.Map B.ByteString WorkTreeEntry)
-    deriving (Show)
-
-
-workTree :: Ref -> WithRepo (Maybe (Either WorkTreeBlob WorkTree))
-workTree ref = readObject ref >>= \case
+workObject :: Ref -> WithRepo (Maybe WorkObject)
+workObject ref = readObject ref >>= \case
         Nothing             -> return Nothing
-        Just (Blob content) -> return . Just $ Left (WorkTreeBlob content)
-        Just (Tree entries) -> workTreeEntries entries >>= \case
-            Just e  -> return . Just $ Right e
-            Nothing -> return Nothing
-        Just _              -> error "Commit or Tag found."
+        Just (Blob content) -> return . Just $ WorkBlob content
+        Just (Tree entries) -> workTreeEntries entries
+        -- Haven't figured out what to do in this case yet.
+        Just _              -> return Nothing
 
-workTreeEntries :: S.Set TreeEntry -> WithRepo (Maybe WorkTree)
+workTreeEntries :: S.Set TreeEntry -> WithRepo (Maybe WorkObject)
 workTreeEntries entries = do
     let entriesList = S.toList entries
-    let filenames = map entryName entriesList
+    let filenames   = map entryName  entriesList
     let permissions = map entryPerms entriesList
-    children <- mapM (workTree . entryRef) entriesList
-    let childrenS = sequence children
-    let wtEntries = zipWith WorkTreeEntry <$> childrenS <*> pure permissions
+    children <- sequence <$> traverse (workObject . entryRef) entriesList
+    let wtEntries   = zipWith WorkTreeEntry <$> children <*> pure permissions
     return $ WorkTree . Map.fromList . zip filenames <$> wtEntries
