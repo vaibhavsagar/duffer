@@ -34,21 +34,21 @@ import System.FilePath         ((</>))
 import Text.Printf             (printf)
 
 data GitObjectGeneric ref entries
-    = Blob {blobContent :: B.ByteString}
-    | Tree {treeEntries :: entries}
+    = Blob {blobContent :: !B.ByteString}
+    | Tree {treeEntries :: !entries}
     | Commit
-        { commitTreeRef    :: ref
-        , commitParentRefs :: [ref]
-        , commitAuthor     :: PersonTime
-        , commitCommitter  :: PersonTime
-        , commitMessage    :: B.ByteString
+        { commitTreeRef    :: !ref
+        , commitParentRefs :: ![ref]
+        , commitAuthor     :: !PersonTime
+        , commitCommitter  :: !PersonTime
+        , commitMessage    :: !B.ByteString
         }
     | Tag
-        { tagObjectRef  :: ref
-        , tagObjectType :: B.ByteString
-        , tagName       :: B.ByteString
-        , tagTagger     :: PersonTime
-        , tagAnnotation :: B.ByteString
+        { tagObjectRef  :: !ref
+        , tagObjectType :: !B.ByteString
+        , tagName       :: !B.ByteString
+        , tagTagger     :: !PersonTime
+        , tagAnnotation :: !B.ByteString
         }
     deriving (Eq)
 
@@ -56,16 +56,16 @@ type GitObject = GitObjectGeneric Ref (Set TreeEntry)
 
 -- A tree entry has permissions, a file/directory name, and a ref.
 data TreeEntry = TreeEntry
-    { entryPerms :: EntryPermission
-    , entryName  :: B.ByteString
-    , entryRef   :: Ref
+    { entryPerms :: !EntryPermission
+    , entryName  :: !B.ByteString
+    , entryRef   :: !Ref
     }
 
 data PersonTime = PersonTime
-    { personName :: B.ByteString
-    , personMail :: B.ByteString
-    , personTime :: B.ByteString
-    , personTZ   :: B.ByteString
+    { personName :: !B.ByteString
+    , personMail :: !B.ByteString
+    , personTime :: !B.ByteString
+    , personTZ   :: !B.ByteString
     }
     deriving (Eq)
 
