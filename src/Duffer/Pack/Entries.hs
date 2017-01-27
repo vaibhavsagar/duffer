@@ -93,6 +93,13 @@ instance Enum PackObjectType where
     toEnum 7 = DeltaType RefDeltaType
     toEnum _ = error "invalid"
 
+instance Byteable FullObjectType where
+    toBytes ty = case ty of
+        CommitType -> "commit"
+        TagType    -> "tag"
+        TreeType   -> "tree"
+        BlobType   -> "blob"
+
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject) = toBytes packedObject
     toBytes (UnResolved ofsD@(OfsDelta _ WCL{..})) = let
