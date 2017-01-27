@@ -27,15 +27,15 @@ convert
     -> GitObjectGeneric a b
     -> f (GitObjectGeneric c d)
 convert f g = \case
-    Blob{..} -> pure Blob{..}
-    Tree{..} -> Tree <$> g treeEntries
+    Blob{..}   -> pure Blob{..}
+    Tree{..}   -> Tree <$> g treeEntries
     Commit{..} -> Commit
         <$> f commitTreeRef
         <*> traverse f commitParentRefs
         <*> pure commitAuthor
         <*> pure commitCommitter
         <*> pure commitMessage
-    Tag{..} -> Tag
+    Tag{..}    -> Tag
         <$> f tagObjectRef
         <*> pure tagObjectType
         <*> pure tagName
