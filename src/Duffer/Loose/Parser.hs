@@ -1,9 +1,8 @@
 module Duffer.Loose.Parser where
 
-import qualified Data.ByteString      as B
-
 import Prelude                          hiding (take)
 
+import Data.ByteString                  (ByteString, cons, pack, find)
 import Control.Applicative              ((<|>))
 import Data.Attoparsec.ByteString       (Parser, anyWord8, notInClass)
 import Data.Attoparsec.ByteString.Char8 (anyChar, char, char8, choice, digit
@@ -20,23 +19,23 @@ import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..), Per
 parseNull :: Parser Char
 parseNull = char '\NUL'
 
-parseHeader :: B.ByteString -> Parser String
+parseHeader :: ByteString -> Parser String
 parseHeader = (*> digit `manyTill'` parseNull) . (*> space) . string
 
-parseRestOfLine :: Parser B.ByteString
+parseRestOfLine :: Parser ByteString
 parseRestOfLine = takeTill (=='\n') <* endOfLine
 
-parseMessage :: Parser B.ByteString
+parseMessage :: Parser ByteString
 parseMessage = endOfLine *> takeByteString
 
-parseTimeZone :: Parser B.ByteString
-parseTimeZone = B.cons <$> (char8 '+' <|> char8 '-') <*> takeWhile1 isDigit
+parseTimeZone :: Parser ByteString
+parseTimeZone = cons <$> (char8 '+' <|> char8 '-') <*> takeWhile1 isDigit
 
-validateRef :: Monad m => B.ByteString -> m Ref
+validateRef :: Monad m => ByteString -> m Ref
 validateRef possibleRef = maybe
     (return possibleRef)
     (const $ fail "invalid ref")
-    $ B.find (notInClass "0-9a-f") possibleRef
+    $ find (notInClass "0-9a-f") possibleRef
 
 parseHexRef, parseBinRef :: Parser Ref
 parseHexRef = validateRef =<< take 40
@@ -55,9 +54,9 @@ parseTreeEntry = TreeEntry <$> parsePerms <*> parseName <*> parseBinRef
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
-    <$> (B.pack        <$> anyWord8 `manyTill'` string " <")
-    <*> (B.pack        <$> anyWord8 `manyTill'` string "> ")
-    <*> (fromString    <$> digit    `manyTill'` space)
+    <$> (pack       <$> anyWord8 `manyTill'` string " <")
+    <*> (pack       <$> anyWord8 `manyTill'` string "> ")
+    <*> (fromString <$> digit    `manyTill'` space)
     <*> parseTimeZone
 
 parseCommit :: Parser GitObject
@@ -71,18 +70,19 @@ parseCommit = Commit
 parseTag :: Parser GitObject
 parseTag = Tag
     <$> ("object" *> space *> parseHexRef     <* endOfLine)
-    <*> ("type"   *> space *> parseRestOfLine)
+    <*> ("type"   *> space *> parseType       <* endOfLine)
     <*> ("tag"    *> space *> parseRestOfLine)
     <*> ("tagger" *> space *> parsePersonTime <* endOfLine)
     <*> parseMessage
+    where parseType = choice $ map string ["blob", "tree", "commit", "tag"]
 
 parseObject :: Parser GitObject
 parseObject = choice
-    [ "blob"   ? parseBlob
-    , "tree"   ? parseTree
-    , "commit" ? parseCommit
-    , "tag"    ? parseTag
-    ] where (?) oType parser = parseHeader oType >> parser
+    [ "blob"   .*> parseBlob
+    , "tree"   .*> parseTree
+    , "commit" .*> parseCommit
+    , "tag"    .*> parseTag
+    ] where (.*>) oType = (parseHeader oType *>)
 
 parseSymRef :: Parser String
 parseSymRef = string "ref:" *> space *> anyChar `manyTill'` endOfLine
