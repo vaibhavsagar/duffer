@@ -47,7 +47,7 @@ loop producer offset remaining indexedMap = do
         indexedMap' = insert offset entry indexedMap
         offset'     = offset + len
         remaining'  = remaining - 1
-    indexedMap' `seq` loop producer' offset' remaining' indexedMap'
+    loop producer' offset' remaining' indexedMap'
 
 getNextEntry :: StateT (Prod a) IO
     (Prod (Either (Prod a) a), (ByteString, CompressionLevel))
