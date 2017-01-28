@@ -43,8 +43,8 @@ loop producer offset remaining indexedMap = do
         either ((,) "" . return) id <$> next decompressedP
     let len         = length $ headerRef `append` compressToLevel level output
         parser      = parsePackRegion' (WCL level <$> takeByteString)
-        entry       = headerRef `append` output
-        indexedMap' = insert offset (parsedOnly parser entry) indexedMap
+        entry       = parsedOnly parser $ headerRef `append` output
+        indexedMap' = insert offset entry indexedMap
         offset'     = offset + len
         remaining'  = remaining - 1
     indexedMap' `seq` loop producer' offset' remaining' indexedMap'
