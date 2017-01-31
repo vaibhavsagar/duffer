@@ -7,14 +7,11 @@ import qualified Prelude              as P
 import Codec.Compression.Zlib           (decompress)
 import Control.Applicative              ((<|>))
 import Control.Monad                    (zipWithM)
-import Crypto.Hash                      (hashWith)
-import Crypto.Hash.Algorithms           (SHA1)
 import Data.Attoparsec.ByteString       (Parser, parseOnly, count, word8
                                         ,takeByteString, takeLazyByteString
                                         ,take, anyWord8, many1, many')
 import Data.Attoparsec.ByteString.Char8 (char, space)
 import Data.Bits                        (Bits(..))
-import Data.ByteArray.Encoding          (Base(Base16), convertToBase)
 import Data.Byteable                    (toBytes)
 import Data.ByteString                  (ByteString, concat, length, splitAt, unpack)
 import Data.ByteString.Lazy             (head, drop, toStrict)
@@ -25,7 +22,7 @@ import Data.Map.Strict                  (Map, singleton, union, empty)
 
 import Prelude hiding (take, drop, head, length, concat, splitAt)
 
-import Duffer.Loose.Objects (GitObject, Ref)
+import Duffer.Loose.Objects (GitObject, Ref, hashSHA1)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
 import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
@@ -39,7 +36,7 @@ parsedOnly :: Parser a -> ByteString -> a
 parsedOnly parser content = either error id $ parseOnly parser content
 
 hashResolved :: FullObjectType -> ByteString -> Ref
-hashResolved t content = convertToBase Base16 $ hashWith (undefined :: SHA1) bs'
+hashResolved t content = hashSHA1 bs'
     where bs'    = concat [header, "\NUL", content]
           header = concat [toBytes t, " ", fromString $ show $ length content]
 

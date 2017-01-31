@@ -170,8 +170,11 @@ showContent gitObject = case gitObject of
         ]
     where (?) key value = mconcat $ map BB.byteString [key, " ", value, "\n"]
 
+hashSHA1 :: B.ByteString -> Ref
+hashSHA1 = convertToBase Base16 . hashWith (undefined :: SHA1)
+
 hash :: GitObject -> Ref
-hash = convertToBase Base16 . hashWith (undefined :: SHA1) . toBytes
+hash = hashSHA1 . toBytes
 
 b64encode :: B.ByteString -> T.Text
 b64encode = E.decodeUtf8 . B64.encode
