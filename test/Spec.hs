@@ -39,15 +39,15 @@ import Duffer.WorkObject
 
 main :: IO ()
 main = do
-    testEncodingAndParsing
     let objectTypes = ["blob", "tree", "commit", "tag"]
     allTypesObjects <- mapM objectsOfType objectTypes
-    testReading objectTypes allTypesObjects
-    testUnpackingAndWriting =<< getPackIndices ".git/objects"
-    testReading objectTypes allTypesObjects
-    testJSON    objectTypes allTypesObjects
-    testRefs
-    testWorkTrees =<< objectsOfType "tree"
+    hspec . parallel $ testEncodingAndParsing
+    hspec . parallel $ testReading objectTypes allTypesObjects
+    hspec . parallel . testUnpackingAndWriting =<< getPackIndices ".git/objects"
+    hspec . parallel $ testReading objectTypes allTypesObjects
+    hspec . parallel $ testJSON    objectTypes allTypesObjects
+    hspec . parallel . testRefs =<< allRefs
+    hspec . parallel . testWorkTrees =<< objectsOfType "tree"
 
 newtype TestPackObjectType
     = TestPackObjectType { innerPackObject :: PackObjectType }
@@ -63,8 +63,8 @@ instance Arbitrary TestPackObjectType where
         , DeltaType RefDeltaType
         ]
 
-testEncodingAndParsing :: IO ()
-testEncodingAndParsing = hspec . parallel $ describe "integer encodings" $ do
+testEncodingAndParsing :: SpecWith ()
+testEncodingAndParsing = describe "integer encodings" $ do
     it "encodes and decodes offsets" $ property $
         \offset -> offset >= 0 ==> let
             encoded = encodeOffset offset
@@ -76,38 +76,33 @@ testEncodingAndParsing = hspec . parallel $ describe "integer encodings" $ do
             decoded = either error id $ parseOnly parseTypeLen encoded
             in decoded == (innerPackObject objectType, len :: Int)
 
-testUnpackingAndWriting :: [FilePath] -> IO ()
-testUnpackingAndWriting indices =
-    hspec . parallel $ describe "unpacking packfiles" $
-        mapM_ testAndWriteUnpacked indices
+testUnpackingAndWriting :: [FilePath] -> SpecWith ()
+testUnpackingAndWriting indices = describe "unpacking packfiles" $
+    mapM_ testAndWriteUnpacked indices
 
-testReading :: [String] -> [[Ref]] -> IO ()
-testReading types partitionedObjects =
-    hspec . parallel $ describe "reading objects" $
-        zipWithM_ describeReadingAll types partitionedObjects
+testReading :: [String] -> [[Ref]] -> SpecWith ()
+testReading types partitionedObjects = describe "reading objects" $
+    zipWithM_ describeReadingAll types partitionedObjects
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects = describe oType $
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
     where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
 
-testJSON :: [String] -> [[Ref]] -> IO ()
-testJSON types partitionedObjects =
-    hspec . parallel $ describe "decoding and encoding" $
-        zipWithM_ describeDecodingEncodingAll types partitionedObjects
+testJSON :: [String] -> [[Ref]] -> SpecWith ()
+testJSON types partitionedObjects = describe "decoding and encoding" $
+    zipWithM_ describeDecodingEncodingAll types partitionedObjects
 
-testWorkTrees :: [Ref] -> IO ()
-testWorkTrees refs = hspec . parallel $ describe "work trees" $
+testWorkTrees :: [Ref] -> SpecWith ()
+testWorkTrees refs = describe "work trees" $
     it "reads and hashes WorkObjects" (mapM_ (readHashWorkObject ".git") refs)
 
-testRefs :: IO ()
-testRefs = hspec . parallel $ describe "reading refs" $ do
-    refsOutput <- runIO allRefs
-    it "correctly reads refs" $
-        mapM_ (checkRef ".git") refsOutput
-    where checkRef repo (path, ref) = withRepo repo (readRef path) >>= \case
-            (Just someRef) -> someRef `shouldBe` ref
-            Nothing        -> expectationFailure $ path ++ " not found"
+testRefs :: [(FilePath, Ref)] -> SpecWith ()
+testRefs refsOutput = describe "reading refs" $
+    it "correctly reads refs" $ mapM_ (checkRef ".git") refsOutput
+    where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
+            (expectationFailure $ path ++ " not found")
+            (`shouldBe` ref)
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects = describe oType $
