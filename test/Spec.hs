@@ -101,7 +101,7 @@ testRefs :: [(FilePath, Ref)] -> SpecWith ()
 testRefs refsOutput = describe "reading refs" $
     it "correctly reads refs" $ mapM_ (checkRef ".git") refsOutput
     where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
-            (expectationFailure $ path ++ " not found")
+            (failureNotFound path)
             (`shouldBe` ref)
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
@@ -162,25 +162,20 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
             \(_, Just handle', _, _) -> return handle'
 
 readHashObject :: String -> Ref -> Expectation
-readHashObject path sha1 = withRepo path (readObject sha1) >>= \case
-    (Just object) -> hash object `shouldBe` sha1
-    Nothing       -> let
-        sha1String = toString sha1
-        in expectationFailure $ sha1String ++ " not found"
+readHashObject path sha1 = withRepo path (readObject sha1) >>= maybe
+    (failureNotFound $ toString sha1)
+    (\object -> hash object `shouldBe` sha1)
 
 decodeEncodeObject :: FilePath -> Ref -> Expectation
-decodeEncodeObject path ref = withRepo path (readObject ref) >>= \case
-    (Just object) -> let
-        encoded = encode object
-        decoded = fromJust $ decode encoded :: GitObject
-        in decoded `shouldBe` object
-    Nothing       -> let
-        sha1String = toString ref
-        in expectationFailure $ sha1String ++ " not found"
+decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
+    (failureNotFound $ toString ref)
+    (\object ->
+        (fromJust . decode $ encode object :: GitObject) `shouldBe` object)
 
 readHashWorkObject :: FilePath -> Ref -> Expectation
-readHashWorkObject path sha1 = withRepo path (workObject sha1) >>= \case
-  (Just object) -> hashWorkObject object `shouldBe` sha1
-  Nothing       -> let
-    sha1String = toString sha1
-    in expectationFailure $ sha1String ++ " not found"
+readHashWorkObject path sha1 = withRepo path (workObject sha1) >>= maybe
+  (failureNotFound $ toString sha1)
+  (\object -> hashWorkObject object `shouldBe` sha1)
+
+failureNotFound :: String -> Expectation
+failureNotFound string = expectationFailure $ string ++ " not found"
