@@ -58,7 +58,7 @@ parsePackIndexUptoRefs :: Parser [Ref]
 parsePackIndexUptoRefs = parsePackIndexTotal >>= parsePackIndexRefs
 
 parsePackIndexHeader :: Parser ()
-parsePackIndexHeader = traverse word8 start *> traverse word8 version *> pure ()
+parsePackIndexHeader = traverse word8 (start ++ version) *> pure ()
     where start   = [255, 116, 79, 99]
           version = [0, 0, 0, 2]
 
@@ -80,7 +80,7 @@ parsedIndex = parsedOnly parsePackIndex
 parseVarInt :: (Bits t, Integral t) => Parser [t]
 parseVarInt = anyWord8 >>= \byte ->
     let value = fromIntegral $ byte .&. 127
-    in (:) value <$> bool (return []) parseVarInt (testMSB byte)
+    in (value:) <$> bool (return []) parseVarInt (testMSB byte)
 
 testMSB :: Bits t => t -> Bool
 testMSB = flip testBit 7
@@ -113,7 +113,7 @@ parseDeltaInstruction = fromIntegral <$> anyWord8 >>= \instruction ->
         instruction
 
 parseInsertInstruction :: Int -> Parser DeltaInstruction
-parseInsertInstruction len = InsertInstruction <$> take len
+parseInsertInstruction = fmap InsertInstruction . take
 
 parseCopyInstruction :: (Bits t, Integral t) => t -> Parser DeltaInstruction
 parseCopyInstruction byte = CopyInstruction
