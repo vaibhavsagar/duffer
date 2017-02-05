@@ -105,8 +105,8 @@ instance Eq TreeEntry where
 
 instance Ord TreeEntry where
     compare = compare `on` sortableName
-        where sortableName (TreeEntry mode name _) = name `B.append`
-                bool "" "/" (mode == Directory || mode == SubModule)
+        where sortableName TreeEntry{..} = entryName `B.append`
+                bool "" "/" (entryPerms == Directory || entryPerms == SubModule)
 
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
