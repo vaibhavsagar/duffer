@@ -19,7 +19,7 @@ import Control.Applicative     (empty)
 import Crypto.Hash             (hashWith)
 import Crypto.Hash.Algorithms  (SHA1)
 import Data.Aeson              (ToJSON(..), FromJSON(..), KeyValue, Value(..)
-                               ,object, pairs, (.=), (.:))
+                               ,object, pairs, (.=), (.:), withObject)
 import Data.Bool               (bool)
 import Data.ByteArray.Encoding (Base(Base16), convertToBase)
 import Data.Byteable           (Byteable(..))
@@ -276,9 +276,6 @@ instance FromJSON TreeEntry where
     parseJSON _ = empty
 
 instance FromJSON PersonTime where
-    parseJSON (Object v) = PersonTime
-        <$> (E.encodeUtf8 <$> v .: "name")
-        <*> (E.encodeUtf8 <$> v .: "mail")
-        <*> (E.encodeUtf8 <$> v .: "time")
-        <*> (E.encodeUtf8 <$> v .: "zone")
-    parseJSON _ = empty
+    parseJSON = withObject "PersonTime" $ \v ->
+        let enc = fmap E.encodeUtf8 . (.:) v in PersonTime
+        <$> enc "name" <*> enc "mail" <*> enc "time" <*> enc "zone"
