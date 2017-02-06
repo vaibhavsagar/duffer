@@ -155,11 +155,11 @@ showContent gitObject = case gitObject of
     Blob content -> BB.byteString content
     Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
-        [                "tree"      ?                 commitTreeRef
-        , mconcat $ map ("parent"    ?)                commitParentRefs
-        ,                "author"    ?  toBytes        commitAuthor
-        ,                "committer" ?  toBytes        commitCommitter
-        ,                "\n"        ,  BB.byteString  commitMessage
+        [                "tree"      ?                commitTreeRef
+        , mconcat $ map ("parent"    ?)               commitParentRefs
+        ,                "author"    ?  toBytes       commitAuthor
+        ,                "committer" ?  toBytes       commitCommitter
+        ,                "\n"        ,  BB.byteString commitMessage
         ]
     Tag {..} -> mconcat
         [ "object" ?               tagObjectRef
