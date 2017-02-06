@@ -14,7 +14,8 @@ import Data.ByteString.UTF8             (fromString)
 import Data.Set                         (fromList)
 import Numeric                          (readOct)
 
-import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..), PersonTime(..), Ref)
+import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..)
+                            ,PersonTime(..), Ref)
 
 parseNull :: Parser Char
 parseNull = char '\NUL'
