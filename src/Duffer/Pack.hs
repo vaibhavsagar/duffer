@@ -79,7 +79,7 @@ indexedByteStringMap indexPath = do
     let indices  =  IntMap.keys offsetMap
     let rangeMap =  IntMap.insert (contentEnd - 20) "" offsetMap
     entries      <- mapM (getPackRegion filePath rangeMap) indices
-    return $ IntMap.fromAscList $ zip indices entries
+    return . IntMap.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
 combinedEntryMap indexPath = CombinedMap
