@@ -38,7 +38,7 @@ parsedOnly parser content = either error id $ parseOnly parser content
 hashResolved :: FullObjectType -> ByteString -> Ref
 hashResolved t content = hashSHA1 bs'
     where bs'    = concat [header, "\NUL", content]
-          header = concat [toBytes t, " ", fromString $ show $ length content]
+          header = concat [toBytes t, " ", fromString . show $ length content]
 
 parseResolved :: FullObjectType -> ByteString -> GitObject
 parseResolved t = parsedOnly (parseObjectContent t)
@@ -152,7 +152,7 @@ parseObjectContent = \case
 
 parseWCL :: Parser (WCL ByteString)
 parseWCL = takeLazyByteString >>= \compressed -> return $ WCL
-    (getCompressionLevel $ head $ drop 1 compressed)
+    (getCompressionLevel . head $ drop 1 compressed)
     (toStrict $ decompress compressed)
 
 parseFullObject

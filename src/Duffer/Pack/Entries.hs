@@ -113,7 +113,7 @@ instance Byteable PackEntry where
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ packed) = let
-        header = encodeTypeLen (FullType t) $ B.length $ wclContent packed
+        header = encodeTypeLen (FullType t) . B.length $ wclContent packed
         in header `B.append` toBytes packed
 
 instance (Byteable a) => Byteable (WCL a) where
@@ -124,7 +124,7 @@ isResolved Resolved{}   = True
 isResolved UnResolved{} = False
 
 compressToLevel :: CompressionLevel -> B.ByteString -> B.ByteString
-compressToLevel level content = toStrict $
+compressToLevel level content = toStrict .
     compressWith defaultCompressParams {compressLevel = level}
         $ fromStrict content
 

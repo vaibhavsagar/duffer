@@ -45,7 +45,7 @@ resolvePartialLooseRef' search = do
                 liftIO (listDirectory objectDir)
             return $ bool
                 Nothing
-                (Just $ fromString $ dir ++ head filtered)
+                (Just . fromString $ dir ++ head filtered)
                 (length filtered == 1))
 
 resolvePartialPackRef' :: String -> WithRepo (Maybe Ref)
@@ -57,8 +57,8 @@ resolvePartialPackRef' search = do
 initRepo :: WithRepo ()
 initRepo = do
     path <- ask
-    objectsPresent <- liftIO $ doesDirectoryExist $ path </> "objects"
-    liftIO $ unless objectsPresent $ do
+    objectsPresent <- liftIO . doesDirectoryExist $ path </> "objects"
+    liftIO . unless objectsPresent $ do
         mapM_ (createDirectoryIfMissing True)
             [ path </> "branches"
             , path </> "hooks"
@@ -76,14 +76,14 @@ initRepo = do
 
 writeTree :: FilePath -> WithRepo Ref
 writeTree path = writeObject . Tree . S.fromList =<< mapM (\entry -> do
-    fileExists <- liftIO $ doesFileExist      $ path </> entry
-    dirExists  <- liftIO $ doesDirectoryExist $ path </> entry
+    fileExists <- liftIO . doesFileExist      $ path </> entry
+    dirExists  <- liftIO . doesDirectoryExist $ path </> entry
     case (dirExists, fileExists) of
         (True, _) -> do
             tRef <- writeTree $ path </> entry
             return $ TreeEntry Directory (BU.fromString entry) tRef
         (_, True) -> do
-            bContent <- liftIO $ B.readFile $ path </> entry
+            bContent <- liftIO . B.readFile $ path </> entry
             bRef     <- writeObject $ Blob bContent
             return $ TreeEntry Regular (BU.fromString entry) bRef
         (False, False) -> error "what even"
