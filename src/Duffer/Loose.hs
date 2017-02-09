@@ -48,7 +48,7 @@ writeLooseObject' :: GitObject -> WithRepo Ref
 writeLooseObject' object = let sha1 = hash object in do
     path   <- asks (sha1Path sha1)
     exists <- hasLooseObject' sha1
-    liftIO $ unless exists $ do
+    liftIO . unless exists $ do
         createDirectoryIfMissing True (takeDirectory path)
         L.writeFile path $ (Z.compress . showObject) object
     return sha1
