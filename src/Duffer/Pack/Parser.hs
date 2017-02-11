@@ -17,6 +17,7 @@ import Data.ByteString                  (ByteString, concat, length, splitAt, un
 import Data.ByteString.Lazy             (head, drop, toStrict)
 import Data.ByteString.UTF8             (fromString)
 import Data.Bool                        (bool)
+import Data.Functor.Compose             (Compose(..))
 import Data.List                        (foldl')
 import Data.Map.Strict                  (Map, singleton, union, empty)
 
@@ -165,7 +166,7 @@ parseOfsDelta parser = OfsDelta <$> parseOffset <*> parseWCLDelta parser
 parseRefDelta parser = RefDelta <$> parseBinRef <*> parseWCLDelta parser
 
 parseWCLDelta :: Parser (WCL ByteString) -> Parser (WCL Delta)
-parseWCLDelta = fmap . fmap $ parsedOnly parseDelta
+parseWCLDelta = getCompose . fmap (parsedOnly parseDelta) . Compose
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = parsePackRegion' parseWCL
