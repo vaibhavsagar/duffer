@@ -110,7 +110,7 @@ parseTypeLen = do
 
 parseDeltaInstruction :: Parser DeltaInstruction
 parseDeltaInstruction = fromIntegral <$> anyWord8 >>=
-    bool parseInsertInstruction parseCopyInstruction . testMSB <*> id
+    (bool parseInsertInstruction parseCopyInstruction =<< testMSB)
 
 parseInsertInstruction :: Int -> Parser DeltaInstruction
 parseInsertInstruction = fmap InsertInstruction . take
