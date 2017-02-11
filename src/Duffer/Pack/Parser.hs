@@ -165,7 +165,7 @@ parseOfsDelta parser = OfsDelta <$> parseOffset <*> parseWCLDelta parser
 parseRefDelta parser = RefDelta <$> parseBinRef <*> parseWCLDelta parser
 
 parseWCLDelta :: Parser (WCL ByteString) -> Parser (WCL Delta)
-parseWCLDelta parser = fmap (parsedOnly parseDelta) <$> parser
+parseWCLDelta = fmap . fmap $ parsedOnly parseDelta
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = parsePackRegion' parseWCL
