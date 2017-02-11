@@ -108,9 +108,8 @@ parseTypeLen = do
     return (packObjectType header, size)
 
 parseDeltaInstruction :: Parser DeltaInstruction
-parseDeltaInstruction = fromIntegral <$> anyWord8 >>= \instruction ->
-    bool parseInsertInstruction parseCopyInstruction (testMSB instruction)
-        instruction
+parseDeltaInstruction = fromIntegral <$> anyWord8 >>=
+    bool parseInsertInstruction parseCopyInstruction . testMSB <*> id
 
 parseInsertInstruction :: Int -> Parser DeltaInstruction
 parseInsertInstruction = fmap InsertInstruction . take
