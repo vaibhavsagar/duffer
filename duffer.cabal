@@ -56,6 +56,8 @@ library
                      -fwarn-tabs
                      -fwarn-missing-signatures
                      -fwarn-incomplete-patterns
+                     -Wall
+                     -Werror
   default-language:    Haskell2010
 
 test-suite duffer-test
