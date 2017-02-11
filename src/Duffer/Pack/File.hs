@@ -62,11 +62,10 @@ resolveIter :: ObjectMap -> OffsetMap -> ObjectMap
 resolveIter objectMap offsetMap | IntMap.null offsetMap = objectMap
 resolveIter objectMap offsetMap = let
     (objectMap', offsetMap') = separateResolved objectMap offsetMap
-    possiblyResolved         = resolveIfPossible objectMap'
-    offsetMap''              = IntMap.mapWithKey possiblyResolved offsetMap'
     in bool
         (error "cannot progress")
-        (resolveIter objectMap' offsetMap'')
+        (resolveIter objectMap' $
+            IntMap.mapWithKey (resolveIfPossible objectMap') offsetMap')
         (IntMap.size offsetMap' < IntMap.size offsetMap)
 
 separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
