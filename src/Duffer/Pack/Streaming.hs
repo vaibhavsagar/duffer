@@ -68,7 +68,7 @@ advanceToCompletion :: ByteString -> Prod (Either a b) -> IO (ByteString, a)
 advanceToCompletion decompressed producer = next producer >>= \case
     Right (d, p')  -> first (append decompressed) <$> advanceToCompletion d p'
     Left (Left p)  -> return (decompressed, p)
-    Left (Right _) -> error "No idea how to handle Left (Right _)"
+    Left (Right _) -> error "no idea how to handle end of stream"
 
 fromRight :: Either a b -> b
 fromRight = either (const $ error "Found Left, Right expected") id
