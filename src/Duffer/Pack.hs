@@ -21,7 +21,8 @@ import Duffer.Loose.Objects (GitObject, Ref)
 import Duffer.Pack.Entries  (CombinedMap(..), OffsetMap, getRefIndex)
 import Duffer.Pack.Parser   (parsedPackIndexRefs, parsedPackRegion
                             ,parsedPackRefs)
-import Duffer.Pack.File     (resolveEntry, makeRefIndex, makeOffsetMap)
+import Duffer.Pack.File     (resolveEntry, resolveDelta, makeRefIndex
+                            ,makeOffsetMap, unpackObject)
 import Duffer.WithRepo      (WithRepo, ask, asks, liftIO, localObjects)
 
 packFile, packIndex :: FilePath -> FilePath
@@ -87,8 +88,10 @@ combinedEntryMap indexPath = CombinedMap
     <*> fmap makeRefIndex (B.readFile indexPath)
 
 resolveAll :: CombinedMap -> [GitObject]
-resolveAll cMap =
-    map (fromJust . resolveEntry cMap) $ Map.keys (getRefIndex cMap)
+resolveAll = go <*> (Map.elems . getRefIndex)
+    where go _Map []     = []
+          go cMap (x:xs) = let (o, cMap') = resolveDelta cMap x
+            in unpackObject o : go cMap' xs
 
 readPackRef :: FilePath -> WithRepo (Maybe Ref)
 readPackRef refPath = asks (</> "packed-refs") >>= \refsPath ->

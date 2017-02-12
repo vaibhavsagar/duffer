@@ -31,18 +31,26 @@ resolve (PackedObject t _ (WCL _ source)) (WCL l (Delta _ _ is)) = let
     r        = hashResolved t resolved
     in PackedObject t r (WCL l resolved)
 
-resolveDelta :: CombinedMap -> Int -> PackedObject
+resolveDelta :: CombinedMap -> Int -> (PackedObject, CombinedMap)
 resolveDelta combinedMap index = case getOffsetMap combinedMap IntMap.! index of
-    Resolved object -> object
+    Resolved object -> (object, combinedMap)
     UnResolved (OfsDelta o delta) -> let
-        source = resolveDelta combinedMap $ index-o
-        in resolve source delta
+        index' = index - o
+        (source, combinedMap') = resolveDelta combinedMap index'
+        resolved = resolve source delta
+        in (resolved, updateOffsetMap combinedMap' index resolved)
     UnResolved (RefDelta r delta) -> let
-        source = resolveDelta combinedMap $ getRefIndex combinedMap Map.! r
-        in resolve source delta
+        index' = getRefIndex combinedMap Map.! r
+        (source, combinedMap') = resolveDelta combinedMap index'
+        resolved = resolve source delta
+        in (resolved, updateOffsetMap combinedMap' index resolved)
+    where updateOffsetMap cMap newIndex value = let
+            offsetMap  = getOffsetMap cMap
+            offsetMap' = IntMap.insert newIndex (Resolved value) offsetMap
+            in cMap {getOffsetMap = offsetMap'}
 
 resolveEntry :: CombinedMap -> Ref -> Maybe GitObject
-resolveEntry combinedMap ref = unpackObject . resolveDelta combinedMap <$>
+resolveEntry combinedMap ref = unpackObject . fst . resolveDelta combinedMap <$>
     Map.lookup ref (getRefIndex combinedMap)
 
 unpackObject :: PackedObject -> GitObject
