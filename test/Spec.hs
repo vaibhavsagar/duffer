@@ -15,8 +15,9 @@ import GHC.IO.Handle              (Handle)
 import System.FilePath            ()
 import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
-import Test.Hspec                 (hspec, expectationFailure, parallel, describe, it
-                                  ,runIO, shouldBe, Expectation, SpecWith)
+import Test.Hspec                 (hspec, expectationFailure, describe
+                                  ,it, runIO, shouldBe, shouldMatchList
+                                  ,Expectation, SpecWith)
 import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
 
 import Prelude hiding (lines, readFile)
@@ -41,10 +42,10 @@ main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
     allTypesObjects <- mapM objectsOfType objectTypes
     hspec $ testEncodingAndParsing
-    hspec $ testReading objectTypes allTypesObjects
+    hspec $ testReading "packed"   objectTypes allTypesObjects
     hspec . testUnpackingAndWriting =<< getPackIndices ".git/objects"
-    hspec $ testReading objectTypes allTypesObjects
-    hspec $ testJSON    objectTypes allTypesObjects
+    hspec $ testReading "unpacked" objectTypes allTypesObjects
+    hspec $ testJSON               objectTypes allTypesObjects
     hspec . testRefs =<< allRefs
     hspec . testWorkTrees =<< objectsOfType "tree"
 
@@ -79,9 +80,10 @@ testUnpackingAndWriting :: [FilePath] -> SpecWith ()
 testUnpackingAndWriting indices = describe "unpacking packfiles" $
     mapM_ testAndWriteUnpacked indices
 
-testReading :: [String] -> [[Ref]] -> SpecWith ()
-testReading types partitionedObjects = describe "reading objects" $
-    zipWithM_ describeReadingAll types partitionedObjects
+testReading :: String -> [String] -> [[Ref]] -> SpecWith ()
+testReading status types partitionedObjects =
+    describe ("reading " ++ status ++ " objects") $
+        zipWithM_ describeReadingAll types partitionedObjects
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects = describe oType $
