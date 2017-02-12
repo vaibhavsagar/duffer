@@ -15,9 +15,8 @@ import GHC.IO.Handle              (Handle)
 import System.FilePath            ()
 import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
-import Test.Hspec                 (hspec, parallel, expectationFailure
-                                  ,describe, it, runIO, shouldBe
-                                  ,shouldMatchList, Expectation, SpecWith)
+import Test.Hspec                 (hspec, expectationFailure, parallel, describe, it
+                                  ,runIO, shouldBe, Expectation, SpecWith)
 import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
 
 import Prelude hiding (lines, readFile)
@@ -41,13 +40,13 @@ main :: IO ()
 main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
     allTypesObjects <- mapM objectsOfType objectTypes
-    hspec . parallel $ testEncodingAndParsing
-    hspec . parallel $ testReading objectTypes allTypesObjects
-    hspec . parallel . testUnpackingAndWriting =<< getPackIndices ".git/objects"
-    hspec . parallel $ testReading objectTypes allTypesObjects
-    hspec . parallel $ testJSON    objectTypes allTypesObjects
-    hspec . parallel . testRefs =<< allRefs
-    hspec . parallel . testWorkTrees =<< objectsOfType "tree"
+    hspec $ testEncodingAndParsing
+    hspec $ testReading objectTypes allTypesObjects
+    hspec . testUnpackingAndWriting =<< getPackIndices ".git/objects"
+    hspec $ testReading objectTypes allTypesObjects
+    hspec $ testJSON    objectTypes allTypesObjects
+    hspec . testRefs =<< allRefs
+    hspec . testWorkTrees =<< objectsOfType "tree"
 
 newtype TestPackObjectType
     = TestPackObjectType { innerPackObject :: PackObjectType }
