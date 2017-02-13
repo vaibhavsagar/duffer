@@ -65,12 +65,12 @@ instance Arbitrary TestPackObjectType where
 
 testEncodingAndParsing :: SpecWith ()
 testEncodingAndParsing = describe "integer encodings" $ do
-    it "encodes and decodes offsets" $ property $
+    it "encodes and decodes offsets" . property $
         \offset -> offset >= 0 ==> let
             encoded = encodeOffset offset
             decoded = either error id $ parseOnly parseOffset encoded
             in decoded == (offset :: Int)
-    it "encodes and decodes object types and lengths" $ property $
+    it "encodes and decodes object types and lengths" . property $
         \len objectType -> len >= 0 ==> let
             encoded = encodeTypeLen (innerPackObject objectType) len
             decoded = either error id $ parseOnly parseTypeLen encoded
@@ -99,7 +99,7 @@ testWorkTrees refs = describe "work trees" $
     it "reads and hashes WorkObjects" (mapM_ (readHashWorkObject ".git") refs)
 
 testRefs :: [(FilePath, Ref)] -> SpecWith ()
-testRefs refsOutput = describe "reading refs" $
+testRefs refsOutput = describe "reading refs" .
     it "correctly reads refs" $ mapM_ (checkRef ".git") refsOutput
     where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
             (failureNotFound path)
