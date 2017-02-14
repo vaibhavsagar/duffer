@@ -75,7 +75,6 @@ data ObjectMap = ObjectMap
     }
 
 type OffsetMap = IntMap.IntMap PackEntry
-type RefMap    = Map Ref PackEntry
 type RefIndex  = Map Ref Int
 
 instance Enum PackObjectType where
