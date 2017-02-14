@@ -242,15 +242,15 @@ insertObject offset object@(PackedObject _ r _) ObjectMap {..} = ObjectMap
 fromBytes :: (Bits t, Integral t) => B.ByteString -> t
 fromBytes = B.foldl' (\a b -> (a `shiftL` 8) + fromIntegral b) 0
 
-toSomeBitList :: (Bits t, Integral t) => Int -> t -> [t]
-toSomeBitList some n = reverse $ toSomeBitList' some n
-    where toSomeBitList' some' n' = case divMod n' (bit some') of
+toBitList :: (Bits t, Integral t) => Int -> t -> [t]
+toBitList some n = reverse $ toBitList' some n
+    where toBitList' some' n' = case divMod n' (bit some') of
             (0, i) -> [fromIntegral i]
-            (x, y) ->  fromIntegral y : toSomeBitList' some' x
+            (x, y) ->  fromIntegral y : toBitList' some' x
 
 toByteList, to7BitList :: (Bits t, Integral t) => t -> [t]
-toByteList = toSomeBitList 8
-to7BitList = toSomeBitList 7
+toByteList = toBitList 8
+to7BitList = toBitList 7
 
 fifthOffsets :: B.ByteString -> [Int]
 fifthOffsets ""   = []
