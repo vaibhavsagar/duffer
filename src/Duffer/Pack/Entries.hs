@@ -214,11 +214,8 @@ instance Byteable DeltaInstruction where
         encodedLen  = encode lenBytes
         in B.concat [B.singleton firstByte, encodedOff, encodedLen]
         where encode = B.pack . map fromIntegral . reverse . filter (>0)
-              padFalse :: [Bool] -> Int -> [Bool]
-              padFalse bits len = let
-                pad = len - length bits
+              padFalse bits len = let pad = len - length bits
                 in bool bits (replicate pad False ++ bits) (pad > 0)
-              boolsToByte :: [Bool] -> Int
               boolsToByte = foldl' (\acc b -> shiftL acc 1 + fromEnum b) 0
 
 packObjectType :: (Bits t, Integral t) => t -> PackObjectType
