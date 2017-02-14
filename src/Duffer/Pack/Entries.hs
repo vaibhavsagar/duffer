@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 module Duffer.Pack.Entries where
 
@@ -54,7 +55,7 @@ data PackEntry = Resolved !PackedObject | UnResolved !PackDelta
 data WCL a = WCL
     { wclLevel   :: !CompressionLevel
     , wclContent :: !a
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Functor)
 
 data DeltaInstruction
     = CopyInstruction   !Int !Int
@@ -133,9 +134,6 @@ getCompressionLevel levelByte = case levelByte of
         1   -> bestSpeed
         156 -> defaultCompression
         _   -> error "I can't make sense of this compression level"
-
-instance Functor WCL where
-    fmap f (WCL l a) = WCL l (f a)
 
 encodeTypeLen :: PackObjectType -> Int -> B.ByteString
 encodeTypeLen packObjType len = let
