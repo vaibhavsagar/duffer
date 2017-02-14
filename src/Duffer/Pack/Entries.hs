@@ -25,8 +25,7 @@ data PackIndexEntry = PackIndexEntry
     { pieOffset :: Int
     , pieRef    :: Ref
     , pieCRC    :: Word32
-    }
-    deriving (Show, Eq)
+    } deriving (Show, Eq)
 
 data FullObjectType = CommitType | TreeType | BlobType | TagType
     deriving (Eq, Show)
@@ -167,14 +166,13 @@ instance Byteable PackDelta where
  -}
 encodeOffset :: Int -> B.ByteString
 encodeOffset n = let
-    noTermsLog  = logBase 128 (fromIntegral n * (128 - 1) + 128) :: Double
-    noTerms     = floor noTermsLog - 1
-    powers128   = map (128^) ([1..] :: [Integer])
-    remove      = sum $ take noTerms powers128 :: Integer
-    remainder   = n - fromIntegral remove :: Int
-    varInt      = to7BitList remainder
-    encodedInts = toLittleEndian . reverse $ leftPadZeros varInt (noTerms + 1)
-    in encodedInts
+    noTermsLog = logBase 128 (fromIntegral n * (128 - 1) + 128) :: Double
+    noTerms    = floor noTermsLog - 1
+    powers128  = map (128^) ([1..] :: [Integer])
+    remove     = sum $ take noTerms powers128 :: Integer
+    remainder  = n - fromIntegral remove :: Int
+    varInt     = to7BitList remainder
+    in toLittleEndian . reverse $ leftPadZeros varInt (noTerms + 1)
 
 leftPadZeros :: [Int] -> Int -> [Int]
 leftPadZeros ints n
