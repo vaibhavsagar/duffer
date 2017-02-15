@@ -20,10 +20,10 @@ install:
 
 script:
 - git repack -ad
-- stack --no-terminal --skip-ghc-check test --pedantic
+- stack --no-terminal --skip-ghc-check test
 - git config --local --add repack.UseDeltaBaseOffset false
 - git repack -ad
-- stack --no-terminal --skip-ghc-check test --pedantic
+- stack --no-terminal --skip-ghc-check test
 
 after_success:
 - bash .ci/update_pages.sh
