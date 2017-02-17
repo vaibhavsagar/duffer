@@ -81,8 +81,8 @@ type Ref  = B.ByteString
 type Repo = FilePath
 
 instance Show GitObject where
-    show (Tree entries) = unlines $ map show $ toAscList entries
-    show other          = UL.toString $ BB.toLazyByteString $ showContent other
+    show (Tree entries) = unlines . map show $ toAscList entries
+    show other          = UL.toString . BB.toLazyByteString $ showContent other
 
 instance Byteable PersonTime where
     toBytes (PersonTime name mail time zone) =
@@ -138,7 +138,7 @@ showObject :: GitObject -> L.ByteString
 showObject gitObject = header `L.append` content
     where content    = BB.toLazyByteString $ showContent gitObject
           header     = L.concat [objectType gitObject, " ", len, "\NUL"]
-          len        = L.fromStrict $ fromString . show $ L.length content
+          len        = L.fromStrict . fromString . show $ L.length content
 
 objectType :: IsString a => GitObjectGeneric r e -> a
 objectType someObject = case someObject of
@@ -150,7 +150,7 @@ objectType someObject = case someObject of
 showContent :: GitObject -> BB.Builder
 showContent gitObject = case gitObject of
     Blob content -> BB.byteString content
-    Tree entries -> mconcat $ map (BB.byteString . toBytes) $ toAscList entries
+    Tree entries -> mconcat . map (BB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
         [                "tree"      ?                commitTreeRef
         , mconcat $ map ("parent"    ?)               commitParentRefs
