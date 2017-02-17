@@ -99,13 +99,12 @@ instance Show TreeEntry where
                 SubModule -> "commit"
                 _         -> "blob"
 
-instance Eq TreeEntry where
-    (==) = (==) `on` entryName
+instance Eq  TreeEntry where (==)    = (==)    `on` sortableName
+instance Ord TreeEntry where compare = compare `on` sortableName
 
-instance Ord TreeEntry where
-    compare = compare `on` sortableName
-        where sortableName TreeEntry{..} = entryName `B.append`
-                bool "" "/" (entryPerms == Directory || entryPerms == SubModule)
+sortableName :: TreeEntry -> B.ByteString
+sortableName TreeEntry{..} = entryName `B.append`
+    bool "" "/" (entryPerms == Directory || entryPerms == SubModule)
 
 instance Byteable TreeEntry where
     toBytes (TreeEntry mode name sha1) = let
