@@ -88,8 +88,7 @@ instance Byteable PersonTime where
     toBytes (PersonTime name mail time zone) =
         B.concat [name, " <", mail, "> ", time, " ", zone]
 
-instance Show PersonTime where
-    show = toString . toBytes
+instance Show PersonTime where show = toString . toBytes
 
 instance Show TreeEntry where
     show (TreeEntry mode name sha1) = intercalate "\t" components
@@ -114,8 +113,7 @@ instance Byteable TreeEntry where
         sha1' = fst $ B16.decode sha1
         in B.concat [mode', " ", name, "\NUL", sha1']
 
-instance Byteable GitObject where
-    toBytes = L.toStrict . showObject
+instance Byteable GitObject where toBytes = L.toStrict . showObject
 
 instance Enum EntryPermission where
     fromEnum p = case p of
