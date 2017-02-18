@@ -192,30 +192,24 @@ encodeBS :: T.Text -> B.ByteString
 encodeBS  = E.encodeUtf8
 
 gitObjectPairs :: KeyValue t => GitObject -> [t]
-gitObjectPairs obj = case obj of
+gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
     Blob {..} ->
-        [ "object_type" .= String "blob"
-        , "content"     .= b64encode blobContent
-        ]
+        [ "content"    .= b64encode blobContent ]
     Tree {..} ->
-        [ "object_type" .= String "tree"
-        , "entries"     .= S.toList treeEntries
-        ]
+        [ "entries"    .= S.toList treeEntries ]
     Commit {..} ->
-        [ "object_type" .= String "commit"
-        , "tree"        .=     decodeRef commitTreeRef
-        , "parents"     .= map decodeRef commitParentRefs
-        , "author"      .=               commitAuthor
-        , "committer"   .=               commitCommitter
-        , "message"     .=     decodeBS  commitMessage
+        [ "tree"       .=     decodeRef commitTreeRef
+        , "parents"    .= map decodeRef commitParentRefs
+        , "author"     .=               commitAuthor
+        , "committer"  .=               commitCommitter
+        , "message"    .=     decodeBS  commitMessage
         ]
     Tag {..} ->
-        [ "object_type" .= String "tag"
-        , "object"      .= decodeRef tagObjectRef
-        , "type"        .= decodeBS  tagObjectType
-        , "name"        .= decodeBS  tagName
-        , "tagger"      .=           tagTagger
-        , "annotation"  .= decodeBS  tagAnnotation
+        [ "object"     .= decodeRef tagObjectRef
+        , "type"       .= decodeBS  tagObjectType
+        , "name"       .= decodeBS  tagName
+        , "tagger"     .=           tagTagger
+        , "annotation" .= decodeBS  tagAnnotation
         ]
 
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
@@ -246,7 +240,7 @@ instance ToJSON PersonTime where
     toEncoding = pairs  . foldr1 (<>) . personTimePairs
 
 instance FromJSON GitObject where
-    parseJSON (Object v) = case H.lookup "object_type" v of
+    parseJSON = withObject "GitObject" $ \v -> case H.lookup "object_type" v of
         Just "blob"   -> Blob <$> (b64decode  <$> v .: "content")
         Just "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
         Just "commit" -> Commit
@@ -262,15 +256,13 @@ instance FromJSON GitObject where
             <*>                v .: "tagger"
             <*> (encodeBS  <$> v .: "annotation")
         _ -> empty
-    parseJSON _ = empty
 
 instance FromJSON TreeEntry where
-    parseJSON (Object v) = TreeEntry
+    parseJSON = withObject "TreeEntry" $ \v -> TreeEntry
         <$> (readOctal    <$> v .: "mode")
         <*> (E.encodeUtf8 <$> v .: "name")
         <*> (E.encodeUtf8 <$> v .: "ref")
         where readOctal = toEnum . fst . head . readOct . T.unpack
-    parseJSON _ = empty
 
 instance FromJSON PersonTime where
     parseJSON = withObject "PersonTime" $ \v ->
