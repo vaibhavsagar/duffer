@@ -162,7 +162,7 @@ cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
             {std_out = CreatePipe, std_in = UseHandle pipe} >>=
             \(_, Just handle', _, _) -> return handle'
 
-readHashObject :: String -> Ref -> Expectation
+readHashObject :: FilePath -> Ref -> Expectation
 readHashObject path sha1 = withRepo path (readObject sha1) >>= maybe
     (failureNotFound $ toString sha1)
     (\object -> hash object `shouldBe` sha1)
