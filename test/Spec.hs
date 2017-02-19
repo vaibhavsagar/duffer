@@ -86,7 +86,7 @@ testReading status types partitionedObjects =
         zipWithM_ describeReadingAll types partitionedObjects
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
-describeReadingAll oType objects = describe oType $
+describeReadingAll oType objects = parallel . describe oType $
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
     where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
 
