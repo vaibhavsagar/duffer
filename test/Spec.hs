@@ -15,7 +15,7 @@ import GHC.IO.Handle              (Handle)
 import System.FilePath            ()
 import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
-import Test.Hspec                 (hspec, expectationFailure, describe
+import Test.Hspec                 (hspec, expectationFailure, parallel, describe
                                   ,it, runIO, shouldBe, shouldMatchList
                                   ,Expectation, SpecWith)
 import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
