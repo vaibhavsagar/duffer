@@ -147,10 +147,9 @@ objectsOfType objectType = fmap lines $
     >>= hGetContents
 
 allRefs :: IO [(FilePath, Ref)]
-allRefs = do
-    content  <- cmd "git show-ref" >>= hGetContents
+allRefs = cmd "git show-ref" >>= hGetContents >>= \content ->
     let refs =  split 32 <$> lines content
-    return $ map (\[p, h] -> (toString h, p)) refs
+    in return $ map (\[p, h] -> (toString h, p)) refs
 
 cmd :: String -> IO Handle
 cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
