@@ -41,13 +41,15 @@ main :: IO ()
 main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
     allTypesObjects <- mapM objectsOfType objectTypes
-    hspec $ testEncodingAndParsing
-    hspec $ testReading "packed"   objectTypes allTypesObjects
-    hspec . testUnpackingAndWriting =<< getPackIndices ".git/objects"
-    hspec $ testReading "unpacked" objectTypes allTypesObjects
-    hspec $ testJSON               objectTypes allTypesObjects
-    hspec . testRefs =<< allRefs
-    hspec . testWorkTrees =<< objectsOfType "tree"
+    hspec . describe "packed representation" $ do
+        parallel $ testEncodingAndParsing
+        testReading "packed" objectTypes allTypesObjects
+        testUnpackingAndWriting =<< runIO (getPackIndices ".git/objects")
+    hspec . parallel . describe "loose representation" $ do
+        testReading "loose" objectTypes allTypesObjects
+        testJSON            objectTypes allTypesObjects
+        testRefs =<< runIO allRefs
+        testWorkTrees =<< runIO (objectsOfType "tree")
 
 newtype TestPackObjectType
     = TestPackObjectType { innerPackObject :: PackObjectType }
