@@ -13,7 +13,8 @@ import Data.Attoparsec.ByteString       (Parser, parseOnly, count, word8
 import Data.Attoparsec.ByteString.Char8 (char, space)
 import Data.Bits                        (Bits(..))
 import Data.Byteable                    (toBytes)
-import Data.ByteString                  (ByteString, concat, length, splitAt, unpack)
+import Data.ByteString                  (ByteString, concat, length, splitAt
+                                        ,unpack)
 import Data.ByteString.Lazy             (head, drop, toStrict)
 import Data.ByteString.UTF8             (fromString)
 import Data.Bool                        (bool)
