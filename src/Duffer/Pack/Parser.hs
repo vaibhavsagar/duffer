@@ -153,8 +153,8 @@ parseObjectContent = \case
 
 parseWCL :: Parser (WCL ByteString)
 parseWCL = takeLazyByteString >>= \compressed -> return $ WCL
-    (getCompressionLevel . head $ drop 1 compressed)
-    (toStrict $ decompress compressed)
+    (getCompressionLevel . head . drop 1 $ compressed)
+    (toStrict . decompress               $ compressed)
 
 parseFullObject
     :: Parser (WCL ByteString) -> FullObjectType -> Parser PackedObject
