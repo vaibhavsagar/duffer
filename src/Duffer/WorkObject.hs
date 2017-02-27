@@ -34,6 +34,7 @@ convert f g = \case
         <*> traverse f commitParentRefs
         <*> pure commitAuthor
         <*> pure commitCommitter
+        <*> pure commitSignature
         <*> pure commitMessage
     Tag{..}    -> Tag
         <$> f tagObjectRef

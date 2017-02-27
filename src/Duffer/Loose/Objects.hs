@@ -19,13 +19,14 @@ import Control.Applicative     (empty)
 import Crypto.Hash             (hashWith)
 import Crypto.Hash.Algorithms  (SHA1)
 import Data.Aeson              (ToJSON(..), FromJSON(..), KeyValue, Value(..)
-                               ,object, pairs, (.=), (.:), withObject)
+                               ,object, pairs, (.=), (.:), (.:?), withObject)
 import Data.Bool               (bool)
 import Data.ByteArray.Encoding (Base(Base16), convertToBase)
 import Data.Byteable           (Byteable(toBytes))
 import Data.ByteString.UTF8    (fromString, toString)
 import Data.Function           (on)
 import Data.List               (intercalate)
+import Data.Maybe              (fromMaybe)
 import Data.Monoid             ((<>))
 import Data.Set                (Set, toAscList)
 import Data.String             (IsString)
@@ -41,6 +42,7 @@ data GitObjectGeneric ref entries
         , commitParentRefs :: ![ref]
         , commitAuthor     :: !PersonTime
         , commitCommitter  :: !PersonTime
+        , commitSignature  :: !(Maybe B.ByteString)
         , commitMessage    :: !B.ByteString
         }
     | Tag
@@ -156,6 +158,7 @@ showContent gitObject = case gitObject of
         , mconcat $ map ("parent"    ?)               commitParentRefs
         ,                "author"    ?  toBytes       commitAuthor
         ,                "committer" ?  toBytes       commitCommitter
+        , maybe mempty  ("gpgsig"    ?)               commitSignature
         ,                "\n"        ,  BB.byteString commitMessage
         ]
     Tag {..} -> mconcat
@@ -202,6 +205,7 @@ gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
         , "parents"    .= map decodeRef commitParentRefs
         , "author"     .=               commitAuthor
         , "committer"  .=               commitCommitter
+        , "gpgsig"     .= fromMaybe Null (String . decodeBS <$> commitSignature)
         , "message"    .=     decodeBS  commitMessage
         ]
     Tag {..} ->
@@ -244,11 +248,12 @@ instance FromJSON GitObject where
         Just "blob"   -> Blob <$> (b64decode  <$> v .: "content")
         Just "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
         Just "commit" -> Commit
-            <$> (encodeRef     <$> v .: "tree")
-            <*> (map encodeRef <$> v .: "parents")
-            <*>                    v .: "author"
-            <*>                    v .: "committer"
-            <*> (encodeBS      <$> v .: "message")
+            <$> (encodeRef      <$> v .: "tree")
+            <*> (map encodeRef  <$> v .: "parents")
+            <*>                     v .: "author"
+            <*>                     v .: "committer"
+            <*> ((encodeBS <$>) <$> v .:? "gpgsig")
+            <*> (encodeBS       <$> v .: "message")
         Just "tag" -> Tag
             <$> (encodeRef <$> v .: "object")
             <*> (encodeBS  <$> v .: "type")
