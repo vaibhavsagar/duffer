@@ -205,7 +205,7 @@ gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
         , "parents"    .= map decodeRef commitParentRefs
         , "author"     .=               commitAuthor
         , "committer"  .=               commitCommitter
-        , "gpgsig"     .= fromMaybe Null (String . decodeBS <$> commitSignature)
+        , "gpgsig"     .= may decodeBS  commitSignature
         , "message"    .=     decodeBS  commitMessage
         ]
     Tag {..} ->
@@ -215,6 +215,7 @@ gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
         , "tagger"     .=           tagTagger
         , "annotation" .= decodeBS  tagAnnotation
         ]
+    where may decoder value = fromMaybe Null (String . decoder <$> value)
 
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
 treeEntryPairs TreeEntry {..} =
