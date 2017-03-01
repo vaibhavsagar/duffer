@@ -249,12 +249,12 @@ instance FromJSON GitObject where
         Just "blob"   -> Blob <$> (b64decode  <$> v .: "content")
         Just "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
         Just "commit" -> Commit
-            <$> (encodeRef      <$> v .: "tree")
-            <*> (map encodeRef  <$> v .: "parents")
-            <*>                     v .: "author"
-            <*>                     v .: "committer"
+            <$> (encodeRef      <$> v .:  "tree")
+            <*> (map encodeRef  <$> v .:  "parents")
+            <*>                     v .:  "author"
+            <*>                     v .:  "committer"
             <*> ((encodeBS <$>) <$> v .:? "gpgsig")
-            <*> (encodeBS       <$> v .: "message")
+            <*> (encodeBS       <$> v .:  "message")
         Just "tag" -> Tag
             <$> (encodeRef <$> v .: "object")
             <*> (encodeBS  <$> v .: "type")
