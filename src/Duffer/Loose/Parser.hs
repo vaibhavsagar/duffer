@@ -70,23 +70,26 @@ parsePersonTime = PersonTime
 
 parseCommit :: Parser GitObject
 parseCommit = Commit
-    <$>         ("tree"      *> space *> parseHexRef     <* endOfLine)
-    <*>  many'  ("parent"    *> space *> parseHexRef     <* endOfLine)
-    <*>         ("author"    *> space *> parsePersonTime <* endOfLine)
-    <*>         ("committer" *> space *> parsePersonTime <* endOfLine)
-    <*> perhaps ("gpgsig"    *> space *> parseSignature  <* endOfLine)
+    <$>          "tree"      =: parseHexRef
+    <*>  many'  ("parent"    =: parseHexRef)
+    <*>          "author"    =: parsePersonTime
+    <*>          "committer" =: parsePersonTime
+    <*> perhaps ("gpgsig"    =: parseSignature)
     <*>         parseMessage
     where
         perhaps  parser = choice [Just <$> parser, pure Nothing]
+        field =: parser = (string field) *> space *> parser <* endOfLine
 
 parseTag :: Parser GitObject
 parseTag = Tag
-    <$> ("object" *> space *> parseHexRef     <* endOfLine)
-    <*> ("type"   *> space *> parseType       <* endOfLine)
+    <$>  "object" =: parseHexRef
+    <*>  "type"   =: parseType
     <*> ("tag"    *> space *> parseRestOfLine)
-    <*> ("tagger" *> space *> parsePersonTime <* endOfLine)
-    <*> parseMessage
-    where parseType = choice $ map string ["blob", "tree", "commit", "tag"]
+    <*>  "tagger" =: parsePersonTime
+    <*>  parseMessage
+    where
+        parseType = choice $ map string ["blob", "tree", "commit", "tag"]
+        field =: parser = (string field) *> space *> parser <* endOfLine
 
 parseObject :: Parser GitObject
 parseObject = choice
