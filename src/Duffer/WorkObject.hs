@@ -10,7 +10,9 @@ import qualified Data.Set        as S
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Functor.Compose      (Compose(..))
 import Data.Functor.Identity     (Identity(..))
-import Duffer.Loose.Objects
+import Duffer.Loose.Objects      (GitObjectGeneric(..), GitObject, Ref
+                                 ,EntryPermission, EntryPermission
+                                 ,TreeEntry(..), hash)
 import Duffer                    (readObject, writeObject)
 import Duffer.WithRepo
 
@@ -26,17 +28,18 @@ convert
     -> (b -> f d)
     -> GitObjectGeneric a b
     -> f (GitObjectGeneric c d)
-convert f g = \case
+convert ref tree = \case
     Blob{..}   -> pure Blob{..}
-    Tree{..}   -> Tree <$> g treeEntries
+    Tree{..}   -> Tree <$> tree treeEntries
     Commit{..} -> Commit
-        <$> f commitTreeRef
-        <*> traverse f commitParentRefs
+        <$> ref  commitTreeRef
+        <*> traverse ref commitParentRefs
         <*> pure commitAuthor
         <*> pure commitCommitter
+        <*> pure commitSignature
         <*> pure commitMessage
     Tag{..}    -> Tag
-        <$> f tagObjectRef
+        <$> ref  tagObjectRef
         <*> pure tagObjectType
         <*> pure tagName
         <*> pure tagTagger
@@ -49,8 +52,8 @@ workObject ref = runMaybeT $ MaybeT (readObject ref) >>=
 workTreeEntries :: S.Set TreeEntry -> WithRepo (Maybe WorkTreeEntryMap)
 workTreeEntries entries = do
     let entriesL    = S.toList entries
-    let filenames   = map entryName  entriesL
-    let permissions = map entryPerms entriesL
+        filenames   = map entryName  entriesL
+        permissions = map entryPerms entriesL
     children <- getCompose $ traverse (Compose . workObject . entryRef) entriesL
     let wtEntries   = zipWith WorkTreeEntry <$> children <*> pure permissions
     return $ Map.fromList . zip filenames <$> wtEntries

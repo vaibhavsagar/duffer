@@ -9,6 +9,7 @@ result
 create_docset.sh
 target.docset
 packfiles
+eventlogs
 *.tix
 *.prof
 *.ipynb
