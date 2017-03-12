@@ -18,7 +18,8 @@ import System.Process             (CreateProcess(..), StdStream(..)
 import Test.Hspec                 (hspec, expectationFailure, parallel, describe
                                   ,it, runIO, shouldBe, shouldMatchList
                                   ,Expectation, SpecWith)
-import Test.QuickCheck            (Arbitrary(..), oneof, property, (==>))
+import Test.Hspec.QuickCheck      (prop)
+import Test.QuickCheck            (Arbitrary(..), oneof, (==>))
 
 import Prelude hiding (lines, readFile)
 
@@ -67,13 +68,13 @@ instance Arbitrary TestPackObjectType where
 
 testEncodingAndParsing :: SpecWith ()
 testEncodingAndParsing = describe "integer encodings" $ do
-    it "encodes and decodes offsets" . property $
-        \offset -> offset >= 0 ==> let
+    prop "encodes and decodes offsets" $ \offset ->
+        offset >= 0 ==> let
             encoded = encodeOffset offset
             decoded = either error id $ parseOnly parseOffset encoded
             in decoded == (offset :: Int)
-    it "encodes and decodes object types and lengths" . property $
-        \len objectType -> len >= 0 ==> let
+    prop "encodes and decodes object types and lengths" $ \len objectType ->
+        len >= 0 ==> let
             encoded = encodeTypeLen (innerPackObject objectType) len
             decoded = either error id $ parseOnly parseTypeLen encoded
             in decoded == (innerPackObject objectType, len :: Int)
