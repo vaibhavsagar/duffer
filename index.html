@@ -66,7 +66,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <section>
   <h1 class="title">Duffer's Guide to <code>git</code> Internals</h1>
-  <h2 class="author">Vaibhav Sagar</h2>
+  <p class="author">Vaibhav Sagar</p>
 </section>
 
 <section class="slide level2">
@@ -77,7 +77,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </aside>
 </section>
 <section><section id="what" class="titleslide slide level1"><h1>What</h1></section><section id="my-library" class="slide level2">
-<h1>My Library</h1>
+<h2>My Library</h2>
 <ul>
 <li>an API for <code>git</code> repositories</li>
 <li>Pure Haskell</li>
@@ -85,7 +85,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </section></section>
 <section><section id="demo" class="titleslide slide level1"><h1>Demo</h1></section></section>
 <section><section id="code" class="titleslide slide level1"><h1>Code</h1></section><section id="types" class="slide level2">
-<h1>Types</h1>
+<h2>Types</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">GitObject</span>
     <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot">content ::</span> <span class="dt">B.ByteString</span>}
     <span class="fu">|</span> <span class="dt">Tree</span> {<span class="ot">entries ::</span> <span class="dt">Set</span> <span class="dt">TreeEntry</span>}
@@ -113,7 +113,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ul>
 </aside>
 </section><section id="types-1" class="slide level2">
-<h1>Types</h1>
+<h2>Types</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">TreeEntry</span> <span class="fu">=</span> <span class="dt">TreeEntry</span>
     {<span class="ot"> entryPerms ::</span> <span class="dt">Int</span>
     ,<span class="ot"> entryName  ::</span> <span class="dt">B.ByteString</span>
@@ -135,7 +135,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>Included for completeness.</p>
 </aside>
 </section><section id="functor" class="slide level2">
-<h1>Functor</h1>
+<h2>Functor</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">parseTree ::</span> <span class="dt">Parser</span> <span class="dt">GitObject</span>
 parseTree <span class="fu">=</span> <span class="dt">Tree</span> <span class="fu">.</span> fromList <span class="fu">&lt;$&gt;</span> many&#39; parseTreeEntry</code></pre></div>
 <aside class="notes">
@@ -145,14 +145,14 @@ parseTree <span class="fu">=</span> <span class="dt">Tree</span> <span class="fu
 </ul>
 </aside>
 </section><section id="applicative" class="slide level2">
-<h1>Applicative</h1>
+<h2>Applicative</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">parseMessage ::</span> <span class="dt">Parser</span> <span class="dt">B.ByteString</span>
 parseMessage <span class="fu">=</span> endOfLine <span class="fu">*&gt;</span> takeByteString</code></pre></div>
 <aside class="notes">
 <p>I think this reads pretty well.</p>
 </aside>
 </section><section id="monad-transformers" class="slide level2">
-<h1>Monad (Transformers)</h1>
+<h2>Monad (Transformers)</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">WithRepo</span> <span class="fu">=</span> <span class="dt">ReaderT</span> <span class="dt">Repo</span> <span class="dt">IO</span>
 
 <span class="ot">hasLooseObject ::</span> <span class="dt">Ref</span> <span class="ot">-&gt;</span> <span class="dt">WithRepo</span> <span class="dt">Bool</span>
@@ -165,7 +165,7 @@ hasLooseObject ref <span class="fu">=</span> <span class="kw">do</span>
 </ul>
 </aside>
 </section><section id="bit-twiddling" class="slide level2">
-<h1>Bit Twiddling</h1>
+<h2>Bit Twiddling</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">setMSBs ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
 setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
     ints&#39;  <span class="fu">=</span> reverse ints
@@ -176,7 +176,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <p>I'm actually currently dealing with a bug where two different bytestrings parse to the same value. I'm hoping that my deserialisation logic is the culprit.</p>
 </aside>
 </section><section id="streaming" class="slide level2">
-<h1>Streaming</h1>
+<h2>Streaming</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">getNextEntry <span class="fu">=</span> <span class="kw">do</span>
     <span class="dt">Just</span> (<span class="dt">Right</span> tLen) <span class="ot">&lt;-</span> PA.parse parseTypeLen
     baseRef <span class="ot">&lt;-</span> <span class="kw">case</span> fst tLen <span class="kw">of</span>
@@ -197,7 +197,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <p>This code is gross, but it works! I asked for help with this and I think the consensus was that the libraries for streaming <code>zlib</code> decompression are less than ideal.</p>
 </aside>
 </section><section id="layout" class="slide level2">
-<h1>Layout</h1>
+<h2>Layout</h2>
 <pre><code>src
 ├── Duffer
 │   ├── Loose
@@ -216,7 +216,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <p><code>git</code> has a packfile representation that is used for compression and network transfer. I have parsers for the loose and packed representations and additional logic for dealing with some quirks of the packfile format.</p>
 </aside>
 </section><section id="testing" class="slide level2">
-<h1>Testing</h1>
+<h2>Testing</h2>
 <ul>
 <li><code>duffer</code> uses its own repo to test itself.</li>
 </ul>
@@ -228,20 +228,20 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 </aside>
 </section></section>
 <section><section id="functional-git" class="titleslide slide level1"><h1>Functional Git</h1></section><section id="data-structures" class="slide level2">
-<h1>Data Structures</h1>
+<h2>Data Structures</h2>
 <ul>
 <li>Merkle trees &amp; Merkle DAGs</li>
 <li>Not too different from an efficiently implemented functional data structure.</li>
 </ul>
 </section><section id="design" class="slide level2">
-<h1>Design</h1>
+<h2>Design</h2>
 <ul>
 <li>Append-only object store and mutable ref store</li>
 <li>Separating the immutable and the mutable? Sounds like this language I know...</li>
 </ul>
 </section></section>
 <section><section id="more" class="titleslide slide level1"><h1>More</h1></section><section id="whats-next" class="slide level2">
-<h1>What's next?</h1>
+<h2>What's next?</h2>
 <ul>
 <li>A <code>git</code> web server?</li>
 <li>A better API</li>
@@ -252,14 +252,14 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <p>There's no reason the filesystem has to be the backing store of a repository.</p>
 </aside>
 </section><section id="ideas" class="slide level2">
-<h1>Ideas</h1>
+<h2>Ideas</h2>
 <ul>
 <li>A git-based project management system</li>
 <li>Using git as the backend of an application</li>
 </ul>
 </section></section>
 <section><section id="my-experience-with-haskell" class="titleslide slide level1"><h1>My experience with Haskell</h1></section><section id="advice-for-beginners" class="slide level2">
-<h1>Advice for beginners</h1>
+<h2>Advice for beginners</h2>
 <ul>
 <li>Don't get too hung up on understanding monads before you write any code</li>
 <li>Lots of support on IRC and r/haskell</li>
@@ -273,7 +273,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 </ul>
 </aside>
 </section><section id="bad" class="slide level2">
-<h1>Bad</h1>
+<h2>Bad</h2>
 <ul>
 <li>Documentation is mostly terrible</li>
 <li>Hard to find the right libraries</li>
@@ -287,7 +287,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 </ul>
 </aside>
 </section><section id="some-thoughts" class="slide level2">
-<h1>Some thoughts</h1>
+<h2>Some thoughts</h2>
 <ul>
 <li>I thought Haskell was pretty silly the first time I encountered it</li>
 <li>Only after a couple of bad production experiences did I see the point</li>
@@ -295,31 +295,31 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 </ul>
 </section></section>
 <section><section id="what-can-you-do-with-this" class="titleslide slide level1"><h1>What can you do with this</h1></section><section id="historical-revisionism" class="slide level2">
-<h1>Historical Revisionism</h1>
+<h2>Historical Revisionism</h2>
 <ul>
 <li>https://github.com/vaibhavsagar/git-internals-workshop</li>
 </ul>
 </section></section>
 <section><section id="further-reading" class="titleslide slide level1"><h1>Further Reading</h1></section><section id="better-implementations" class="slide level2">
-<h1>Better Implementations</h1>
+<h2>Better Implementations</h2>
 <ul>
 <li>https://github.com/vincenthz/hit - a pure Haskell implementation of Git objects</li>
 <li>https://github.com/jwiegley/gitlib - A type-safe interface with many backends</li>
 <li>http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/</li>
 </ul>
 </section><section id="interesting-projects" class="slide level2">
-<h1>Interesting Projects</h1>
+<h2>Interesting Projects</h2>
 <ul>
 <li>https://github.com/mirage/irmin - A distributed database with Git-like design</li>
 </ul>
 </section><section id="about-this-project" class="slide level2">
-<h1>About this project</h1>
+<h2>About this project</h2>
 <ul>
 <li>Code is at <a href="https://github.com/vaibhavsagar/duffer" class="uri">https://github.com/vaibhavsagar/duffer</a></li>
 <li>Presentation is in the <code>gh-pages</code> branch or <a href="http://www.vaibhavsagar.com/duffer" class="uri">http://www.vaibhavsagar.com/duffer</a></li>
 </ul>
 </section><section id="rc" class="slide level2">
-<h1>RC</h1>
+<h2>RC</h2>
 <p><img src="http://emoji.octopus.holdings/emoji/emoji_rc.svg" width=400 height=400></p>
 <p>https://www.recurse.com</p>
 <aside class="notes">
@@ -343,7 +343,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
         dependencies: [
           { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
           { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
-          { src: 'reveal.js/plugin/notes/notes.js', async: true }
+              { src: 'reveal.js/plugin/notes/notes.js', async: true }
         ]
       });
     </script>
