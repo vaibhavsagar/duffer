@@ -179,7 +179,7 @@ leftPadZeros ints n
     | length ints < n = leftPadZeros (0:ints) n
     | otherwise       = ints
 
-setMSB :: (Bits t, Integral t) => t -> t
+setMSB :: Bits t => t -> t
 setMSB = (`setBit` 7)
 
 setMSBs :: (Bits t, Integral t) => [t] -> [Word8]
