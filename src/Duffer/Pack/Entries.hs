@@ -237,10 +237,10 @@ fromBytes :: (Bits t, Integral t) => B.ByteString -> t
 fromBytes = B.foldl' (\a b -> (a `shiftL` 8) + fromIntegral b) 0
 
 toBitList :: (Bits t, Integral t) => Int -> t -> [t]
-toBitList some n = reverse $ toBitList' some n
-    where toBitList' some' n' = case divMod n' (bit some') of
+toBitList = ((.).(.)) reverse go
+    where go some n = case divMod n (bit some) of
             (0, i) -> [fromIntegral i]
-            (x, y) ->  fromIntegral y : toBitList' some' x
+            (x, y) ->  fromIntegral y : go some x
 
 toByteList, to7BitList :: (Bits t, Integral t) => t -> [t]
 toByteList = toBitList 8
