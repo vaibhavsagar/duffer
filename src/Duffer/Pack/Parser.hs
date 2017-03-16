@@ -116,7 +116,7 @@ parseDeltaInstruction = fromIntegral <$> anyWord8 >>=
 parseInsertInstruction :: Int -> Parser DeltaInstruction
 parseInsertInstruction = fmap InsertInstruction . take
 
-parseCopyInstruction :: (Bits t, Integral t) => t -> Parser DeltaInstruction
+parseCopyInstruction :: Bits t => t -> Parser DeltaInstruction
 parseCopyInstruction byte = CopyInstruction
     {-
     o0 <- readShift (testBit byte 0) 0
