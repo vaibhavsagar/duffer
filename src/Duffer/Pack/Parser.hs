@@ -186,7 +186,7 @@ parsedPackIndexRefs :: ByteString -> [Ref]
 parsedPackIndexRefs = parsedOnly parsePackIndexUptoRefs
 
 parsePackFileHeader :: Parser Int
-parsePackFileHeader = mapM word8 (unpack "PACK") *> take 4 *> parse4Bytes
+parsePackFileHeader = traverse word8 (unpack "PACK") *> take 4 *> parse4Bytes
 
 parsePackRefsHeader, parseCaret, parsePackRef :: Parser (Map ByteString Ref)
 parsePackRefsHeader = char '#' *> parseRestOfLine *> return empty

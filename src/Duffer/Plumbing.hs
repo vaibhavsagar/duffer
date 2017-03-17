@@ -7,6 +7,7 @@ import qualified Data.Set             as S
 import Control.Applicative       ((<|>))
 import Control.Monad             (unless)
 import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
+import Data.Foldable             (traverse_)
 import System.Directory          (createDirectoryIfMissing, doesDirectoryExist
                                  ,doesFileExist)
 import System.FilePath           ((</>))
@@ -59,7 +60,7 @@ initRepo = do
     path <- ask
     objectsPresent <- liftIO . doesDirectoryExist $ path </> "objects"
     liftIO . unless objectsPresent $ do
-        mapM_ (createDirectoryIfMissing True)
+        traverse_ (createDirectoryIfMissing True)
             [ path </> "branches"
             , path </> "hooks"
             , path </> "info"
@@ -68,14 +69,14 @@ initRepo = do
             , path </> "refs"    </> "heads"
             , path </> "refs"    </> "tags"
             ]
-        mapM_ (uncurry writeFile)
+        traverse_ (uncurry writeFile)
             [ (path </> "HEAD",        "ref: refs/heads/master\n")
             , (path </> "config",      "")
             , (path </> "description", "")
             ]
 
 writeTree :: FilePath -> WithRepo Ref
-writeTree path = writeObject . Tree . S.fromList =<< mapM (\entry -> do
+writeTree path = writeObject . Tree . S.fromList =<< traverse (\entry -> do
     fileExists <- liftIO . doesFileExist      $ path </> entry
     dirExists  <- liftIO . doesDirectoryExist $ path </> entry
     case (dirExists, fileExists) of

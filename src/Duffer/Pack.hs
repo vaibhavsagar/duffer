@@ -41,7 +41,7 @@ getPackIndices path = let packFilePath = path </> "pack" in
 
 getPackObjectRefs :: WithRepo (Set.Set Ref)
 getPackObjectRefs = Set.fromList . concatMap parsedPackIndexRefs <$>
-    (asks getPackIndices >>= liftIO . (=<<) (mapM B.readFile))
+    (asks getPackIndices >>= liftIO . (=<<) (traverse B.readFile))
 
 hasPacked :: Ref -> FilePath -> IO Bool
 hasPacked ref = fmap (elem ref . parsedPackIndexRefs) . B.readFile
@@ -52,7 +52,7 @@ hasPackObject = localObjects . hasPackObject'
 hasPackObject' :: Ref -> WithRepo Bool
 hasPackObject' ref = do
     paths <- asks getPackIndices
-    or <$> liftIO (mapM (hasPacked ref) =<< paths)
+    or <$> liftIO (traverse (hasPacked ref) =<< paths)
 
 readPackObject :: Ref -> WithRepo (Maybe GitObject)
 readPackObject = localObjects . readPackObject'
@@ -79,7 +79,7 @@ indexedByteStringMap indexPath = do
     contentEnd   <- B.length <$> B.readFile filePath
     let indices  =  IntMap.keys offsetMap
     let rangeMap =  IntMap.insert (contentEnd - 20) "" offsetMap
-    entries      <- mapM (getPackRegion filePath rangeMap) indices
+    entries      <- traverse (getPackRegion filePath rangeMap) indices
     return . IntMap.fromAscList $ zip indices entries
 
 combinedEntryMap :: FilePath -> IO CombinedMap
