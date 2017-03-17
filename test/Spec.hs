@@ -9,6 +9,7 @@ import Data.ByteString            (readFile, hGetContents, split)
 import Data.ByteString.UTF8       (lines, toString)
 import Data.Byteable              (Byteable(..))
 import Data.Digest.CRC32          (crc32)
+import Data.Foldable              (traverse_)
 import Data.IntMap.Strict         (elems)
 import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
@@ -41,7 +42,7 @@ import Duffer.WorkObject
 main :: IO ()
 main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
-    allTypesObjects <- mapM objectsOfType objectTypes
+    allTypesObjects <- traverse objectsOfType objectTypes
     hspec . describe "packed representation" $ do
         parallel $ testEncodingAndParsing
         testReading "packed" objectTypes allTypesObjects
@@ -80,8 +81,8 @@ testEncodingAndParsing = describe "integer encodings" $ do
             in decoded == (innerPackObject objectType, len :: Int)
 
 testUnpackingAndWriting :: [FilePath] -> SpecWith ()
-testUnpackingAndWriting indices = describe "unpacking packfiles" $
-    mapM_ testAndWriteUnpacked indices
+testUnpackingAndWriting = describe "unpacking packfiles" .
+    traverse_ testAndWriteUnpacked
 
 testReading :: String -> [String] -> [[Ref]] -> SpecWith ()
 testReading status types partitionedObjects =
@@ -91,19 +92,19 @@ testReading status types partitionedObjects =
 describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects = parallel . describe oType $
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (mapM_ (readHashObject ".git") os)
+    where readAll desc os = it desc (traverse_ (readHashObject ".git") os)
 
 testJSON :: [String] -> [[Ref]] -> SpecWith ()
 testJSON types partitionedObjects = describe "decoding and encoding" $
     zipWithM_ describeDecodingEncodingAll types partitionedObjects
 
 testWorkTrees :: [Ref] -> SpecWith ()
-testWorkTrees refs = describe "work trees" $
-    it "reads and hashes WorkObjects" (mapM_ (readHashWorkObject ".git") refs)
+testWorkTrees refs = describe "work trees" . it "reads and hashes WorkObjects" $
+    traverse_ (readHashWorkObject ".git") refs
 
 testRefs :: [(FilePath, Ref)] -> SpecWith ()
 testRefs refsOutput = describe "reading refs" .
-    it "correctly reads refs" $ mapM_ (checkRef ".git") refsOutput
+    it "correctly reads refs" $ traverse_ (checkRef ".git") refsOutput
     where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
             (failureNotFound path)
             (`shouldBe` ref)
@@ -111,7 +112,7 @@ testRefs refsOutput = describe "reading refs" .
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects = describe oType $
     readAll ("correctly decodes and encodes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (mapM_ (decodeEncodeObject ".git") os)
+    where readAll desc os = it desc (traverse_ (decodeEncodeObject ".git") os)
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
@@ -139,7 +140,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         refs     `shouldMatchList` map hash objects
     it "writes resolved objects out" $ do
         let write = withRepo ".git" . writeObject
-        mapM write objects >>= shouldMatchList refs
+        traverse write objects >>= shouldMatchList refs
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
@@ -172,8 +173,8 @@ readHashObject path sha1 = withRepo path (readObject sha1) >>= maybe
 decodeEncodeObject :: FilePath -> Ref -> Expectation
 decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
     (failureNotFound $ toString ref)
-    (\object ->
-        (fromJust . decode $ encode object :: GitObject) `shouldBe` object)
+    (\object -> roundtrip object `shouldBe` object)
+    where roundtrip = fromJust . decode . encode
 
 readHashWorkObject :: FilePath -> Ref -> Expectation
 readHashWorkObject path sha1 = withRepo path (workObject sha1) >>= maybe
