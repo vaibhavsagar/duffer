@@ -101,14 +101,12 @@ parseOffset = parseVarInt >>= \values -> let len = P.length values - 1 in
     0 (sum $ map (\i -> 2^(7*i)) [1..len]) (len > 0)
 
 parseTypeLen :: (Bits t, Integral t) => Parser (PackObjectType, t)
-parseTypeLen = do
-    header <- anyWord8
-    let initial  = fromIntegral $ header .&. 15
-    size <- (+) initial <$> bool
+parseTypeLen = anyWord8 >>= \header -> (,)
+    <$> pure (packObjectType header)
+    <*> (+) (fromIntegral $ header .&. 15) <$> bool
         (return 0)
         ((`shiftL` 4) <$> (littleEndian <$> parseVarInt))
         (testMSB header)
-    return (packObjectType header, size)
 
 parseDeltaInstruction :: Parser DeltaInstruction
 parseDeltaInstruction = fromIntegral <$> anyWord8 >>=
