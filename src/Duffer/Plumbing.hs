@@ -41,8 +41,7 @@ resolvePartialLooseRef' search = do
     objectDir <- asks (</> dir)
     liftIO (doesDirectoryExist objectDir) >>= bool
         (return Nothing)
-        (do
-            filtered <- filter (isPrefixOf (drop 2 search)) <$>
+        (do filtered <- filter (isPrefixOf (drop 2 search)) <$>
                 liftIO (listDirectory objectDir)
             return $ bool
                 Nothing
@@ -56,8 +55,7 @@ resolvePartialPackRef' search = do
     return $ bool Nothing (Just $ S.elemAt 0 matching) (S.size matching == 1)
 
 initRepo :: WithRepo ()
-initRepo = do
-    path <- ask
+initRepo = ask >>= \path -> do
     objectsPresent <- liftIO . doesDirectoryExist $ path </> "objects"
     liftIO . unless objectsPresent $ do
         traverse_ (createDirectoryIfMissing True)
