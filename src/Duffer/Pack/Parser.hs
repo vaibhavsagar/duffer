@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Duffer.Pack.Parser where
 
@@ -173,11 +174,10 @@ parsePackRegion :: Parser PackEntry
 parsePackRegion = parsePackRegion' parseWCL
 
 parsePackRegion' :: Parser (WCL ByteString) -> Parser PackEntry
-parsePackRegion' parser =
-    fst <$> (parseTypeLen :: Parser (PackObjectType, Int)) >>= \case
-        DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta   parser
-        DeltaType RefDeltaType -> UnResolved <$> parseRefDelta   parser
-        FullType fType         -> Resolved   <$> parseFullObject parser fType
+parsePackRegion' parser = fst <$> parseTypeLen @Int >>= \case
+    DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta   parser
+    DeltaType RefDeltaType -> UnResolved <$> parseRefDelta   parser
+    FullType  fType        -> Resolved   <$> parseFullObject parser fType
 
 parsedPackRegion :: ByteString -> PackEntry
 parsedPackRegion = parsedOnly parsePackRegion
