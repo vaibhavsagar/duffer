@@ -13,7 +13,6 @@ import Data.Foldable              (traverse_)
 import Data.IntMap.Strict         (elems)
 import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
-import System.FilePath            ()
 import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
 import Test.Hspec                 (hspec, expectationFailure, parallel, describe
