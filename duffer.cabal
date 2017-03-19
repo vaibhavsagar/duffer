@@ -28,6 +28,7 @@ library
                        Duffer.Unified
                        Duffer.WithRepo
                        Duffer.WorkObject
+  other-modules:       Duffer.Misc
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , attoparsec
