@@ -89,7 +89,7 @@ testReading status types partitionedObjects =
         zipWithM_ describeReadingAll types partitionedObjects
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
-describeReadingAll oType objects = parallel . describe oType $
+describeReadingAll oType objects =
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
     where readAll desc os = it desc (traverse_ (readHashObject ".git") os)
 
@@ -109,7 +109,7 @@ testRefs refsOutput = describe "reading refs" .
             (`shouldBe` ref)
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
-describeDecodingEncodingAll oType objects = describe oType $
+describeDecodingEncodingAll oType objects =
     readAll ("correctly decodes and encodes all " ++ oType ++ "s") objects
     where readAll desc os = it desc (traverse_ (decodeEncodeObject ".git") os)
 
