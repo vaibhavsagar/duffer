@@ -24,7 +24,7 @@ import Test.QuickCheck            (Arbitrary(..), oneof, (==>))
 import Prelude hiding (lines, readFile)
 
 import Duffer.Unified        (readRef, readObject, writeObject)
-import Duffer.Loose.Objects  (GitObject, Ref, hash)
+import Duffer.Loose.Objects  (Ref, hash)
 import Duffer.Pack           (getPackIndices, indexedEntryMap
                              ,indexedByteStringMap, packFile, combinedEntryMap
                              ,resolveAll)
