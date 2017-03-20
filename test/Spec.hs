@@ -42,8 +42,8 @@ main :: IO ()
 main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
     allTypesObjects <- traverse objectsOfType objectTypes
-    hspec . describe "packed representation" $ do
-        parallel $ testEncodingAndParsing
+    hspec . parallel . describe "packed representation" $ do
+        testEncodingAndParsing
         testReading "packed" objectTypes allTypesObjects
         testUnpackingAndWriting =<< runIO (getPackIndices ".git/objects")
     hspec . parallel . describe "loose representation" $ do
