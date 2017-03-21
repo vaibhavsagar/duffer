@@ -28,6 +28,7 @@ import Prelude hiding (take, drop, head, length, concat, splitAt)
 import Duffer.Loose.Objects (GitObject, Ref, hashSHA1)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
+import Duffer.Misc          ((.:), ifLeft)
 import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
                             ,PackEntry(..), PackedObject(..), PackIndexEntry(..)
                             ,DeltaInstruction(..), Delta(..), fixOffsets
@@ -36,7 +37,7 @@ import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
                             ,DeltaObjectType(..))
 
 parsedOnly :: Parser a -> ByteString -> a
-parsedOnly parser content = either error id $ parseOnly parser content
+parsedOnly = ifLeft error .: parseOnly
 
 hashResolved :: FullObjectType -> ByteString -> Ref
 hashResolved t content = hashSHA1 bs'
@@ -44,7 +45,7 @@ hashResolved t content = hashSHA1 bs'
           header = concat [toBytes t, " ", fromString . show $ length content]
 
 parseResolved :: FullObjectType -> ByteString -> GitObject
-parseResolved t = parsedOnly (parseObjectContent t)
+parseResolved = parsedOnly . parseObjectContent
 
 parsePackIndex :: Parser [PackIndexEntry]
 parsePackIndex = do
