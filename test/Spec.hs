@@ -68,16 +68,14 @@ instance Arbitrary TestPackObjectType where
 
 testEncodingAndParsing :: SpecWith ()
 testEncodingAndParsing = describe "integer encodings" $ do
-    prop "encodes and decodes offsets" $ \offset ->
-        offset >= 0 ==> let
-            encoded = encodeOffset offset
-            decoded = either error id $ parseOnly parseOffset encoded
-            in decoded == (offset :: Int)
-    prop "encodes and decodes object types and lengths" $ \len objectType ->
-        len >= 0 ==> let
-            encoded = encodeTypeLen (innerPackObject objectType) len
-            decoded = either error id $ parseOnly parseTypeLen encoded
-            in decoded == (innerPackObject objectType, len :: Int)
+    prop "offsets" $ \offset -> offset >= 0 ==> let
+        encoded = encodeOffset offset
+        decoded = either error id $ parseOnly parseOffset encoded
+        in decoded == (offset :: Int)
+    prop "object types and lengths" $ \len objType -> len >= 0 ==> let
+        encoded = encodeTypeLen (innerPackObject objType) len
+        decoded = either error id $ parseOnly parseTypeLen encoded
+        in decoded == (innerPackObject objType, len :: Int)
 
 testUnpackingAndWriting :: [FilePath] -> SpecWith ()
 testUnpackingAndWriting = describe "unpacking packfiles" .
