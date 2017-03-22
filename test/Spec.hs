@@ -84,9 +84,8 @@ testUnpackingAndWriting = describe "unpacking packfiles" .
     traverse_ testAndWriteUnpacked
 
 testReading :: String -> [String] -> [[Ref]] -> SpecWith ()
-testReading status types partitionedObjects =
-    describe ("reading " ++ status ++ " objects") $
-        zipWithM_ describeReadingAll types partitionedObjects
+testReading status types = describe ("reading " ++ status ++ " objects") .
+    zipWithM_ describeReadingAll types
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects =
