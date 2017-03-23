@@ -113,7 +113,7 @@ describeDecodingEncodingAll oType objects =
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     index    <- runIO $ parsedIndex <$> readFile indexPath
-    entryMap <- runIO $ indexedEntryMap indexPath
+    entryMap <- runIO $ indexedEntryMap          indexPath
     it "decodes and encodes pack entries correctly" $ do
         byteStringMap  <- indexedByteStringMap indexPath
         let encodedMap =  fmap toBytes entryMap
