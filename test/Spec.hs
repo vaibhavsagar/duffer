@@ -116,11 +116,11 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     entryMap <- runIO $ indexedEntryMap          indexPath
     it "decodes and encodes pack entries correctly" $ do
         byteStringMap  <- indexedByteStringMap indexPath
-        let encodedMap =  fmap toBytes entryMap
+        let encodedMap =  toBytes <$> entryMap
         encodedMap `shouldBe` byteStringMap
-        let decodedMap = fmap parsedPackRegion encodedMap
+        let decodedMap = parsedPackRegion <$> encodedMap
         decodedMap `shouldBe` entryMap
-        let crcMap = fmap crc32 encodedMap
+        let crcMap = crc32 <$> encodedMap
         elems crcMap `shouldMatchList` map pieCRC index
     it "can separate a streamed packfile" $ do
         separatedPackFile <- separatePackFile $ packFile indexPath
