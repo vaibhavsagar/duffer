@@ -36,6 +36,7 @@ library
                      , base64-bytestring
                      , byteable
                      , bytestring
+                     , bytestring-tree-builder
                      , containers
                      , cryptonite
                      , digest

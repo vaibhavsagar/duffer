@@ -7,9 +7,8 @@ module Duffer.Loose.Objects where
 import qualified Data.ByteString           as B
 import qualified Data.ByteString.Base16    as B16 (decode)
 import qualified Data.ByteString.Base64    as B64
-import qualified Data.ByteString.Builder   as BB
-import qualified Data.ByteString.Lazy      as L
-import qualified Data.ByteString.Lazy.UTF8 as UL (toString)
+import qualified ByteString.TreeBuilder    as TB
+import qualified Data.ByteString.UTF8      as UB (toString)
 import qualified Data.HashMap.Strict       as H
 import qualified Data.Set                  as S
 import qualified Data.Text                 as T
@@ -84,7 +83,7 @@ type Repo = FilePath
 
 instance Show GitObject where
     show (Tree entries) = unlines . map show $ toAscList entries
-    show other          = UL.toString . BB.toLazyByteString $ showContent other
+    show other          = UB.toString . TB.toByteString $ showContent other
 
 instance Byteable PersonTime where
     toBytes (PersonTime name mail time zone) =
@@ -114,7 +113,7 @@ instance Byteable TreeEntry where
         sha1' = fst $ B16.decode sha1
         in B.concat [mode', " ", name, "\NUL", sha1']
 
-instance Byteable GitObject where toBytes = L.toStrict . showObject
+instance Byteable GitObject where toBytes = showObject
 
 instance Enum EntryPermission where
     fromEnum p = case p of
@@ -136,11 +135,11 @@ sha1Path ref = let (sa:sb:suffix) = toString ref in
     flip (foldl (</>)) [[sa, sb], suffix]
 
 -- Generate a stored representation of a git object.
-showObject :: GitObject -> L.ByteString
-showObject gitObject = header `L.append` content
-    where content    = BB.toLazyByteString $ showContent gitObject
-          header     = L.concat [objectType gitObject, " ", len, "\NUL"]
-          len        = L.fromStrict . fromString . show $ L.length content
+showObject :: GitObject -> B.ByteString
+showObject gitObject = header `B.append` content
+    where content    = TB.toByteString $ showContent gitObject
+          header     = B.concat [objectType gitObject, " ", len, "\NUL"]
+          len        = fromString . show $ B.length content
 
 objectType :: IsString a => GitObjectGeneric r e -> a
 objectType someObject = case someObject of
@@ -149,26 +148,26 @@ objectType someObject = case someObject of
     Commit{} -> "commit"
     Tag{}    -> "tag"
 
-showContent :: GitObject -> BB.Builder
+showContent :: GitObject -> TB.Builder
 showContent gitObject = case gitObject of
-    Blob content -> BB.byteString content
-    Tree entries -> mconcat . map (BB.byteString . toBytes) $ toAscList entries
+    Blob content -> TB.byteString content
+    Tree entries -> mconcat . map (TB.byteString . toBytes) $ toAscList entries
     Commit {..}  -> mconcat
         [                "tree"      ?                commitTreeRef
         , mconcat $ map ("parent"    ?)               commitParentRefs
         ,                "author"    ?  toBytes       commitAuthor
         ,                "committer" ?  toBytes       commitCommitter
         , maybe mempty  ("gpgsig"    ?)               commitSignature
-        ,                "\n"        ,  BB.byteString commitMessage
+        ,                "\n"        ,  TB.byteString commitMessage
         ]
     Tag {..} -> mconcat
         [ "object" ?               tagObjectRef
         , "type"   ?               tagObjectType
         , "tag"    ?               tagName
         , "tagger" ?       toBytes tagTagger
-        , "\n"     , BB.byteString tagAnnotation
+        , "\n"     , TB.byteString tagAnnotation
         ]
-    where (?) key value = mconcat $ map BB.byteString [key, " ", value, "\n"]
+    where (?) key value = mconcat $ map TB.byteString [key, " ", value, "\n"]
 
 hashSHA1 :: B.ByteString -> Ref
 hashSHA1 = convertToBase Base16 . hashWith (undefined :: SHA1)

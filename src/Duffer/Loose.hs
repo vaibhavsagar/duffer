@@ -50,7 +50,7 @@ writeLooseObject' object = let sha1 = hash object in do
     exists <- hasLooseObject' sha1
     liftIO . unless exists $ do
         createDirectoryIfMissing True (takeDirectory path)
-        L.writeFile path $ (Z.compress . showObject) object
+        L.writeFile path $ (Z.compress . L.fromStrict . showObject) object
     return sha1
 
 hasLooseObject :: Ref -> WithRepo Bool
