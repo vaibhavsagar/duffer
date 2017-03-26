@@ -8,11 +8,11 @@ if [ "$TRAVIS" == "true" ]; then
     git config --global user.name "Travis"
 fi
 # Using token, clone gh-pages branch
-git clone --quiet --branch=$BRANCH https://${GH_TOKEN}@github.com/$TARGET_REPO build > /dev/null
+git clone --quiet --branch=$BRANCH "https://$GH_TOKEN@github.com/$TARGET_REPO build" > /dev/null
 # Generate presentation
 pandoc --standalone -t revealjs -V theme:simple presentation/presentation.md -o index.html
 # Go into directory and copy data we're interested in to that directory
-cd build
+cd build || exit
 cp ../index.html .
 # Download a fresh copy of reveal.js
 rm -rf reveal.js
