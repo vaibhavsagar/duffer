@@ -20,6 +20,7 @@ import Data.Map.Strict        (Map, insert, empty, foldrWithKey)
 import Data.Word              (Word8, Word32)
 
 import Duffer.Loose.Objects (Ref)
+import Duffer.Misc          ((.:))
 
 data PackIndexEntry = PackIndexEntry
     { pieOffset :: Int
@@ -237,7 +238,7 @@ fromBytes :: (Bits t, Integral t) => B.ByteString -> t
 fromBytes = B.foldl' (\a b -> (a `shiftL` 8) + fromIntegral b) 0
 
 toBitList :: (Bits t, Integral t) => Int -> t -> [t]
-toBitList = ((.).(.)) reverse go
+toBitList = reverse .: go
     where go some n = case divMod n (bit some) of
             (0, i) -> [fromIntegral i]
             (x, y) ->  fromIntegral y : go some x
