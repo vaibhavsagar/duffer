@@ -259,6 +259,6 @@ fixOffsets fOffsets offset
 
 packIndexEntries :: CombinedMap -> [PackIndexEntry]
 packIndexEntries CombinedMap {..} = let
-    crc32s = (crc32 . toBytes) <$> getOffsetMap
+    crc32s = crc32 . toBytes <$> getOffsetMap
     op r o = (:) (PackIndexEntry o r (crc32s IntMap.! o))
     in foldrWithKey op [] getRefIndex
