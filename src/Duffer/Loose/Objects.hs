@@ -9,7 +9,6 @@ import qualified Data.ByteString.Base16    as B16 (decode)
 import qualified Data.ByteString.Base64    as B64
 import qualified ByteString.TreeBuilder    as TB
 import qualified Data.ByteString.UTF8      as UB (toString)
-import qualified Data.HashMap.Strict       as H
 import qualified Data.Set                  as S
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as E
@@ -244,23 +243,24 @@ instance ToJSON PersonTime where
     toEncoding = pairs  . foldr1 (<>) . personTimePairs
 
 instance FromJSON GitObject where
-    parseJSON = withObject "GitObject" $ \v -> case H.lookup "object_type" v of
-        Just "blob"   -> Blob <$> (b64decode  <$> v .: "content")
-        Just "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
-        Just "commit" -> Commit
-            <$> (encodeRef      <$> v .:  "tree")
-            <*> (map encodeRef  <$> v .:  "parents")
-            <*>                     v .:  "author"
-            <*>                     v .:  "committer"
-            <*> ((encodeBS <$>) <$> v .:? "gpgsig")
-            <*> (encodeBS       <$> v .:  "message")
-        Just "tag" -> Tag
-            <$> (encodeRef <$> v .: "object")
-            <*> (encodeBS  <$> v .: "type")
-            <*> (encodeBS  <$> v .: "name")
-            <*>                v .: "tagger"
-            <*> (encodeBS  <$> v .: "annotation")
-        _ -> empty
+    parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \oType ->
+        case (oType :: String) of
+            "blob"   -> Blob <$> (b64decode  <$> v .: "content")
+            "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
+            "commit" -> Commit
+                <$> (encodeRef      <$> v .:  "tree")
+                <*> (map encodeRef  <$> v .:  "parents")
+                <*>                     v .:  "author"
+                <*>                     v .:  "committer"
+                <*> ((encodeBS <$>) <$> v .:? "gpgsig")
+                <*> (encodeBS       <$> v .:  "message")
+            "tag" -> Tag
+                <$> (encodeRef <$> v .: "object")
+                <*> (encodeBS  <$> v .: "type")
+                <*> (encodeBS  <$> v .: "name")
+                <*>                v .: "tagger"
+                <*> (encodeBS  <$> v .: "annotation")
+            _ -> empty
 
 instance FromJSON TreeEntry where
     parseJSON = withObject "TreeEntry" $ \v -> TreeEntry

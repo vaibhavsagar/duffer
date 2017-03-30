@@ -50,7 +50,6 @@ library
                      , pipes-zlib
                      , text
                      , transformers
-                     , unordered-containers
                      , utf8-string
                      , zlib
   default-extensions:  OverloadedStrings
