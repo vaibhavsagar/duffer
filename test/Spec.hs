@@ -147,9 +147,8 @@ objectsOfType objectType = fmap lines $
     >>= hGetContents
 
 allRefs :: IO [(FilePath, Ref)]
-allRefs = cmd "git show-ref" >>= hGetContents >>= \content ->
-    let refs =  split 32 <$> lines content
-    in return $ map (\[p, h] -> (toString h, p)) refs
+allRefs = map ((\[p, h] -> (toString h, p)) . (split 32)) . lines <$>
+    (cmd "git show-ref" >>= hGetContents)
 
 cmd :: String -> IO Handle
 cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
