@@ -21,6 +21,7 @@ mkDerivation {
     utf8-string
   ];
   doCheck = false;
+  doHaddock = false;
   homepage = "http://github.com/vaibhavsagar/duffer#readme";
   description = "Initial project template from stack";
   license = stdenv.lib.licenses.bsd3;
