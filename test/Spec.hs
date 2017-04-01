@@ -25,9 +25,8 @@ import Prelude hiding (lines, readFile)
 
 import Duffer.Unified        (readRef, readObject, writeObject)
 import Duffer.Loose.Objects  (Ref, hash)
-import Duffer.Pack           (getPackIndices, indexedEntryMap
-                             ,indexedByteStringMap, packFile, combinedEntryMap
-                             ,resolveAll)
+import Duffer.Pack           (getPackIndices, indexedEntryMap, packFile
+                             ,combinedEntryMap, resolveAll)
 import Duffer.Pack.File      (resolveAll')
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
@@ -115,9 +114,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     index    <- runIO $ parsedIndex <$> readFile indexPath
     entryMap <- runIO $ indexedEntryMap          indexPath
     it "decodes and encodes pack entries correctly" $ do
-        byteStringMap  <- indexedByteStringMap indexPath
-        let encodedMap =  toBytes <$> entryMap
-        encodedMap `shouldBe` byteStringMap
+        let encodedMap = toBytes <$> entryMap
         let decodedMap = parsedPackRegion <$> encodedMap
         decodedMap `shouldBe` entryMap
         let crcMap = crc32 <$> encodedMap
