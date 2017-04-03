@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 BRANCH=gh-pages
-TARGET_REPO=vaibhavsagar/duffer.hs.git
+TARGET_REPO=vaibhavsagar/duffer.git
 
 echo -e "Starting to deploy to Github Pages\n"
 if [ "$TRAVIS" == "true" ]; then
@@ -8,7 +8,7 @@ if [ "$TRAVIS" == "true" ]; then
     git config --global user.name "Travis"
 fi
 # Using token, clone gh-pages branch
-git clone --quiet --branch=$BRANCH "https://$GH_TOKEN@github.com/$TARGET_REPO build" > /dev/null
+git clone --quiet --branch=$BRANCH "https://$GH_TOKEN@github.com/$TARGET_REPO" build > /dev/null
 # Generate presentation
 pandoc --standalone -t revealjs -V theme:simple presentation/presentation.md -o index.html
 # Go into directory and copy data we're interested in to that directory
