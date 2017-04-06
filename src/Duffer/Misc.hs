@@ -9,4 +9,4 @@ ifLeft = flip either id
 (.:) = ((.).(.))
 
 compose :: (Compose f g a -> Compose f g b) -> f (g a) -> f (g b)
-compose fn = getCompose . fn . Compose
+compose f = getCompose . f . Compose
