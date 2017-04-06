@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE StrictData #-}
 
 module Duffer.Pack.Streaming (separatePackFile) where
 
