@@ -3,7 +3,7 @@ module Duffer.Misc where
 import Data.Functor.Compose (Compose(..))
 
 ifLeft :: (a -> b) -> Either a b -> b
-ifLeft f = either f id
+ifLeft = flip either id
 
 (.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (.:) = ((.).(.))
