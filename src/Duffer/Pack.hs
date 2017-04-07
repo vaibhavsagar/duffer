@@ -8,14 +8,17 @@ import qualified Data.Map.Strict      as Map
 import qualified Data.IntMap.Strict   as IntMap
 import qualified Data.Set             as Set
 
-import Data.Bool          (bool)
-import Data.IntMap.Strict (IntMap)
-import Data.Maybe         (fromJust)
-import Control.Monad      (filterM)
-import GHC.Int            (Int64)
-import System.IO.MMap     (mmapFileByteString)
-import System.FilePath    ((</>), (-<.>), takeExtension)
-import System.Directory   (getDirectoryContents, doesFileExist)
+import Control.Monad          (filterM, (<$!>))
+import Data.Bool              (bool)
+import Data.ByteString.Unsafe (unsafePackCStringLen)
+import Data.IntMap.Strict     (IntMap)
+import Data.Maybe             (fromJust)
+import Foreign.C.String       (CStringLen)
+import Foreign.Ptr            (Ptr, castPtr)
+import GHC.Int                (Int64)
+import System.Directory       (getDirectoryContents, doesFileExist)
+import System.FilePath        ((</>), (-<.>), takeExtension)
+import System.IO.MMap         (mmapWithFilePtr, Mode(..))
 
 import Duffer.Loose.Objects (GitObject, Ref)
 import Duffer.Pack.Entries  (CombinedMap(..), OffsetMap, getRefIndex)
@@ -65,22 +68,21 @@ readPacked ref path = getPackIndices path >>= filterM (hasPacked ref) >>= \case
     []      -> return Nothing
     index:_ -> flip resolveEntry ref <$> combinedEntryMap index
 
-getPackRegion :: FilePath -> IntMap B.ByteString -> Int -> IO B.ByteString
-getPackRegion packFilePath rangeMap =
-    mmapFileByteString packFilePath . region rangeMap
+getPackPtr :: FilePath -> IntMap b -> ((Ptr (), Int) -> IO a) -> Int -> IO a
+getPackPtr packFilePath rangeMap action offset =
+    mmapWithFilePtr packFilePath ReadOnly (region rangeMap offset) action
 
 indexedEntryMap :: FilePath -> IO OffsetMap
-indexedEntryMap = fmap (fmap parsedPackRegion) . indexedByteStringMap
-
-indexedByteStringMap :: FilePath -> IO (IntMap B.ByteString)
-indexedByteStringMap indexPath = do
+indexedEntryMap indexPath = do
     offsetMap    <- makeOffsetMap <$> B.readFile indexPath
     let filePath =  packFile indexPath
     contentEnd   <- B.length <$> B.readFile filePath
     let indices  =  IntMap.keys offsetMap
     let rangeMap =  IntMap.insert (contentEnd - 20) "" offsetMap
-    entries      <- traverse (getPackRegion filePath rangeMap) indices
+    entries      <- traverse (getPackPtr filePath rangeMap parse) indices
     return . IntMap.fromAscList $ zip indices entries
+    where parse (ptr, size) = let cStr = (castPtr ptr, size) :: CStringLen in
+            parsedPackRegion <$!> unsafePackCStringLen cStr
 
 combinedEntryMap :: FilePath -> IO CombinedMap
 combinedEntryMap indexPath = CombinedMap
