@@ -60,7 +60,7 @@ getNextEntry = do
         _fullType              -> return ""
     decompressed <- gets (decompress' defaultWindowBits)
     _firstByte   <- drawByte -- The compression level is in the second byte.
-    level        <- getCompressionLevel . fromJust <$!> peekByte
+    level        <- getCompressionLevel . fromJust <$> peekByte
     let headerRef = append (uncurry encodeTypeLen tLen) baseRef
     return (decompressed, (headerRef, level))
     where parse' convert = fmap (convert . fromRightJust) . parse
