@@ -19,6 +19,7 @@ import Prelude hiding                   (length, concat)
 import System.IO                        (openFile, IOMode(ReadMode))
 
 import Duffer.Loose.Parser (parseBinRef)
+import Duffer.Misc         (ifLeft)
 import Duffer.Pack.Parser  (parseOffset, parsePackFileHeader, parseTypeLen
                            ,parsePackRegion', parsedOnly)
 import Duffer.Pack.Entries (PackObjectType(..), DeltaObjectType(..), WCL(..)
@@ -34,8 +35,7 @@ separatePackFile path = do
     ((start, count), entries) <- runStateT parsePackFileStart =<<
         fromHandle <$> openFile path ReadMode
     fst <$> loop entries start count empty
-    where parsePackFileStart =
-            fromRight . fromJust <$> parseL parsePackFileHeader
+    where parsePackFileStart = fromRightJust <$> parseL parsePackFileHeader
 
 loop :: Prod -> Int -> Int -> EntryMap -> IO (EntryMap, Prod)
 loop producer _end   0         indexedMap = return (indexedMap, producer)
@@ -60,10 +60,10 @@ getNextEntry = do
         _fullType              -> return ""
     decompressed <- gets (decompress' defaultWindowBits)
     _firstByte   <- drawByte -- The compression level is in the second byte.
-    level        <- getCompressionLevel . fromJust <$> peekByte
+    level        <- getCompressionLevel . fromJust <$!> peekByte
     let headerRef = append (uncurry encodeTypeLen tLen) baseRef
     return (decompressed, (headerRef, level))
-    where parse' convert = fmap (convert . fromRight . fromJust) . parse
+    where parse' convert = fmap (convert . fromRightJust) . parse
 
 advanceToCompletion :: ByteString -> ProdE a b -> IO (ByteString, a)
 advanceToCompletion decompressed producer = next producer >>= \case
@@ -71,5 +71,5 @@ advanceToCompletion decompressed producer = next producer >>= \case
     Left (Left p)  -> return (decompressed, p)
     Left (Right _) -> error "no idea how to handle end of stream"
 
-fromRight :: Either a b -> b
-fromRight = either (const $ error "Found Left, Right expected") id
+fromRightJust :: Maybe (Either a b) -> b
+fromRightJust = ifLeft (const $ error "Found Left, Right expected") . fromJust
