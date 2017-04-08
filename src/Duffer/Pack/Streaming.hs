@@ -25,8 +25,9 @@ import Duffer.Pack.Entries (PackObjectType(..), DeltaObjectType(..), WCL(..)
                            ,PackEntry(..), compressToLevel, encodeOffset
                            ,getCompressionLevel, encodeTypeLen)
 
-type Prod a   = Producer ByteString IO a
-type EntryMap = IntMap PackEntry
+type Prod      = Producer ByteString IO ()
+type ProdE a b = Producer ByteString IO (Either a b)
+type EntryMap  = IntMap PackEntry
 
 separatePackFile :: FilePath -> IO EntryMap
 separatePackFile path = do
@@ -36,7 +37,7 @@ separatePackFile path = do
     where parsePackFileStart =
             fromRight . fromJust <$> parseL parsePackFileHeader
 
-loop :: Prod a -> Int -> Int -> EntryMap -> IO (EntryMap, Prod a)
+loop :: Prod -> Int -> Int -> EntryMap -> IO (EntryMap, Prod)
 loop producer _end   0         indexedMap = return (indexedMap, producer)
 loop producer offset remaining indexedMap = do
     (decompressedP, (headerRef, level)) <- evalStateT getNextEntry producer
@@ -50,8 +51,7 @@ loop producer offset remaining indexedMap = do
         remaining'  = remaining - 1
     loop producer' offset' remaining' indexedMap'
 
-getNextEntry :: StateT (Prod a) IO
-    (Prod (Either (Prod a) a), (ByteString, CompressionLevel))
+getNextEntry :: StateT Prod IO (ProdE Prod (), (ByteString, CompressionLevel))
 getNextEntry = do
     tLen    <- parse' id parseTypeLen
     baseRef <- case fst tLen of
@@ -65,7 +65,7 @@ getNextEntry = do
     return (decompressed, (headerRef, level))
     where parse' convert = fmap (convert . fromRight . fromJust) . parse
 
-advanceToCompletion :: ByteString -> Prod (Either a b) -> IO (ByteString, a)
+advanceToCompletion :: ByteString -> ProdE a b -> IO (ByteString, a)
 advanceToCompletion decompressed producer = next producer >>= \case
     Right (d, p')  -> first (append decompressed) <$> advanceToCompletion d p'
     Left (Left p)  -> return (decompressed, p)
