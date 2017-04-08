@@ -69,7 +69,7 @@ advanceToCompletion :: ByteString -> ProdE a b -> IO (ByteString, a)
 advanceToCompletion decompressed producer = next producer >>= \case
     Right (d, p')  -> first (append decompressed) <$> advanceToCompletion d p'
     Left (Left p)  -> return (decompressed, p)
-    Left (Right _) -> error "no idea how to handle end of stream"
+    Left (Right _) -> error "end of stream"
 
 fromRightJust :: Maybe (Either a b) -> b
 fromRightJust = ifLeft (const $ error "Found Left, Right expected") . fromJust
