@@ -41,7 +41,7 @@ data GitObjectGeneric ref entries
         , commitParentRefs :: [ref]
         , commitAuthor     :: PersonTime
         , commitCommitter  :: PersonTime
-        , commitSignature  :: (Maybe B.ByteString)
+        , commitSignature  :: Maybe B.ByteString
         , commitMessage    :: B.ByteString
         }
     | Tag
