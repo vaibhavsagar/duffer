@@ -1,7 +1,6 @@
 module Duffer.Plumbing where
 
 import qualified Data.ByteString      as B
-import qualified Data.ByteString.UTF8 as BU
 import qualified Data.Set             as S
 
 import Control.Applicative       ((<|>))
@@ -80,10 +79,10 @@ writeTree path = writeObject . Tree . S.fromList =<< traverse (\entry -> do
     case (dirExists, fileExists) of
         (True, _) -> do
             tRef <- writeTree $ path </> entry
-            return $ TreeEntry Directory (BU.fromString entry) tRef
+            return $ TreeEntry Directory (fromString entry) tRef
         (_, True) -> do
             bContent <- liftIO . B.readFile $ path </> entry
             bRef     <- writeObject $ Blob bContent
-            return $ TreeEntry Regular (BU.fromString entry) bRef
+            return $ TreeEntry Regular (fromString entry) bRef
         (False, False) -> error "what even"
     ) =<< liftIO (listDirectory path)
