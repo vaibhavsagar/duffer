@@ -78,7 +78,7 @@ parseCommit = Commit
     <*>         parseMessage
     where
         perhaps  parser = choice [Just <$> parser, pure Nothing]
-        field =: parser = (string field) *> space *> parser <* endOfLine
+        field =: parser = string field *> space *> parser <* endOfLine
 
 parseTag :: Parser GitObject
 parseTag = Tag
@@ -89,7 +89,7 @@ parseTag = Tag
     <*>  parseMessage
     where
         parseType = choice $ map string ["blob", "tree", "commit", "tag"]
-        field =: parser = (string field) *> space *> parser <* endOfLine
+        field =: parser = string field *> space *> parser <* endOfLine
 
 parseObject :: Parser GitObject
 parseObject = choice
