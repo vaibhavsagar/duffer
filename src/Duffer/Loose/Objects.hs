@@ -5,14 +5,14 @@
 
 module Duffer.Loose.Objects where
 
-import qualified Data.ByteString           as B
-import qualified Data.ByteString.Base16    as B16 (decode)
-import qualified Data.ByteString.Base64    as B64
-import qualified ByteString.TreeBuilder    as TB
-import qualified Data.ByteString.UTF8      as UB (toString)
-import qualified Data.Set                  as S
-import qualified Data.Text                 as T
-import qualified Data.Text.Encoding        as E
+import qualified Data.ByteString        as B
+import qualified Data.ByteString.Base16 as B16 (decode)
+import qualified Data.ByteString.Base64 as B64
+import qualified ByteString.TreeBuilder as TB
+import qualified Data.ByteString.UTF8   as UB (toString)
+import qualified Data.Set               as S
+import qualified Data.Text              as T
+import qualified Data.Text.Encoding     as E
 
 import Crypto.Hash             (hashWith)
 import Crypto.Hash.Algorithms  (SHA1)
