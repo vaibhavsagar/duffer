@@ -14,7 +14,6 @@ import qualified Data.Set                  as S
 import qualified Data.Text                 as T
 import qualified Data.Text.Encoding        as E
 
-import Control.Applicative     (empty)
 import Crypto.Hash             (hashWith)
 import Crypto.Hash.Algorithms  (SHA1)
 import Data.Aeson              (ToJSON(..), FromJSON(..), KeyValue, Value(..)
@@ -244,24 +243,24 @@ instance ToJSON PersonTime where
     toEncoding = pairs  . foldr1 (<>) . personTimePairs
 
 instance FromJSON GitObject where
-    parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \oType ->
-        case (oType :: String) of
+    parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \t ->
+        case (t :: String) of
             "blob"   -> Blob <$> (b64decode  <$> v .: "content")
             "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
             "commit" -> Commit
-                <$> (encodeRef      <$> v .:  "tree")
-                <*> (map encodeRef  <$> v .:  "parents")
-                <*>                     v .:  "author"
-                <*>                     v .:  "committer"
-                <*> ((encodeBS <$>) <$> v .:? "gpgsig")
-                <*> (encodeBS       <$> v .:  "message")
-            "tag" -> Tag
+                <$> (    encodeRef <$> v .:  "tree")
+                <*> (map encodeRef <$> v .:  "parents")
+                <*>                    v .:  "author"
+                <*>                    v .:  "committer"
+                <*> (fmap encodeBS <$> v .:? "gpgsig")
+                <*> (     encodeBS <$> v .:  "message")
+            "tag"    -> Tag
                 <$> (encodeRef <$> v .: "object")
                 <*> (encodeBS  <$> v .: "type")
                 <*> (encodeBS  <$> v .: "name")
                 <*>                v .: "tagger"
                 <*> (encodeBS  <$> v .: "annotation")
-            _ -> empty
+            _        -> fail $ "unknown object_type: " <> t
 
 instance FromJSON TreeEntry where
     parseJSON = withObject "TreeEntry" $ \v -> TreeEntry
