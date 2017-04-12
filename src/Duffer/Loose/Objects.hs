@@ -24,7 +24,6 @@ import Data.Byteable           (Byteable(toBytes))
 import Data.ByteString.UTF8    (fromString, toString)
 import Data.Function           (on)
 import Data.List               (intercalate)
-import Data.Maybe              (fromMaybe)
 import Data.Monoid             ((<>))
 import Data.Set                (Set, toAscList)
 import Data.String             (IsString)
@@ -213,7 +212,7 @@ gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
         , "tagger"     .=           tagTagger
         , "annotation" .= decodeBS  tagAnnotation
         ]
-    where may decoder value = fromMaybe Null (String . decoder <$> value)
+    where may = maybe Null . (.) String
 
 treeEntryPairs :: KeyValue t => TreeEntry -> [t]
 treeEntryPairs TreeEntry {..} =
