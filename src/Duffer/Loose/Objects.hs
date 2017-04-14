@@ -10,7 +10,6 @@ import qualified Data.ByteString.Base16 as B16 (decode)
 import qualified Data.ByteString.Base64 as B64
 import qualified ByteString.TreeBuilder as TB
 import qualified Data.ByteString.UTF8   as UB (toString)
-import qualified Data.Set               as S
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as E
 
@@ -196,7 +195,7 @@ gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
     Blob {..} ->
         [ "content"    .= b64encode blobContent ]
     Tree {..} ->
-        [ "entries"    .= S.toList treeEntries ]
+        [ "entries"    .= treeEntries ]
     Commit {..} ->
         [ "tree"       .=     decodeRef commitTreeRef
         , "parents"    .= map decodeRef commitParentRefs
@@ -245,7 +244,7 @@ instance FromJSON GitObject where
     parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \t ->
         case (t :: String) of
             "blob"   -> Blob <$> (b64decode  <$> v .: "content")
-            "tree"   -> Tree <$> (S.fromList <$> v .: "entries")
+            "tree"   -> Tree <$>                 v .: "entries"
             "commit" -> Commit
                 <$> (    encodeRef <$> v .:  "tree")
                 <*> (map encodeRef <$> v .:  "parents")
