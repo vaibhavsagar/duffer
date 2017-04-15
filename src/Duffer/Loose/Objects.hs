@@ -23,7 +23,7 @@ import Data.Byteable           (Byteable(toBytes))
 import Data.ByteString.UTF8    (fromString, toString)
 import Data.Function           (on)
 import Data.List               (intercalate)
-import Data.Monoid             ((<>))
+import Data.Monoid             ((<>), mconcat)
 import Data.Set                (Set, toAscList)
 import Data.String             (IsString)
 import Numeric                 (readOct)
@@ -230,15 +230,15 @@ personTimePairs PersonTime {..} =
 
 instance ToJSON GitObject where
     toJSON     = object . gitObjectPairs
-    toEncoding = pairs  . foldr1 (<>) . gitObjectPairs
+    toEncoding = pairs  . mconcat . gitObjectPairs
 
 instance ToJSON TreeEntry where
     toJSON     = object . treeEntryPairs
-    toEncoding = pairs  . foldr1 (<>) . treeEntryPairs
+    toEncoding = pairs  . mconcat . treeEntryPairs
 
 instance ToJSON PersonTime where
     toJSON     = object . personTimePairs
-    toEncoding = pairs  . foldr1 (<>) . personTimePairs
+    toEncoding = pairs  . mconcat . personTimePairs
 
 instance FromJSON GitObject where
     parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \t ->
