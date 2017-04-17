@@ -17,7 +17,7 @@ import Duffer.Loose.Objects      (GitObjectGeneric(..), GitObject, Ref
 import Duffer                    (readObject, writeObject)
 import Duffer.WithRepo
 
-type WorkObject = GitObjectGeneric Ref WorkTreeEntryMap
+type WorkObject = GitObjectGeneric Ref (Map.Map B.ByteString) WorkTreeEntry
 
 type WorkTreeEntryMap = Map.Map B.ByteString WorkTreeEntry
 
@@ -25,10 +25,10 @@ data WorkTreeEntry = WorkTreeEntry WorkObject EntryPermission
 
 convert
     :: Applicative f
-    => (a -> f c)
-    -> (b -> f d)
-    -> GitObjectGeneric a b
-    -> f (GitObjectGeneric c d)
+    => (a   -> f    g)
+    -> (b c -> f (h i))
+    -> GitObjectGeneric a b c
+    -> f (GitObjectGeneric g h i)
 convert ref tree = \case
     Blob{..}   -> pure Blob{..}
     Tree{..}   -> Tree <$> tree treeEntries
