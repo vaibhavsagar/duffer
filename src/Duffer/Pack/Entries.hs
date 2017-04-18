@@ -71,7 +71,7 @@ data CombinedMap = CombinedMap
     } deriving (Show)
 
 data ObjectMap = ObjectMap
-    { getObjectMap   :: (IntMap.IntMap PackedObject)
+    { getObjectMap   :: IntMap.IntMap PackedObject
     , getObjectIndex :: RefIndex
     }
 
@@ -223,9 +223,6 @@ packObjectType header = toEnum . fromIntegral $ (header `shiftR` 4) .&. 7
 
 toAssoc :: PackIndexEntry -> (Int, Ref)
 toAssoc (PackIndexEntry o r _) = (o, r)
-
-emptyCombinedMap :: CombinedMap
-emptyCombinedMap = CombinedMap IntMap.empty empty
 
 emptyObjectMap :: ObjectMap
 emptyObjectMap = ObjectMap IntMap.empty empty
