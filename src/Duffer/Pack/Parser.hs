@@ -19,7 +19,6 @@ import Data.ByteString                  (ByteString, concat, length, splitAt
 import Data.ByteString.Lazy             (head, drop, toStrict)
 import Data.ByteString.UTF8             (fromString)
 import Data.Bool                        (bool)
-import Data.Functor.Compose             (Compose(..))
 import Data.List                        (foldl')
 import Data.Map.Strict                  (Map, singleton, union, empty)
 
@@ -28,7 +27,7 @@ import Prelude hiding (take, drop, head, length, concat, splitAt)
 import Duffer.Loose.Objects (GitObject, Ref, hashSHA1)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
-import Duffer.Misc          ((.:), ifLeft)
+import Duffer.Misc          ((.:), compose, ifLeft)
 import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
                             ,PackEntry(..), PackedObject(..), PackIndexEntry(..)
                             ,DeltaInstruction(..), Delta(..), fixOffsets
@@ -167,7 +166,7 @@ parseOfsDelta parser = OfsDelta <$> parseOffset <*> parseWCLDelta parser
 parseRefDelta parser = RefDelta <$> parseBinRef <*> parseWCLDelta parser
 
 parseWCLDelta :: Parser (WCL ByteString) -> Parser (WCL Delta)
-parseWCLDelta = getCompose . fmap (parsedOnly parseDelta) . Compose
+parseWCLDelta = compose . fmap $ parsedOnly parseDelta
 
 parsePackRegion :: Parser PackEntry
 parsePackRegion = parsePackRegion' parseWCL
