@@ -43,7 +43,7 @@ main = do
     hspec . describe "packed representation" $ do
         parallel $ testEncodingAndParsing
         parallel $ testReading "packed" objectTypes allTypesObjects
-        testUnpackingAndWriting =<< runIO (getPackIndices ".git/objects")
+        testUnpackingAndWriting =<< runIO (getPackIndices "../.git/objects")
     hspec . parallel . describe "loose representation" $ do
         testReading "loose" objectTypes allTypesObjects
         testJSON            objectTypes allTypesObjects
@@ -86,7 +86,7 @@ testReading status types = describe ("reading " ++ status ++ " objects") .
 describeReadingAll :: String -> [Ref] -> SpecWith ()
 describeReadingAll oType objects =
     readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (traverse_ (readHashObject ".git") os)
+    where readAll desc os = it desc (traverse_ (readHashObject "../.git") os)
 
 testJSON :: [String] -> [[Ref]] -> SpecWith ()
 testJSON types partitionedObjects = describe "decoding and encoding" $
@@ -94,11 +94,11 @@ testJSON types partitionedObjects = describe "decoding and encoding" $
 
 testWorkTrees :: [Ref] -> SpecWith ()
 testWorkTrees refs = describe "work trees" . it "reads and hashes WorkObjects" $
-    traverse_ (readHashWorkObject ".git") refs
+    traverse_ (readHashWorkObject "../.git") refs
 
 testRefs :: [(FilePath, Ref)] -> SpecWith ()
 testRefs refsOutput = describe "reading refs" .
-    it "correctly reads refs" $ traverse_ (checkRef ".git") refsOutput
+    it "correctly reads refs" $ traverse_ (checkRef "../.git") refsOutput
     where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
             (failureNotFound path)
             (`shouldBe` ref)
@@ -106,7 +106,7 @@ testRefs refsOutput = describe "reading refs" .
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType objects =
     readAll ("correctly decodes and encodes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (traverse_ (decodeEncodeObject ".git") os)
+    where readAll desc os = it desc (traverse_ (decodeEncodeObject "../.git") os)
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
@@ -131,7 +131,7 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         objects' `shouldMatchList` objects
         refs     `shouldMatchList` map hash objects
     it "writes resolved objects out" $ do
-        let write = withRepo ".git" . writeObject
+        let write = withRepo "../.git" . writeObject
         traverse write objects >>= shouldMatchList refs
 
 objectsOfType :: String -> IO [Ref]
