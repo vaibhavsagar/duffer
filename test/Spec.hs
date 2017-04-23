@@ -143,7 +143,7 @@ objectsOfType objectType = fmap lines $
     >>= hGetContents
 
 allRefs :: IO [(FilePath, Ref)]
-allRefs = map ((\[p, h] -> (toString h, p)) . (split 32)) . lines <$>
+allRefs = map ((\[p, h] -> (toString h, p)) . split 32) . lines <$>
     (cmd "git show-ref" >>= hGetContents)
 
 cmd :: String -> IO Handle
