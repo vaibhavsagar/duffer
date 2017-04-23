@@ -23,7 +23,6 @@ library
                        Duffer.Pack.File
                        Duffer.Pack.Parser
                        Duffer.Pack.Entries
-                       Duffer.Pack.Streaming
                        Duffer.Plumbing
                        Duffer.Unified
                        Duffer.WithRepo
@@ -44,10 +43,6 @@ library
                      , filepath
                      , memory
                      , mmap
-                     , pipes
-                     , pipes-attoparsec
-                     , pipes-bytestring
-                     , pipes-zlib
                      , text
                      , transformers
                      , utf8-string

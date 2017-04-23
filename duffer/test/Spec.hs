@@ -29,7 +29,6 @@ import Duffer.Pack           (getPackIndices, indexedEntryMap, packFile
 import Duffer.Pack.File      (resolveAll')
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
-import Duffer.Pack.Streaming (separatePackFile)
 import Duffer.Pack.Entries   (PackObjectType(..), encodeOffset, encodeTypeLen
                              ,PackIndexEntry(..), packIndexEntries, toAssoc
                              ,FullObjectType(..), DeltaObjectType(..))
@@ -118,9 +117,6 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
         decodedMap `shouldBe` entryMap
         let crcMap = crc32 <$> encodedMap
         elems crcMap `shouldMatchList` map pieCRC index
-    it "can separate a streamed packfile" $ do
-        separatedPackFile <- separatePackFile $ packFile indexPath
-        separatedPackFile `shouldBe` entryMap
     combinedMap <- runIO $ combinedEntryMap indexPath
     it "can reconstruct the pack index entries" $
         packIndexEntries combinedMap `shouldMatchList` index
