@@ -7,26 +7,20 @@ module Duffer.Loose.Objects where
 
 import qualified Data.ByteString        as B
 import qualified Data.ByteString.Base16 as B16 (decode)
-import qualified Data.ByteString.Base64 as B64
 import qualified ByteString.TreeBuilder as TB
 import qualified Data.ByteString.UTF8   as UB (toString)
-import qualified Data.Text              as T
-import qualified Data.Text.Encoding     as E
 
 import Crypto.Hash             (hashWith)
 import Crypto.Hash.Algorithms  (SHA1)
-import Data.Aeson              (ToJSON(..), FromJSON(..), KeyValue, Value(..)
-                               ,object, pairs, (.=), (.:), (.:?), withObject)
 import Data.Bool               (bool)
 import Data.ByteArray.Encoding (Base(Base16), convertToBase)
 import Data.Byteable           (Byteable(toBytes))
 import Data.ByteString.UTF8    (fromString, toString)
 import Data.Function           (on)
 import Data.List               (intercalate)
-import Data.Monoid             ((<>), mconcat)
+import Data.Monoid             (mconcat)
 import Data.Set                (Set, toAscList)
 import Data.String             (IsString)
-import Numeric                 (readOct)
 import System.FilePath         ((</>))
 import Text.Printf             (printf)
 
@@ -171,103 +165,3 @@ hashSHA1 = convertToBase Base16 . hashWith (undefined :: SHA1)
 
 hash :: GitObject -> Ref
 hash = hashSHA1 . toBytes
-
-b64encode :: B.ByteString -> T.Text
-b64encode = E.decodeUtf8 . B64.encode
-
-b64decode :: T.Text -> B.ByteString
-b64decode = B64.decodeLenient . E.encodeUtf8
-
-decodeRef :: Ref -> T.Text
-decodeRef = E.decodeUtf8
-
-decodeBS :: B.ByteString -> T.Text
-decodeBS  = E.decodeUtf8
-
-encodeRef :: T.Text -> Ref
-encodeRef = E.encodeUtf8
-
-encodeBS :: T.Text -> B.ByteString
-encodeBS  = E.encodeUtf8
-
-gitObjectPairs :: KeyValue t => GitObject -> [t]
-gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
-    Blob {..} ->
-        [ "content"    .= b64encode blobContent ]
-    Tree {..} ->
-        [ "entries"    .= treeEntries ]
-    Commit {..} ->
-        [ "tree"       .=     decodeRef commitTreeRef
-        , "parents"    .= map decodeRef commitParentRefs
-        , "author"     .=               commitAuthor
-        , "committer"  .=               commitCommitter
-        , "gpgsig"     .= may decodeBS  commitSignature
-        , "message"    .=     decodeBS  commitMessage
-        ]
-    Tag {..} ->
-        [ "object"     .= decodeRef tagObjectRef
-        , "type"       .= decodeBS  tagObjectType
-        , "name"       .= decodeBS  tagName
-        , "tagger"     .=           tagTagger
-        , "annotation" .= decodeBS  tagAnnotation
-        ]
-    where may = maybe Null . (.) String
-
-treeEntryPairs :: KeyValue t => TreeEntry -> [t]
-treeEntryPairs TreeEntry {..} =
-    ["mode" .= octMode, "name" .= dName, "ref" .= dRef]
-    where octMode = T.pack $ printf "%06o" (fromEnum entryPerms) :: T.Text
-          dName   = E.decodeUtf8 entryName
-          dRef    = decodeRef entryRef
-
-personTimePairs :: KeyValue t => PersonTime -> [t]
-personTimePairs PersonTime {..} =
-    [ "name" .= decodeBS personName
-    , "mail" .= decodeBS personMail
-    , "time" .= decodeBS personTime
-    , "zone" .= decodeBS personTZ
-    ]
-
-instance ToJSON GitObject where
-    toJSON     = object . gitObjectPairs
-    toEncoding = pairs  . mconcat . gitObjectPairs
-
-instance ToJSON TreeEntry where
-    toJSON     = object . treeEntryPairs
-    toEncoding = pairs  . mconcat . treeEntryPairs
-
-instance ToJSON PersonTime where
-    toJSON     = object . personTimePairs
-    toEncoding = pairs  . mconcat . personTimePairs
-
-instance FromJSON GitObject where
-    parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \t ->
-        case (t :: String) of
-            "blob"   -> Blob <$> (b64decode  <$> v .: "content")
-            "tree"   -> Tree <$>                 v .: "entries"
-            "commit" -> Commit
-                <$> (    encodeRef <$> v .:  "tree")
-                <*> (map encodeRef <$> v .:  "parents")
-                <*>                    v .:  "author"
-                <*>                    v .:  "committer"
-                <*> (fmap encodeBS <$> v .:? "gpgsig")
-                <*> (     encodeBS <$> v .:  "message")
-            "tag"    -> Tag
-                <$> (encodeRef <$> v .: "object")
-                <*> (encodeBS  <$> v .: "type")
-                <*> (encodeBS  <$> v .: "name")
-                <*>                v .: "tagger"
-                <*> (encodeBS  <$> v .: "annotation")
-            _        -> fail $ "unknown object_type: " <> t
-
-instance FromJSON TreeEntry where
-    parseJSON = withObject "TreeEntry" $ \v -> TreeEntry
-        <$> (readOctal    <$> v .: "mode")
-        <*> (E.encodeUtf8 <$> v .: "name")
-        <*> (E.encodeUtf8 <$> v .: "ref")
-        where readOctal = toEnum . fst . head . readOct . T.unpack
-
-instance FromJSON PersonTime where
-    parseJSON = withObject "PersonTime" $ \v ->
-        let enc = fmap E.encodeUtf8 . (.:) v in PersonTime
-        <$> enc "name" <*> enc "mail" <*> enc "time" <*> enc "zone"

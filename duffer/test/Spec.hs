@@ -1,8 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
 
 import Control.Monad              (zipWithM_)
-import Data.Aeson                 (encode, decode)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString            (readFile, hGetContents, split)
 import Data.ByteString.UTF8       (lines, toString)
@@ -10,7 +8,6 @@ import Data.Byteable              (Byteable(..))
 import Data.Digest.CRC32          (crc32)
 import Data.Foldable              (traverse_)
 import Data.IntMap.Strict         (elems)
-import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
 import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
@@ -24,8 +21,8 @@ import Prelude hiding (lines, readFile)
 
 import Duffer.Unified        (readRef, readObject, writeObject)
 import Duffer.Loose.Objects  (Ref, hash)
-import Duffer.Pack           (getPackIndices, indexedEntryMap, packFile
-                             ,combinedEntryMap, resolveAll)
+import Duffer.Pack           (getPackIndices, indexedEntryMap, combinedEntryMap
+                             ,resolveAll)
 import Duffer.Pack.File      (resolveAll')
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
@@ -45,7 +42,6 @@ main = do
         testUnpackingAndWriting =<< runIO (getPackIndices "../.git/objects")
     hspec . parallel . describe "loose representation" $ do
         testReading "loose" objectTypes allTypesObjects
-        testJSON            objectTypes allTypesObjects
         testRefs =<< runIO allRefs
         testWorkTrees =<< runIO (objectsOfType "tree")
 
@@ -83,13 +79,9 @@ testReading status types = describe ("reading " ++ status ++ " objects") .
     zipWithM_ describeReadingAll types
 
 describeReadingAll :: String -> [Ref] -> SpecWith ()
-describeReadingAll oType objects =
-    readAll ("correctly parses and hashes all " ++ oType ++ "s") objects
+describeReadingAll oType =
+    readAll ("correctly parses and hashes all " ++ oType ++ "s")
     where readAll desc os = it desc (traverse_ (readHashObject "../.git") os)
-
-testJSON :: [String] -> [[Ref]] -> SpecWith ()
-testJSON types partitionedObjects = describe "decoding and encoding" $
-    zipWithM_ describeDecodingEncodingAll types partitionedObjects
 
 testWorkTrees :: [Ref] -> SpecWith ()
 testWorkTrees refs = describe "work trees" . it "reads and hashes WorkObjects" $
@@ -101,11 +93,6 @@ testRefs refsOutput = describe "reading refs" .
     where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
             (failureNotFound path)
             (`shouldBe` ref)
-
-describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
-describeDecodingEncodingAll oType objects =
-    readAll ("correctly decodes and encodes all " ++ oType ++ "s") objects
-    where readAll desc os = it desc (traverse_ (decodeEncodeObject "../.git") os)
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
@@ -156,12 +143,6 @@ readHashObject :: FilePath -> Ref -> Expectation
 readHashObject path sha1 = withRepo path (readObject sha1) >>= maybe
     (failureNotFound $ toString sha1)
     (\object -> hash object `shouldBe` sha1)
-
-decodeEncodeObject :: FilePath -> Ref -> Expectation
-decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
-    (failureNotFound $ toString ref)
-    (\object -> roundtrip object `shouldBe` object)
-    where roundtrip = fromJust . decode . encode
 
 readHashWorkObject :: FilePath -> Ref -> Expectation
 readHashWorkObject path sha1 = withRepo path (workObject sha1) >>= maybe
