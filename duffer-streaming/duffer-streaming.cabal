@@ -1,0 +1,54 @@
+name:                duffer-streaming
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            http://github.com/vaibhavsagar/duffer#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Vaibhav Sagar
+maintainer:          vaibhavsagar@gmail.com
+copyright:           2016 Vaibhav Sagar
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Duffer.Pack.Streaming
+  build-depends:       base >= 4.7 && < 5
+                     , attoparsec
+                     , base16-bytestring
+                     , bytestring
+                     , containers
+                     , duffer
+                     , filepath
+                     , pipes
+                     , pipes-attoparsec
+                     , pipes-bytestring
+                     , pipes-zlib
+                     , transformers
+                     , zlib
+  default-extensions:  OverloadedStrings
+  ghc-options:       -fwarn-unused-imports
+                     -fwarn-tabs
+                     -fwarn-missing-signatures
+                     -fwarn-incomplete-patterns
+                     -Wall
+                     -Werror
+  default-language:    Haskell2010
+
+test-suite duffer-streaming-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , duffer
+                     , duffer-streaming
+                     , hspec
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/vaibhavsagar/duffer

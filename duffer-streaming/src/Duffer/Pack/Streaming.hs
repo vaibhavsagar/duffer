@@ -19,7 +19,6 @@ import Prelude hiding                   (length, concat)
 import System.IO                        (openFile, IOMode(ReadMode))
 
 import Duffer.Loose.Parser (parseBinRef)
-import Duffer.Misc         (ifLeft)
 import Duffer.Pack.Parser  (parseOffset, parsePackFileHeader, parseTypeLen
                            ,parsePackRegion', parsedOnly)
 import Duffer.Pack.Entries (PackObjectType(..), DeltaObjectType(..), WCL(..)
@@ -70,6 +69,9 @@ advanceToCompletion decompressed producer = next producer >>= \case
     Right (d, p')  -> first (append decompressed) <$> advanceToCompletion d p'
     Left (Left p)  -> return (decompressed, p)
     Left (Right _) -> error "end of stream"
+
+ifLeft :: (a -> b) -> Either a b -> b
+ifLeft = flip either id
 
 fromRightJust :: Maybe (Either a b) -> b
 fromRightJust = ifLeft (const $ error "Found Left, Right expected") . fromJust
