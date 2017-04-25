@@ -1,9 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 import Control.Monad              (zipWithM_)
 import Data.Aeson                 (encode, decode)
 import Data.ByteString            (hGetContents)
 import Data.ByteString.UTF8       (lines, toString)
+import Data.Coerce                (coerce)
 import Data.Foldable              (traverse_)
 import Data.Maybe                 (fromJust)
 import GHC.IO.Handle              (Handle)
@@ -15,7 +16,7 @@ import Test.Hspec                 (hspec, expectationFailure, parallel, describe
 import Prelude hiding (lines, readFile)
 
 import Duffer.Unified        (readObject)
-import Duffer.Loose.Objects  (Ref)
+import Duffer.Loose.Objects  (Ref, GitObject)
 import Duffer.WithRepo       (withRepo)
 import Duffer.JSON
 
@@ -57,7 +58,8 @@ decodeEncodeObject :: FilePath -> Ref -> Expectation
 decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
     (failureNotFound $ toString ref)
     (\object -> roundtrip object `shouldBe` object)
-    where roundtrip = fromJust . fmap innerObject . decode . encode . GitObjectJSON
+    where roundtrip =
+            coerce @GitObjectJSON . fromJust . decode . encode . GitObjectJSON
 
 failureNotFound :: String -> Expectation
 failureNotFound string = expectationFailure $ string ++ " not found"

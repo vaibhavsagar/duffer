@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Duffer.JSON where
 
@@ -13,15 +14,16 @@ import qualified Data.Text.Encoding     as E
 
 import Data.Aeson              (ToJSON(..), FromJSON(..), KeyValue, Value(..)
                                ,object, pairs, (.=), (.:), (.:?), withObject)
+import Data.Coerce             (coerce)
 import Data.Monoid             ((<>), mconcat)
 import Numeric                 (readOct)
 import Text.Printf             (printf)
 
 import Duffer.Loose.Objects (Ref, GitObjectGeneric(..), GitObject, TreeEntry(..), PersonTime(..), objectType)
 
-newtype GitObjectJSON  = GitObjectJSON  { innerObject :: GitObject  }
-newtype TreeEntryJSON  = TreeEntryJSON  { innerEntry  :: TreeEntry  } deriving (Eq, Ord)
-newtype PersonTimeJSON = PersonTimeJSON { innerPT     :: PersonTime }
+newtype GitObjectJSON  = GitObjectJSON  GitObject
+newtype TreeEntryJSON  = TreeEntryJSON  TreeEntry deriving (Eq, Ord)
+newtype PersonTimeJSON = PersonTimeJSON PersonTime
 
 b64encode :: B.ByteString -> T.Text
 b64encode = E.decodeUtf8 . B64.encode
@@ -80,39 +82,42 @@ personTimePairs PersonTime {..} =
     ]
 
 instance ToJSON GitObjectJSON where
-    toJSON     = object . gitObjectPairs . innerObject
-    toEncoding = pairs  . mconcat . gitObjectPairs . innerObject
+    toJSON     = object . gitObjectPairs . coerce
+    toEncoding = pairs  . mconcat . gitObjectPairs . coerce
 
 instance ToJSON TreeEntryJSON where
-    toJSON     = object . treeEntryPairs . innerEntry
-    toEncoding = pairs  . mconcat . treeEntryPairs . innerEntry
+    toJSON     = object . treeEntryPairs . coerce
+    toEncoding = pairs  . mconcat . treeEntryPairs . coerce
 
 instance ToJSON PersonTimeJSON where
-    toJSON     = object . personTimePairs . innerPT
-    toEncoding = pairs  . mconcat . personTimePairs . innerPT
+    toJSON     = object . personTimePairs . coerce
+    toEncoding = pairs  . mconcat . personTimePairs . coerce
 
 instance FromJSON GitObjectJSON where
     parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \t ->
-        GitObjectJSON <$> case (t :: String) of
-            "blob"   -> Blob <$> (b64decode        <$> v .: "content")
-            "tree"   -> Tree <$> (S.map innerEntry <$> v .: "entries")
+        coerce <$> case (t :: String) of
+            "blob"   -> Blob <$> (b64decode      <$> v .: "content")
+            "tree"   -> Tree <$> (S.map encodeTE <$> v .: "entries")
             "commit" -> Commit
-                <$> (    encodeRef <$> v .:  "tree")
-                <*> (map encodeRef <$> v .:  "parents")
-                <*> fmap innerPT      (v .:  "author")
-                <*> fmap innerPT      (v .:  "committer")
-                <*> (fmap encodeBS <$> v .:? "gpgsig")
-                <*> (     encodeBS <$> v .:  "message")
+                <$> (     encodeRef <$> v .:  "tree")
+                <*> (map  encodeRef <$> v .:  "parents")
+                <*> (     encodePT  <$> v .:  "author")
+                <*> (     encodePT  <$> v .:  "committer")
+                <*> (fmap encodeBS  <$> v .:? "gpgsig")
+                <*> (     encodeBS  <$> v .:  "message")
             "tag"    -> Tag
                 <$> (encodeRef <$> v .: "object")
                 <*> (encodeBS  <$> v .: "type")
                 <*> (encodeBS  <$> v .: "name")
-                <*> (innerPT   <$> v .: "tagger")
+                <*> (encodePT  <$> v .: "tagger")
                 <*> (encodeBS  <$> v .: "annotation")
             _        -> fail $ "unknown object_type: " <> t
+        where
+            encodePT = coerce @PersonTimeJSON
+            encodeTE = coerce @TreeEntryJSON
 
 instance FromJSON TreeEntryJSON where
-    parseJSON = withObject "TreeEntry" $ \v -> fmap TreeEntryJSON $ TreeEntry
+    parseJSON = withObject "TreeEntry" $ \v -> fmap coerce $ TreeEntry
         <$> (readOctal    <$> v .: "mode")
         <*> (E.encodeUtf8 <$> v .: "name")
         <*> (E.encodeUtf8 <$> v .: "ref")
@@ -120,5 +125,5 @@ instance FromJSON TreeEntryJSON where
 
 instance FromJSON PersonTimeJSON where
     parseJSON = withObject "PersonTime" $ \v ->
-        let enc = fmap E.encodeUtf8 . (.:) v in fmap PersonTimeJSON $ PersonTime
+        let enc = fmap E.encodeUtf8 . (.:) v in fmap coerce $ PersonTime
         <$> enc "name" <*> enc "mail" <*> enc "time" <*> enc "zone"
