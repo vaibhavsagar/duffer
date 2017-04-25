@@ -16,7 +16,7 @@ import Test.Hspec                 (hspec, expectationFailure, parallel, describe
 import Prelude hiding (lines, readFile)
 
 import Duffer.Unified        (readObject)
-import Duffer.Loose.Objects  (Ref, GitObject)
+import Duffer.Loose.Objects  (Ref)
 import Duffer.WithRepo       (withRepo)
 import Duffer.JSON
 
