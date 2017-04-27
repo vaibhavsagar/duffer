@@ -17,7 +17,7 @@ import Prelude hiding (lines, readFile)
 import Duffer.Unified        (readObject)
 import Duffer.Loose.Objects  (Ref)
 import Duffer.WithRepo       (withRepo)
-import Duffer.JSON           (GitObjectJSON(..))
+import Duffer.JSON           (GitObjectJSON(..), RefJSON(..))
 
 main :: IO ()
 main = let objectTypes = ["blob", "tree", "commit", "tag"] in
@@ -25,8 +25,9 @@ main = let objectTypes = ["blob", "tree", "commit", "tag"] in
         hspec . parallel . describe "JSON" . testJSON objectTypes
 
 testJSON :: [String] -> [[Ref]] -> SpecWith ()
-testJSON types partitionedRefs = describe "decoding and encoding" $
+testJSON types partitionedRefs = describe "decoding and encoding" $ do
     zipWithM_ describeDecodingEncodingAll types partitionedRefs
+    testRefs $ concat partitionedRefs
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType =
@@ -39,6 +40,14 @@ decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
     (flip shouldBe <*> roundtrip)
     where roundtrip =
             coerce @GitObjectJSON . fromJust . decode . encode . GitObjectJSON
+
+testRefs :: [Ref] -> SpecWith ()
+testRefs = it "correctly decodes and encodes all refs" .
+    traverse_ decodeEncodeRef
+
+decodeEncodeRef :: Ref -> Expectation
+decodeEncodeRef = flip shouldBe <*> roundtrip
+    where roundtrip = coerce @RefJSON . fromJust . decode . encode . RefJSON
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $

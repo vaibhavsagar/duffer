@@ -87,7 +87,7 @@ instance ToJSON RefJSON where
     toEncoding (RefJSON ref) = pairs  ("ref" .= decodeRef ref)
 
 instance FromJSON RefJSON where
-    parseJSON (Object v) = coerce <$> (encodeRef <$> v .: "ref")
+    parseJSON = withObject "Ref" $ \v -> coerce <$> (encodeRef <$> v .: "ref")
 
 instance ToJSON GitObjectJSON where
     toJSON     = object . gitObjectPairs . coerce
