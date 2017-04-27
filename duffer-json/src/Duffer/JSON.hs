@@ -21,6 +21,7 @@ import Text.Printf             (printf)
 
 import Duffer.Loose.Objects (Ref, GitObjectGeneric(..), GitObject, TreeEntry(..), PersonTime(..), objectType)
 
+newtype RefJSON        = RefJSON        Ref
 newtype GitObjectJSON  = GitObjectJSON  GitObject
 newtype TreeEntryJSON  = TreeEntryJSON  TreeEntry deriving (Eq, Ord)
 newtype PersonTimeJSON = PersonTimeJSON PersonTime
@@ -80,6 +81,13 @@ personTimePairs PersonTime {..} =
     , "time" .= decodeBS personTime
     , "zone" .= decodeBS personTZ
     ]
+
+instance ToJSON RefJSON where
+    toJSON     (RefJSON ref) = object ["ref" .= decodeRef ref]
+    toEncoding (RefJSON ref) = pairs  ("ref" .= decodeRef ref)
+
+instance FromJSON RefJSON where
+    parseJSON (Object v) = coerce <$> (encodeRef <$> v .: "ref")
 
 instance ToJSON GitObjectJSON where
     toJSON     = object . gitObjectPairs . coerce

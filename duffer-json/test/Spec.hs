@@ -7,7 +7,6 @@ import Data.ByteString.UTF8       (lines, toString)
 import Data.Coerce                (coerce)
 import Data.Foldable              (traverse_)
 import Data.Maybe                 (fromJust)
-import GHC.IO.Handle              (Handle)
 import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
 import Test.Hspec                 (hspec, expectationFailure, parallel, describe
@@ -18,23 +17,28 @@ import Prelude hiding (lines, readFile)
 import Duffer.Unified        (readObject)
 import Duffer.Loose.Objects  (Ref)
 import Duffer.WithRepo       (withRepo)
-import Duffer.JSON
+import Duffer.JSON           (GitObjectJSON(..))
 
 main :: IO ()
-main = do
-    let objectTypes = ["blob", "tree", "commit", "tag"]
-    allTypesObjects <- traverse objectsOfType objectTypes
-    hspec . parallel . describe "JSON" $
-        testJSON objectTypes allTypesObjects
+main = let objectTypes = ["blob", "tree", "commit", "tag"] in
+    traverse objectsOfType objectTypes >>=
+        hspec . parallel . describe "JSON" . testJSON objectTypes
 
 testJSON :: [String] -> [[Ref]] -> SpecWith ()
-testJSON types partitionedObjects = describe "decoding and encoding" $
-    zipWithM_ describeDecodingEncodingAll types partitionedObjects
+testJSON types partitionedRefs = describe "decoding and encoding" $
+    zipWithM_ describeDecodingEncodingAll types partitionedRefs
 
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType =
-    readAll ("correctly decodes and encodes all " ++ oType ++ "s")
-    where readAll desc os = it desc (traverse_ (decodeEncodeObject "../.git") os)
+    it ("correctly decodes and encodes all " ++ oType ++ "s") .
+        traverse_ (decodeEncodeObject "../.git")
+
+decodeEncodeObject :: FilePath -> Ref -> Expectation
+decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
+    (expectationFailure $ toString ref ++ "not read")
+    (flip shouldBe <*> roundtrip)
+    where roundtrip =
+            coerce @GitObjectJSON . fromJust . decode . encode . GitObjectJSON
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
@@ -43,23 +47,10 @@ objectsOfType objectType = fmap lines $
     >|> ("grep '^[^ ]* " ++ objectType ++ "'")
     >|> "cut -d' ' -f1"
     >>= hGetContents
-
-cmd :: String -> IO Handle
-cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
-    \(_, Just handle, _, _) -> return handle
-
-(>|>) :: IO Handle -> String -> IO Handle
-(>|>) handle command = withPipe =<< handle
-    where withPipe pipe = createProcess (shell command)
-            {std_out = CreatePipe, std_in = UseHandle pipe} >>=
-            \(_, Just handle', _, _) -> return handle'
-
-decodeEncodeObject :: FilePath -> Ref -> Expectation
-decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
-    (failureNotFound $ toString ref)
-    (\object -> roundtrip object `shouldBe` object)
-    where roundtrip =
-            coerce @GitObjectJSON . fromJust . decode . encode . GitObjectJSON
-
-failureNotFound :: String -> Expectation
-failureNotFound string = expectationFailure $ string ++ " not found"
+    where
+        cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
+            \(_, Just handle, _, _) -> return handle
+        (>|>) handle command = withPipe =<< handle
+            where withPipe pipe = createProcess (shell command)
+                    {std_out = CreatePipe, std_in = UseHandle pipe} >>=
+                    \(_, Just handle', _, _) -> return handle'
