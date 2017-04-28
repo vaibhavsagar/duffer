@@ -1,10 +1,11 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 import Control.Monad              (zipWithM_)
-import Data.Aeson                 (encode, decode)
+import Data.Aeson                 (encode, decode, ToJSON, FromJSON)
 import Data.ByteString            (hGetContents)
 import Data.ByteString.UTF8       (lines, toString)
-import Data.Coerce                (coerce)
+import Data.Coerce                (Coercible, coerce)
 import Data.Foldable              (traverse_)
 import Data.Maybe                 (fromJust)
 import System.Process             (CreateProcess(..), StdStream(..)
@@ -37,17 +38,14 @@ describeDecodingEncodingAll oType =
 decodeEncodeObject :: FilePath -> Ref -> Expectation
 decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
     (expectationFailure $ toString ref ++ "not read")
-    (flip shouldBe <*> roundtrip)
-    where roundtrip =
-            coerce @GitObjectJSON . fromJust . decode . encode . GitObjectJSON
+    (flip shouldBe <*> (roundTrip . GitObjectJSON))
 
 testRefs :: [Ref] -> SpecWith ()
 testRefs = it "correctly decodes and encodes all refs" .
-    traverse_ decodeEncodeRef
+    traverse_ (flip shouldBe <*> (roundTrip . RefJSON))
 
-decodeEncodeRef :: Ref -> Expectation
-decodeEncodeRef = flip shouldBe <*> roundtrip
-    where roundtrip = coerce @RefJSON . fromJust . decode . encode . RefJSON
+roundTrip :: forall a b. (Coercible a b, FromJSON a, ToJSON a) => a -> b
+roundTrip = coerce @a . fromJust . decode . encode
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
