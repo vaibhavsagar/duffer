@@ -38,11 +38,11 @@ describeDecodingEncodingAll oType =
 decodeEncodeObject :: FilePath -> Ref -> Expectation
 decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
     (expectationFailure $ toString ref ++ "not read")
-    (flip shouldBe <*> (roundTrip . GitObjectJSON))
+    ((roundTrip . GitObjectJSON) >>= shouldBe)
 
 testRefs :: [Ref] -> SpecWith ()
 testRefs = it "correctly decodes and encodes all refs" .
-    traverse_ (flip shouldBe <*> (roundTrip . RefJSON))
+    traverse_ ((roundTrip . RefJSON) >>= shouldBe)
 
 roundTrip :: forall a b. (Coercible a b, FromJSON a, ToJSON a) => a -> b
 roundTrip = coerce @a . fromJust . decode . encode
