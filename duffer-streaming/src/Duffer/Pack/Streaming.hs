@@ -8,10 +8,10 @@ import Data.ByteString                  (ByteString, append, length)
 import Codec.Compression.Zlib           (CompressionLevel)
 import Control.Arrow                    (first)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, runStateT, gets)
+import Control.Monad.Trans.Class        (lift)
 import Data.ByteString.Base16           (decode)
-import Data.IntMap.Strict               (IntMap, empty, insert)
 import Data.Maybe                       (fromJust)
-import Pipes                            (Producer, next)
+import Pipes                            (Producer, next, yield)
 import Pipes.Attoparsec                 (parse, parseL)
 import Pipes.ByteString                 (fromHandle, drawByte, peekByte)
 import Pipes.Zlib                       (decompress', defaultWindowBits)
@@ -27,28 +27,29 @@ import Duffer.Pack.Entries (PackObjectType(..), DeltaObjectType(..), WCL(..)
 
 type Prod      = Producer ByteString IO ()
 type ProdE a b = Producer ByteString IO (Either a b)
-type EntryMap  = IntMap PackEntry
 
-separatePackFile :: FilePath -> IO EntryMap
+separatePackFile :: FilePath -> Producer (Int, PackEntry) IO ()
 separatePackFile path = do
-    ((start, count), entries) <- runStateT parsePackFileStart =<<
+    ((start, count), entries) <- lift $ runStateT parsePackFileStart =<<
         fromHandle <$> openFile path ReadMode
-    fst <$> loop entries start count empty
+    loop entries start count
     where parsePackFileStart = fromRightJust <$> parseL parsePackFileHeader
 
-loop :: Prod -> Int -> Int -> EntryMap -> IO (EntryMap, Prod)
-loop producer _end   0         indexedMap = return (indexedMap, producer)
-loop producer offset remaining indexedMap = do
-    (decompressedP, (headerRef, level)) <- evalStateT getNextEntry producer
-    (output, producer')                 <- uncurry advanceToCompletion =<<
-        either ((,) "" . return) id <$> next decompressedP
-    let len         = length $ headerRef `append` compressToLevel level output
-        parser      = parsePackRegion' (WCL level <$> takeByteString)
-        entry       = parsedOnly parser $ headerRef `append` output
-        indexedMap' = insert offset entry indexedMap
-        offset'     = offset + len
-        remaining'  = remaining - 1
-    loop producer' offset' remaining' indexedMap'
+loop :: Prod -> Int -> Int -> Producer (Int, PackEntry) IO ()
+loop _remains _end   0         = return ()
+loop producer offset remaining = do
+    (headerRef, level, output, producer') <- lift $ do
+        (decompressedP, (headerRef, level)) <- evalStateT getNextEntry producer
+        (output, producer')                 <- uncurry advanceToCompletion =<<
+            either ((,) "" . return) id <$> next decompressedP
+        return (headerRef, level, output, producer')
+    let len        = length $ headerRef `append` compressToLevel level output
+        parser     = parsePackRegion' (WCL level <$> takeByteString)
+        entry      = parsedOnly parser $ headerRef `append` output
+        offset'    = offset + len
+        remaining' = remaining - 1
+    yield (offset, entry)
+    loop producer' offset' remaining'
 
 getNextEntry :: StateT Prod IO (ProdE Prod (), (ByteString, CompressionLevel))
 getNextEntry = do
