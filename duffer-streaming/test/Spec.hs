@@ -1,3 +1,4 @@
+import Control.Monad         (join)
 import Data.Foldable         (traverse_)
 import Data.IntMap           (toList)
 import Test.Hspec            (hspec, describe, it, runIO, shouldBe, SpecWith)
@@ -11,7 +12,6 @@ main = hspec . describe "streaming packfiles" $
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
 testAndWriteUnpacked indexPath = describe (show (packFile indexPath)) $
-    it "can separate a streamed packfile" $ do
-        entryList' <- toListM (separatePackFile (packFile indexPath))
-        entryList  <- toList <$> indexedEntryMap indexPath
-        entryList' `shouldBe` entryList
+    it "can separate a streamed packfile" . join $ shouldBe
+        <$> toListM (separatePackFile (packFile indexPath))
+        <*> fmap toList (indexedEntryMap indexPath)
