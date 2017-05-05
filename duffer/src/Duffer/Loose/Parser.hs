@@ -58,8 +58,9 @@ parseTree = Tree . fromList <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
 parseTreeEntry = TreeEntry <$> parsePerms <*> parseName <*> parseBinRef
-    where parsePerms = toEnum . fst . head . readOct <$> digit `manyTill'` space
-          parseName  = takeWhile1 (/='\NUL')         <*  parseNull
+    where
+        parsePerms = toEnum . fst . head . readOct <$> digit `manyTill'` space
+        parseName  = takeWhile1 (/='\NUL')         <*  parseNull
 
 parsePersonTime :: Parser PersonTime
 parsePersonTime = PersonTime
