@@ -9,7 +9,7 @@ import Data.Attoparsec.ByteString       (Parser, anyWord8, notInClass)
 import Data.Attoparsec.ByteString.Char8 (anyChar, char, char8, choice, digit
                                         ,isDigit, space, string, manyTill'
                                         ,endOfLine, takeByteString, takeTill
-                                        ,takeWhile1, many', take)
+                                        ,takeWhile1, many', take, option)
 import Data.ByteString.Base16           (encode)
 import Data.ByteString.UTF8             (fromString)
 import Data.Set                         (fromList)
@@ -78,7 +78,7 @@ parseCommit = Commit
     <*> perhaps ("gpgsig"    =: parseSignature)
     <*>         parseMessage
     where
-        perhaps  parser = choice [Just <$> parser, pure Nothing]
+        perhaps         = option Nothing . fmap Just
         field =: parser = string field *> space *> parser <* endOfLine
 
 parseTag :: Parser GitObject
