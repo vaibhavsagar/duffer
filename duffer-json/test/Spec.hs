@@ -1,24 +1,24 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-import Control.Monad              (zipWithM_)
-import Data.Aeson                 (encode, decode, ToJSON, FromJSON)
-import Data.ByteString            (hGetContents)
-import Data.ByteString.UTF8       (lines, toString)
-import Data.Coerce                (Coercible, coerce)
-import Data.Foldable              (traverse_)
-import Data.Maybe                 (fromJust)
-import System.Process             (CreateProcess(..), StdStream(..)
-                                  ,createProcess, shell)
-import Test.Hspec                 (hspec, expectationFailure, parallel, describe
-                                  ,it, shouldBe, Expectation, SpecWith)
+import Control.Monad        (zipWithM_)
+import Data.Aeson           (encode, decode, ToJSON, FromJSON)
+import Data.ByteString      (hGetContents)
+import Data.ByteString.UTF8 (lines, toString)
+import Data.Coerce          (Coercible, coerce)
+import Data.Foldable        (traverse_)
+import Data.Maybe           (fromJust)
+import System.Process       (CreateProcess(..), StdStream(..), createProcess
+                            ,shell)
+import Test.Hspec           (hspec, expectationFailure, parallel, describe, it
+                            ,shouldBe, Expectation, SpecWith)
 
-import Prelude hiding (lines, readFile)
+import Prelude hiding (lines)
 
-import Duffer.Unified        (readObject)
-import Duffer.Loose.Objects  (Ref)
-import Duffer.WithRepo       (withRepo)
-import Duffer.JSON           (GitObjectJSON(..), RefJSON(..))
+import Duffer.Unified       (readObject)
+import Duffer.Loose.Objects (Ref)
+import Duffer.WithRepo      (withRepo)
+import Duffer.JSON          (GitObjectJSON(..), RefJSON(..))
 
 main :: IO ()
 main = let objectTypes = ["blob", "tree", "commit", "tag"] in
