@@ -71,15 +71,15 @@ parsePersonTime = PersonTime
 
 parseCommit :: Parser GitObject
 parseCommit = Commit
-    <$>          "tree"      =: parseHexRef
-    <*>  many'  ("parent"    =: parseHexRef)
-    <*>          "author"    =: parsePersonTime
-    <*>          "committer" =: parsePersonTime
-    <*> perhaps ("gpgsig"    =: parseSignature)
-    <*>         parseMessage
+    <$>          "tree"      .= parseHexRef
+    <*> many'   ("parent"    .= parseHexRef)
+    <*>          "author"    .= parsePersonTime
+    <*>          "committer" .= parsePersonTime
+    <*> perhaps ("gpgsig"    .= parseSignature)
+    <*>                         parseMessage
     where
         perhaps         = option Nothing . fmap Just
-        field =: parser = string field *> space *> parser <* endOfLine
+        field .= parser = string field *> space *> parser <* endOfLine
 
 parseTag :: Parser GitObject
 parseTag = Tag
