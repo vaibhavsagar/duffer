@@ -1,4 +1,4 @@
-module Duffer.Unified where
+module Duffer.Unified (module Duffer.Unified) where
 
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.ByteString            (init, readFile)

@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Duffer.Pack where
+module Duffer.Pack (module Duffer.Pack) where
 
 import qualified Data.ByteString      as B
 import qualified Data.ByteString.UTF8 as BU

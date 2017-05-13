@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StrictData #-}
 
-module Duffer.Loose.Objects where
+module Duffer.Loose.Objects (module Duffer.Loose.Objects) where
 
 import qualified Data.ByteString        as B
 import qualified Data.ByteString.Base16 as B16 (decode)

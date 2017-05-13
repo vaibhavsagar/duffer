@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Duffer.Pack.Parser where
+module Duffer.Pack.Parser (module Duffer.Pack.Parser) where
 
 import qualified Prelude              as P
 

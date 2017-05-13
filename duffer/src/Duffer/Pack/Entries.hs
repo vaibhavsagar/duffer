@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StrictData #-}
 
-module Duffer.Pack.Entries where
+module Duffer.Pack.Entries (module Duffer.Pack.Entries) where
 
 import qualified Data.ByteString    as B
 import qualified Data.IntMap.Strict as IntMap

@@ -1,4 +1,4 @@
-module Duffer.Misc where
+module Duffer.Misc (module Duffer.Misc) where
 
 import Data.Functor.Compose (Compose(..))
 

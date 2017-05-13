@@ -1,4 +1,4 @@
-module Duffer.Plumbing where
+module Duffer.Plumbing (module Duffer.Plumbing) where
 
 import qualified Data.ByteString      as B
 import qualified Data.Set             as S

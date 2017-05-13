@@ -1,4 +1,4 @@
-module Duffer.Loose.Parser where
+module Duffer.Loose.Parser (module Duffer.Loose.Parser) where
 
 import Prelude                          hiding (take)
 

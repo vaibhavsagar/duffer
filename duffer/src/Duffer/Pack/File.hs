@@ -1,4 +1,4 @@
-module Duffer.Pack.File where
+module Duffer.Pack.File (module Duffer.Pack.File) where
 
 import qualified Data.Map.Strict    as Map
 import qualified Data.IntMap.Strict as IntMap

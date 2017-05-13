@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StrictData #-}
 
-module Duffer.WorkObject where
+module Duffer.WorkObject (module Duffer.WorkObject) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.ByteString as B

@@ -1,4 +1,4 @@
-module Duffer.Loose where
+module Duffer.Loose (module Duffer.Loose) where
 
 import qualified Data.ByteString.Lazy   as L (toStrict, fromStrict, writeFile)
 import qualified Codec.Compression.Zlib as Z (compress, decompress)
