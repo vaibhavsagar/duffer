@@ -74,9 +74,11 @@ resolveIter objectMap offsetMap = let
 separateResolved :: ObjectMap -> OffsetMap -> (ObjectMap, OffsetMap)
 separateResolved objectMap offsetMap = let
     (objects, deltas) = IntMap.partition isResolved offsetMap
-    objects'          = IntMap.map (\(Resolved o) -> o) objects
+    objects'          = IntMap.map resolved objects
     objectMap'        = IntMap.foldrWithKey insertObject objectMap objects'
     in (objectMap', deltas)
+    where resolved (Resolved o)   = o
+          resolved (UnResolved _) = error "only works with resolved"
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry
 resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of

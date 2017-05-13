@@ -122,8 +122,9 @@ instance Enum EntryPermission where
         _        -> error "invalid permission"
 
 sha1Path :: Ref -> Repo -> FilePath
-sha1Path ref = let (sa:sb:suffix) = toString ref in
+sha1Path ref | (sa:sb:suffix) <- toString ref =
     flip (foldl (</>)) [[sa, sb], suffix]
+sha1Path _  = error "invalid ref"
 
 -- Generate a stored representation of a git object.
 showObject :: GitObject -> B.ByteString
