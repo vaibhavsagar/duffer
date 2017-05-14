@@ -12,7 +12,7 @@ main = hspec . describe "streaming packfiles" $
     traverse_ testAndWriteUnpacked =<< runIO (getPackIndices "../.git/objects")
 
 testAndWriteUnpacked :: FilePath -> SpecWith ()
-testAndWriteUnpacked indexPath = describe (show (packFile indexPath)) $
+testAndWriteUnpacked indexPath = describe (show (packFile indexPath)) .
     it "can separate a streamed packfile" . join $ shouldBe
         <$> toListM (separatePackFile (packFile indexPath))
         <*> fmap toList (indexedEntryMap indexPath)
