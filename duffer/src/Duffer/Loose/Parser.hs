@@ -83,14 +83,14 @@ parseCommit = Commit
 
 parseTag :: Parser GitObject
 parseTag = Tag
-    <$> "object" =: parseHexRef
-    <*> "type"   =: parseType
-    <*> "tag"    =: takeTill (=='\n')
-    <*> "tagger" =: parsePersonTime
+    <$> "object" .= parseHexRef
+    <*> "type"   .= parseType
+    <*> "tag"    .= takeTill (=='\n')
+    <*> "tagger" .= parsePersonTime
     <*>             parseMessage
     where
         parseType       = choice $ map string ["blob", "tree", "commit", "tag"]
-        field =: parser = string field *> space *> parser <* endOfLine
+        field .= parser = string field *> space *> parser <* endOfLine
 
 parseObject :: Parser GitObject
 parseObject = choice
