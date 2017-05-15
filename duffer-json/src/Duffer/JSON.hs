@@ -4,7 +4,12 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Duffer.JSON where
+module Duffer.JSON
+    ( RefJSON(..)
+    , GitObjectJSON(..)
+    , TreeEntryJSON(..)
+    , PersonTimeJSON(..)
+    ) where
 
 import qualified Data.ByteString        as B
 import qualified Data.ByteString.Base64 as B64
