@@ -12,7 +12,8 @@ import System.FilePath            ((</>), takeDirectory)
 
 import Prelude hiding (readFile, writeFile, init)
 
-import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, Ref, sha1Path, hash, showObject)
+import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, Ref, sha1Path
+                            ,hash, showObject)
 import Duffer.Loose.Parser  (parseObject)
 import Duffer.WithRepo      (WithRepo, asks, localObjects, liftIO)
 
