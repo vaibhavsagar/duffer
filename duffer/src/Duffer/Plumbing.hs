@@ -1,7 +1,7 @@
 module Duffer.Plumbing (module Duffer.Plumbing) where
 
-import qualified Data.ByteString      as B
-import qualified Data.Set             as S
+import qualified Data.ByteString as B
+import qualified Data.Set        as S
 
 import Control.Applicative       ((<|>))
 import Control.Monad             (unless)
