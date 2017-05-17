@@ -34,11 +34,9 @@ resolvePartialRef search = runMaybeT
     <|> MaybeT (localObjects $ resolvePartialPackRef'  search)
 
 resolvePartialLooseRef' :: String -> WithRepo (Maybe Ref)
-resolvePartialLooseRef' search = do
-    let dir = take 2 search
+resolvePartialLooseRef' search = let dir = take 2 search in do
     objectDir <- asks (</> dir)
-    liftIO (doesDirectoryExist objectDir) >>= bool
-        (return Nothing)
+    liftIO (doesDirectoryExist objectDir) >>= bool (return Nothing)
         (do filtered <- filter (isPrefixOf (drop 2 search)) <$>
                 liftIO (listDirectory objectDir)
             return $ bool
