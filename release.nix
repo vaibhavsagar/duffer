@@ -1,7 +1,7 @@
 let pkgs = import <nixpkgs> { };
 
 in rec {
-  duffer           = pkgs.haskellPackages.callPackage ./duffer/default.nix           {};
-  duffer-streaming = pkgs.haskellPackages.callPackage ./duffer-streaming/default.nix { duffer = duffer; };
-  duffer-json      = pkgs.haskellPackages.callPackage ./duffer-json/default.nix      { duffer = duffer; };
+  duffer           = pkgs.haskellPackages.callPackage ./duffer           {};
+  duffer-streaming = pkgs.haskellPackages.callPackage ./duffer-streaming { inherit duffer; };
+  duffer-json      = pkgs.haskellPackages.callPackage ./duffer-json      { inherit duffer; };
 }
