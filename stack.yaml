@@ -8,6 +8,15 @@ packages:
 - './duffer'
 - './duffer-streaming'
 - './duffer-json'
+- './ihaskell-duffer'
+- location:
+    git: https://github.com/gibiansky/IHaskell.git
+    commit: f715672606ea2acacebce3df56ca7b2cd287d694
+  extra-dep: true
+  subdirs:
+    - '.'
+    - 'ghc-parser'
+    - 'ipython-kernel'
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
@@ -16,7 +25,9 @@ extra-deps:
 allow-newer: true
 
 # Override default flag values for local packages and extra-deps
-flags: {}
+flags:
+  ihaskell:
+    binpkgdb: false
 
 # Extra package databases containing global packages
 extra-package-dbs: []
