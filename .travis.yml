@@ -13,12 +13,26 @@ addons:
 before_install:
 - mkdir -p $HOME/.local/bin
 - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+- |
+    if [ ! -d "$HOME/zeromq/lib" ]; then
+        export OLDPWD=$(pwd)
+        travis_retry git clone http://www.github.com/zeromq/zeromq4-x.git libzmq
+        mkdir $HOME/zeromq
+        cd libzmq
+        travis_retry ./autogen.sh
+        travis_retry ./configure --prefix=$HOME/zeromq
+        make
+        travis_retry make install
+        cd $OLDPWD
+    fi
 
 install:
 - stack setup
 - stack install pandoc
+- export PKG_CONFIG_PATH=$HOME/zeromq/lib/pkgconfig/
 
 script:
+- export LD_LIBRARY_PATH=$HOME/zeromq/lib
 - git repack -ad
 - stack --no-terminal --skip-ghc-check test
 - git config --local --add repack.UseDeltaBaseOffset false
