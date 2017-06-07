@@ -9,11 +9,11 @@ import Data.ByteString.UTF8 (toString)
 import Data.Byteable        (Byteable(..))
 import Data.List            (intercalate)
 import Data.Set             (toAscList)
-import IHaskell.Display     (IHaskellDisplay(..))
+import IHaskell.Display     (IHaskellDisplay(..), Display(..), plain)
 import Text.Printf          (printf)
 
-import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject(..), TreeEntry(..)
-                            ,PersonTime(..))
+import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..)
+                            ,PersonTime(..), EntryPermission(..), showContent)
 
 wrap :: String -> IO Display
 wrap = return . Display . return . plain
