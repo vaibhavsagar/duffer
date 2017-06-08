@@ -3,17 +3,16 @@
 
 module IHaskell.Display.Duffer where
 
-import qualified Data.ByteString.UTF8   as UB (toString)
-import qualified ByteString.TreeBuilder as TB (toByteString)
-import Data.ByteString.UTF8 (toString)
-import Data.Byteable        (Byteable(..))
-import Data.List            (intercalate)
-import Data.Set             (toAscList)
-import IHaskell.Display     (IHaskellDisplay(..), Display(..), plain)
-import Text.Printf          (printf)
+import Data.ByteString.UTF8   (toString)
+import ByteString.TreeBuilder (toByteString)
+import Data.Byteable          (Byteable(..))
+import Data.List              (intercalate)
+import Data.Set               (toAscList)
+import IHaskell.Display       (IHaskellDisplay(..), Display(..), plain)
+import Text.Printf            (printf)
 
-import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..)
-                            ,PersonTime(..), EntryPermission(..), showContent)
+import Duffer.Loose.Objects   (GitObjectGeneric(..), GitObject, TreeEntry(..)
+                              ,PersonTime(..), EntryPermission(..), showContent)
 
 wrap :: String -> IO Display
 wrap = return . Display . return . plain
@@ -22,7 +21,7 @@ instance IHaskellDisplay GitObject where
     display (Tree entries) =
         wrap . unlines . map toDisplayString $ toAscList entries
     display other          =
-        wrap . UB.toString . TB.toByteString $ showContent other
+        wrap . toString . toByteString $ showContent other
 
 instance IHaskellDisplay PersonTime where display = wrap . toString . toBytes
 
