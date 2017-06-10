@@ -18,8 +18,8 @@ before_install:
 
 install:
 - stack setup
-- stack install pandoc
-- stack build --dependencies-only
+- stack install pandoc --verbose
+- stack build --dependencies-only --verbose
 
 script:
 - git repack -ad
