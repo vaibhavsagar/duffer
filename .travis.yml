@@ -5,6 +5,7 @@ dist: trusty
 cache:
     directories:
     - $HOME/.stack
+    - .stack-work
 
 addons:
     apt:
