@@ -27,24 +27,27 @@ to slow down.
 ## Types
 
 ```haskell
-data GitObject
-    = Blob {content :: B.ByteString}
-    | Tree {entries :: Set TreeEntry}
+data GitObjectGeneric ref container entries
+    = Blob {blobContent :: B.ByteString}
+    | Tree {treeEntries :: container entries}
     | Commit
-        { treeRef       :: Ref
-        , parentRefs    :: [Ref]
-        , authorTime    :: PersonTime
-        , committerTime :: PersonTime
-        , message       :: B.ByteString
+        { commitTreeRef    :: ref
+        , commitParentRefs :: [ref]
+        , commitAuthor     :: PersonTime
+        , commitCommitter  :: PersonTime
+        , commitSignature  :: Maybe B.ByteString
+        , commitMessage    :: B.ByteString
         }
     | Tag
-        { objectRef  :: Ref
-        , objectType :: String
-        , tagName    :: String
-        , tagger     :: PersonTime
-        , annotation :: B.ByteString
+        { tagObjectRef  :: ref
+        , tagObjectType :: B.ByteString
+        , tagName       :: B.ByteString
+        , tagTagger     :: PersonTime
+        , tagAnnotation :: B.ByteString
         }
-deriving (Eq)
+    deriving (Eq)
+
+type GitObject = GitObjectGeneric Ref Set TreeEntry
 ```
 <div class="notes">
 - A Blob   represents a file
@@ -57,11 +60,10 @@ deriving (Eq)
 
 ```haskell
 data TreeEntry = TreeEntry
-    { entryPerms :: Int
+    { entryPerms :: EntryPermission
     , entryName  :: B.ByteString
     , entryRef   :: Ref
     }
-    deriving (Eq)
 
 data PersonTime = PersonTime
     { personName :: B.ByteString
@@ -70,6 +72,14 @@ data PersonTime = PersonTime
     , personTZ   :: B.ByteString
     }
     deriving (Eq)
+
+data EntryPermission
+    = Directory
+    | Regular
+    | Executable
+    | SymbolicLink
+    | SubModule
+    deriving (Show, Eq)
 
 type Ref  = B.ByteString
 type Repo = FilePath
@@ -135,9 +145,7 @@ types in the first place: an invalid bytestring typechecks the same as a
 valid bytestring, just like all data is bytes in memory. Serialisation was
 much more straightforward.
 
-I'm actually currently dealing with a bug where two different bytestrings
-parse to the same value. I'm hoping that my deserialisation logic is the
-culprit.
+Looking forward to those bidirectional parsing libraries becoming commonplace.
 </div>
 
 ## Streaming
@@ -176,13 +184,16 @@ src
 │   │   ├── Objects.hs
 │   │   └── Parser.hs
 │   ├── Loose.hs
+│   ├── Misc.hs
 │   ├── Pack
 │   │   ├── Entries.hs
 │   │   ├── File.hs
-│   │   ├── Parser.hs
-│   │   └── Streaming.hs
+│   │   └── Parser.hs
 │   ├── Pack.hs
-│   └── Porcelain.hs
+│   ├── Plumbing.hs
+│   ├── Unified.hs
+│   ├── WithRepo.hs
+│   └── WorkObject.hs
 └── Duffer.hs
 ```
 
@@ -217,13 +228,11 @@ additional logic for dealing with some quirks of the packfile format.
 
 ## What's next?
 
-- A `git` web server?
 - A better API
 - Multiple backends
 
 <div class="notes">
-`servant` seems like the obvious choice for writing a web server, and maybe
-`lens` would help me come up with a better API for my library?
+Maybe `lens` would help me come up with a better API for my library?
 
 There's no reason the filesystem has to be the backing store of a repository.
 </div>
@@ -271,6 +280,10 @@ There's no reason the filesystem has to be the backing store of a repository.
 
 - https://github.com/vaibhavsagar/git-internals-workshop
 
+## Git Objects as a Service
+
+- https://github.com/vaibhavsagar/suppandi
+
 # Further Reading
 
 ## Better Implementations
@@ -291,13 +304,18 @@ There's no reason the filesystem has to be the backing store of a repository.
 
 ## RC
 
+<style>
+.reveal section img {
+  border: none;
+  box-shadow: none;
+}
+</style>
 <img src="http://emoji.octopus.holdings/emoji/emoji_rc.svg" width=400 height=400>
 
 https://www.recurse.com
 
 <div class="notes">
-In lieu of an employer slide I thought I'd mention that I'm in the middle of my
-batch at RC, and I love it here. If you're interested check us out :)
+In lieu of an employer slide I thought I'd mention RC. If you're interested check us out :)
 </div>
 
 # Questions?
