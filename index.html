@@ -176,11 +176,9 @@ hasLooseObject ref <span class="fu">=</span> <span class="kw">do</span>
 </aside>
 </section><section id="bit-twiddling" class="slide level2">
 <h2>Bit Twiddling</h2>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">setMSBs ::</span> [<span class="dt">Int</span>] <span class="ot">-&gt;</span> [<span class="dt">Int</span>]
-setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
-    ints&#39;  <span class="fu">=</span> reverse ints
-    ints&#39;&#39; <span class="fu">=</span> head ints&#39; <span class="fu">:</span> map (<span class="ot">`setBit`</span> <span class="dv">7</span>) ( tail ints&#39;)
-<span class="kw">in</span> reverse ints&#39;&#39;</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">setMSBs ::</span> (<span class="dt">Bits</span> t, <span class="dt">Integral</span> t) <span class="ot">=&gt;</span> [t] <span class="ot">-&gt;</span> [<span class="dt">Word8</span>]
+setMSBs [] <span class="fu">=</span> []
+setMSBs (i<span class="fu">:</span>is) <span class="fu">=</span> map fromIntegral <span class="fu">$</span> i <span class="fu">:</span> map setMSB is</code></pre></div>
 <aside class="notes">
 <p>This is where most of my bugs live. I think this comes back to why we have types in the first place: an invalid bytestring typechecks the same as a valid bytestring, just like all data is bytes in memory. Serialisation was much more straightforward.</p>
 <p>Looking forward to those bidirectional parsing libraries becoming commonplace.</p>
@@ -309,12 +307,12 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <section><section id="what-can-you-do-with-this" class="titleslide slide level1"><h1>What can you do with this</h1></section><section id="historical-revisionism" class="slide level2">
 <h2>Historical Revisionism</h2>
 <ul>
-<li>https://github.com/vaibhavsagar/git-internals-workshop</li>
+<li><a href="https://github.com/vaibhavsagar/git-internals-workshop" class="uri">https://github.com/vaibhavsagar/git-internals-workshop</a></li>
 </ul>
 </section><section id="git-objects-as-a-service" class="slide level2">
 <h2>Git Objects as a Service</h2>
 <ul>
-<li>https://github.com/vaibhavsagar/suppandi</li>
+<li><a href="https://github.com/vaibhavsagar/suppandi" class="uri">https://github.com/vaibhavsagar/suppandi</a></li>
 </ul>
 </section></section>
 <section><section id="further-reading" class="titleslide slide level1"><h1>Further Reading</h1></section><section id="better-implementations" class="slide level2">
