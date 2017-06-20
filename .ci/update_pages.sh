@@ -16,7 +16,7 @@ cd build || exit
 cp ../index.html .
 # Download a fresh copy of reveal.js
 rm -rf reveal.js
-curl -L https://github.com/hakimel/reveal.js/archive/3.3.0.tar.gz | tar xz
+curl -L https://github.com/hakimel/reveal.js/archive/3.5.0.tar.gz | tar xz
 mv reveal.js* reveal.js
 # Add, commit and push files
 git add -f .
