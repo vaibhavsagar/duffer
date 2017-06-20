@@ -132,11 +132,9 @@ hasLooseObject ref = do
 ## Bit Twiddling
 
 ```haskell
-setMSBs :: [Int] -> [Int]
-setMSBs ints = let
-    ints'  = reverse ints
-    ints'' = head ints' : map (`setBit` 7) ( tail ints')
-in reverse ints''
+setMSBs :: (Bits t, Integral t) => [t] -> [Word8]
+setMSBs [] = []
+setMSBs (i:is) = map fromIntegral $ i : map setMSB is
 ```
 
 <div class="notes">
@@ -278,11 +276,11 @@ There's no reason the filesystem has to be the backing store of a repository.
 
 ## Historical Revisionism
 
-- https://github.com/vaibhavsagar/git-internals-workshop
+- <https://github.com/vaibhavsagar/git-internals-workshop>
 
 ## Git Objects as a Service
 
-- https://github.com/vaibhavsagar/suppandi
+- <https://github.com/vaibhavsagar/suppandi>
 
 # Further Reading
 
