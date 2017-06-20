@@ -86,24 +86,27 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <section><section id="demo" class="titleslide slide level1"><h1>Demo</h1></section></section>
 <section><section id="code" class="titleslide slide level1"><h1>Code</h1></section><section id="types" class="slide level2">
 <h2>Types</h2>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">GitObject</span>
-    <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot">content ::</span> <span class="dt">B.ByteString</span>}
-    <span class="fu">|</span> <span class="dt">Tree</span> {<span class="ot">entries ::</span> <span class="dt">Set</span> <span class="dt">TreeEntry</span>}
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">GitObjectGeneric</span> ref container entries
+    <span class="fu">=</span> <span class="dt">Blob</span> {<span class="ot">blobContent ::</span> <span class="dt">B.ByteString</span>}
+    <span class="fu">|</span> <span class="dt">Tree</span> {<span class="ot">treeEntries ::</span> container entries}
     <span class="fu">|</span> <span class="dt">Commit</span>
-        {<span class="ot"> treeRef       ::</span> <span class="dt">Ref</span>
-        ,<span class="ot"> parentRefs    ::</span> [<span class="dt">Ref</span>]
-        ,<span class="ot"> authorTime    ::</span> <span class="dt">PersonTime</span>
-        ,<span class="ot"> committerTime ::</span> <span class="dt">PersonTime</span>
-        ,<span class="ot"> message       ::</span> <span class="dt">B.ByteString</span>
+        {<span class="ot"> commitTreeRef    ::</span> ref
+        ,<span class="ot"> commitParentRefs ::</span> [ref]
+        ,<span class="ot"> commitAuthor     ::</span> <span class="dt">PersonTime</span>
+        ,<span class="ot"> commitCommitter  ::</span> <span class="dt">PersonTime</span>
+        ,<span class="ot"> commitSignature  ::</span> <span class="dt">Maybe</span> <span class="dt">B.ByteString</span>
+        ,<span class="ot"> commitMessage    ::</span> <span class="dt">B.ByteString</span>
         }
     <span class="fu">|</span> <span class="dt">Tag</span>
-        {<span class="ot"> objectRef  ::</span> <span class="dt">Ref</span>
-        ,<span class="ot"> objectType ::</span> <span class="dt">String</span>
-        ,<span class="ot"> tagName    ::</span> <span class="dt">String</span>
-        ,<span class="ot"> tagger     ::</span> <span class="dt">PersonTime</span>
-        ,<span class="ot"> annotation ::</span> <span class="dt">B.ByteString</span>
+        {<span class="ot"> tagObjectRef  ::</span> ref
+        ,<span class="ot"> tagObjectType ::</span> <span class="dt">B.ByteString</span>
+        ,<span class="ot"> tagName       ::</span> <span class="dt">B.ByteString</span>
+        ,<span class="ot"> tagTagger     ::</span> <span class="dt">PersonTime</span>
+        ,<span class="ot"> tagAnnotation ::</span> <span class="dt">B.ByteString</span>
         }
-<span class="kw">deriving</span> (<span class="dt">Eq</span>)</code></pre></div>
+    <span class="kw">deriving</span> (<span class="dt">Eq</span>)
+
+<span class="kw">type</span> <span class="dt">GitObject</span> <span class="fu">=</span> <span class="dt">GitObjectGeneric</span> <span class="dt">Ref</span> <span class="dt">Set</span> <span class="dt">TreeEntry</span></code></pre></div>
 <aside class="notes">
 <ul>
 <li>A Blob represents a file</li>
@@ -115,11 +118,10 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </section><section id="types-1" class="slide level2">
 <h2>Types</h2>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">TreeEntry</span> <span class="fu">=</span> <span class="dt">TreeEntry</span>
-    {<span class="ot"> entryPerms ::</span> <span class="dt">Int</span>
+    {<span class="ot"> entryPerms ::</span> <span class="dt">EntryPermission</span>
     ,<span class="ot"> entryName  ::</span> <span class="dt">B.ByteString</span>
     ,<span class="ot"> entryRef   ::</span> <span class="dt">Ref</span>
     }
-    <span class="kw">deriving</span> (<span class="dt">Eq</span>)
 
 <span class="kw">data</span> <span class="dt">PersonTime</span> <span class="fu">=</span> <span class="dt">PersonTime</span>
     {<span class="ot"> personName ::</span> <span class="dt">B.ByteString</span>
@@ -128,6 +130,14 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     ,<span class="ot"> personTZ   ::</span> <span class="dt">B.ByteString</span>
     }
     <span class="kw">deriving</span> (<span class="dt">Eq</span>)
+
+<span class="kw">data</span> <span class="dt">EntryPermission</span>
+    <span class="fu">=</span> <span class="dt">Directory</span>
+    <span class="fu">|</span> <span class="dt">Regular</span>
+    <span class="fu">|</span> <span class="dt">Executable</span>
+    <span class="fu">|</span> <span class="dt">SymbolicLink</span>
+    <span class="fu">|</span> <span class="dt">SubModule</span>
+    <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)
 
 <span class="kw">type</span> <span class="dt">Ref</span>  <span class="fu">=</span> <span class="dt">B.ByteString</span>
 <span class="kw">type</span> <span class="dt">Repo</span> <span class="fu">=</span> FilePath</code></pre></div>
@@ -173,7 +183,7 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <span class="kw">in</span> reverse ints&#39;&#39;</code></pre></div>
 <aside class="notes">
 <p>This is where most of my bugs live. I think this comes back to why we have types in the first place: an invalid bytestring typechecks the same as a valid bytestring, just like all data is bytes in memory. Serialisation was much more straightforward.</p>
-<p>I'm actually currently dealing with a bug where two different bytestrings parse to the same value. I'm hoping that my deserialisation logic is the culprit.</p>
+<p>Looking forward to those bidirectional parsing libraries becoming commonplace.</p>
 </aside>
 </section><section id="streaming" class="slide level2">
 <h2>Streaming</h2>
@@ -204,13 +214,16 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 │   │   ├── Objects.hs
 │   │   └── Parser.hs
 │   ├── Loose.hs
+│   ├── Misc.hs
 │   ├── Pack
 │   │   ├── Entries.hs
 │   │   ├── File.hs
-│   │   ├── Parser.hs
-│   │   └── Streaming.hs
+│   │   └── Parser.hs
 │   ├── Pack.hs
-│   └── Porcelain.hs
+│   ├── Plumbing.hs
+│   ├── Unified.hs
+│   ├── WithRepo.hs
+│   └── WorkObject.hs
 └── Duffer.hs</code></pre>
 <aside class="notes">
 <p><code>git</code> has a packfile representation that is used for compression and network transfer. I have parsers for the loose and packed representations and additional logic for dealing with some quirks of the packfile format.</p>
@@ -243,12 +256,11 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <section><section id="more" class="titleslide slide level1"><h1>More</h1></section><section id="whats-next" class="slide level2">
 <h2>What's next?</h2>
 <ul>
-<li>A <code>git</code> web server?</li>
 <li>A better API</li>
 <li>Multiple backends</li>
 </ul>
 <aside class="notes">
-<p><code>servant</code> seems like the obvious choice for writing a web server, and maybe <code>lens</code> would help me come up with a better API for my library?</p>
+<p>Maybe <code>lens</code> would help me come up with a better API for my library?</p>
 <p>There's no reason the filesystem has to be the backing store of a repository.</p>
 </aside>
 </section><section id="ideas" class="slide level2">
@@ -299,6 +311,11 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 <ul>
 <li>https://github.com/vaibhavsagar/git-internals-workshop</li>
 </ul>
+</section><section id="git-objects-as-a-service" class="slide level2">
+<h2>Git Objects as a Service</h2>
+<ul>
+<li>https://github.com/vaibhavsagar/suppandi</li>
+</ul>
 </section></section>
 <section><section id="further-reading" class="titleslide slide level1"><h1>Further Reading</h1></section><section id="better-implementations" class="slide level2">
 <h2>Better Implementations</h2>
@@ -320,10 +337,16 @@ setMSBs ints <span class="fu">=</span> <span class="kw">let</span>
 </ul>
 </section><section id="rc" class="slide level2">
 <h2>RC</h2>
+<style>
+.reveal section img {
+  border: none;
+  box-shadow: none;
+}
+</style>
 <p><img src="http://emoji.octopus.holdings/emoji/emoji_rc.svg" width=400 height=400></p>
 <p>https://www.recurse.com</p>
 <aside class="notes">
-<p>In lieu of an employer slide I thought I'd mention that I'm in the middle of my batch at RC, and I love it here. If you're interested check us out :)</p>
+<p>In lieu of an employer slide I thought I'd mention RC. If you're interested check us out :)</p>
 </aside>
 </section></section>
 <section><section id="questions" class="titleslide slide level1"><h1>Questions?</h1></section></section>
