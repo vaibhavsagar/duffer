@@ -28,12 +28,12 @@ import Duffer.Loose.Objects (GitObject, Ref, hashSHA1)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
 import Duffer.Misc          ((.:), compose, ifLeft)
+import Duffer.Pack.Bits     (fifthOffsets, fixOffsets, fromBytes)
 import Duffer.Pack.Entries  (PackObjectType(..), WCL(..) ,PackDelta(..)
                             ,PackEntry(..), PackedObject(..), PackIndexEntry(..)
-                            ,DeltaInstruction(..), Delta(..), fixOffsets
-                            ,fifthOffsets, fromBytes,packObjectType
-                            ,getCompressionLevel, FullObjectType(..)
-                            ,DeltaObjectType(..))
+                            ,DeltaInstruction(..), Delta(..), packObjectType
+                            , getCompressionLevel, FullObjectType(..)
+                            , DeltaObjectType(..))
 
 parsedOnly :: Parser a -> ByteString -> a
 parsedOnly = ifLeft error .: parseOnly

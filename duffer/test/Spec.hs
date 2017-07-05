@@ -24,9 +24,10 @@ import Duffer.Loose.Objects  (Ref, hash)
 import Duffer.Pack           (getPackIndices, indexedEntryMap, combinedEntryMap
                              ,resolveAll)
 import Duffer.Pack.File      (resolveAll')
+import Duffer.Pack.Bits      (encodeOffset)
 import Duffer.Pack.Parser    (parseOffset, parseTypeLen, parsedIndex
                              ,parsedPackRegion)
-import Duffer.Pack.Entries   (PackObjectType(..), encodeOffset, encodeTypeLen
+import Duffer.Pack.Entries   (PackObjectType(..), encodeTypeLen
                              ,PackIndexEntry(..), packIndexEntries, toAssoc
                              ,FullObjectType(..), DeltaObjectType(..))
 import Duffer.WithRepo       (withRepo)

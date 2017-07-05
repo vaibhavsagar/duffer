@@ -19,10 +19,11 @@ import Prelude hiding                   (length, concat)
 import System.IO                        (openFile, IOMode(ReadMode))
 
 import Duffer.Loose.Parser (parseBinRef)
+import Duffer.Pack.Bits    (encodeOffset)
 import Duffer.Pack.Parser  (parseOffset, parsePackFileHeader, parseTypeLen
                            ,parsePackRegion', parsedOnly)
 import Duffer.Pack.Entries (PackObjectType(..), DeltaObjectType(..), WCL(..)
-                           ,PackEntry(..), compressToLevel, encodeOffset
+                           ,PackEntry(..), compressToLevel
                            ,getCompressionLevel, encodeTypeLen)
 
 type Prod      = Producer ByteString IO ()
