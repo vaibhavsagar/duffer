@@ -15,7 +15,8 @@ import Test.Hspec                 (hspec, expectationFailure, parallel, describe
                                   ,it, runIO, shouldBe, shouldMatchList
                                   ,Expectation, SpecWith)
 import Test.Hspec.QuickCheck      (prop)
-import Test.QuickCheck            (Arbitrary(..), oneof, (==>))
+import Test.QuickCheck            (Arbitrary(..), oneof)
+import Test.QuickCheck.Modifiers  (NonNegative(..))
 
 import Prelude hiding (lines, readFile)
 
@@ -62,11 +63,11 @@ instance Arbitrary TestPackObjectType where
 
 testEncodingAndParsing :: SpecWith ()
 testEncodingAndParsing = describe "integer encodings" $ do
-    prop "offsets" $ \offset -> offset >= 0 ==> let
+    prop "offsets" $ \(NonNegative offset) -> let
         encoded = encodeOffset offset
         decoded = either error id $ parseOnly parseOffset encoded
         in decoded == (offset :: Int)
-    prop "object types and lengths" $ \len objType -> len >= 0 ==> let
+    prop "object types and lengths" $ \(NonNegative len) objType -> let
         encoded = encodeTypeLen (innerPackObject objType) len
         decoded = either error id $ parseOnly parseTypeLen encoded
         in decoded == (innerPackObject objType, len :: Int)
