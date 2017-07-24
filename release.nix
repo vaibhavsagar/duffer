@@ -6,7 +6,7 @@ let
 
 in rec {
   duffer           = dontCheck (cabal2nix "duffer"           ./duffer           {});
-  duffer-streaming = dontCheck (cabal2nix "duffer-streaming" ./duffer-streaming { inherit duffer; pipes-zlib = pipes-zlib; });
+  duffer-streaming = dontCheck (cabal2nix "duffer-streaming" ./duffer-streaming { inherit duffer pipes-zlib; });
   duffer-json      = dontCheck (cabal2nix "duffer-json"      ./duffer-json      { inherit duffer; });
   ihaskell-duffer  = dontCheck (cabal2nix "ihaskell-duffer"  ./ihaskell-duffer  { inherit duffer; });
 }
