@@ -13,7 +13,7 @@ project.
 # What this library does
 
 - Reads and writes loose blobs, trees, commits, and tags.
-- Reads full indexed packfiles.
+- Reads full packfiles.
 - Reads and writes git refs.
 
 # Some things this library does not do (yet)
@@ -22,7 +22,7 @@ project.
 - Support arbitrary backends besides file storage.
 - Read .git/index
 - Diffs (you can get surprisingly far without them!)
-- Provide Functor, Applicative, or Monad instances for a repository.
+- Provide Functor, Applicative, or Monad instances for a repository, whatever that means.
 
 # Goals
 
