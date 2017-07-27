@@ -1,7 +1,7 @@
 # For more information, see: http://docs.haskellstack.org/en/stable/yaml_configuration.html
 
 # Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-8.23
+resolver: lts-9.0
 
 # Local packages, usually specified by relative directory name
 packages:
@@ -11,7 +11,7 @@ packages:
 - './ihaskell-duffer'
 - location:
     git: https://github.com/gibiansky/IHaskell.git
-    commit: f715672606ea2acacebce3df56ca7b2cd287d694
+    commit: 8df923f9e556ec93103978b1f12d7124019d8767
   extra-dep: true
   subdirs:
     - '.'
@@ -52,4 +52,4 @@ extra-package-dbs: []
 
 nix:
   enable: false
-  packages: [zlib, gcc, git]
+  packages: [zlib, gcc, git, ncurses, pkgconfig, zeromq]
