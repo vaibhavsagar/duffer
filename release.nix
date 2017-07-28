@@ -1,12 +1,12 @@
 let
   pkgs       = import <nixpkgs> { };
   pipes-zlib = pkgs.haskell.lib.doJailbreak pkgs.haskellPackages.pipes-zlib;
-  cabal2nix  = pkgs.haskellPackages.callCabal2nix;
-  dontCheck  = pkgs.haskell.lib.dontCheck;
+  produce    = path: args: pkgs.haskell.lib.dontCheck
+      (pkgs.haskellPackages.callCabal2nix (builtins.baseNameOf path) path args);
 
 in rec {
-  duffer           = dontCheck (cabal2nix "duffer"           ./duffer           {});
-  duffer-streaming = dontCheck (cabal2nix "duffer-streaming" ./duffer-streaming { inherit duffer pipes-zlib; });
-  duffer-json      = dontCheck (cabal2nix "duffer-json"      ./duffer-json      { inherit duffer; });
-  ihaskell-duffer  = dontCheck (cabal2nix "ihaskell-duffer"  ./ihaskell-duffer  { inherit duffer; });
+  duffer           = produce ./duffer           {};
+  duffer-streaming = produce ./duffer-streaming { inherit duffer pipes-zlib; };
+  duffer-json      = produce ./duffer-json      { inherit duffer; };
+  ihaskell-duffer  = produce ./ihaskell-duffer  { inherit duffer; };
 }
