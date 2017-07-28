@@ -6,7 +6,7 @@ let
 
 in rec {
   duffer           = produce ./duffer           {};
-  duffer-streaming = produce ./duffer-streaming { inherit duffer pipes-zlib; };
   duffer-json      = produce ./duffer-json      { inherit duffer; };
+  duffer-streaming = produce ./duffer-streaming { inherit duffer pipes-zlib; };
   ihaskell-duffer  = produce ./ihaskell-duffer  { inherit duffer; };
 }
