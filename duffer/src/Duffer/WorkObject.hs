@@ -15,6 +15,7 @@ import Duffer.Loose.Objects      (GitObjectGeneric(..), GitObject, Ref
                                  ,EntryPermission, EntryPermission
                                  ,TreeEntry(..), hash)
 import Duffer                    (readObject, writeObject)
+import Duffer.Misc               ((.:))
 import Duffer.WithRepo
 
 type WorkObject = GitObjectGeneric Ref (Map.Map B.ByteString) WorkTreeEntry
@@ -63,9 +64,8 @@ hashWorkObject :: WorkObject -> Ref
 hashWorkObject = hash . toGitObject
 
 toGitObject :: WorkObject -> GitObject
-toGitObject = runIdentity . convert pure (Identity . hashEntries)
-    where hashEntries = Map.foldrWithKey
-            (\k e -> S.insert $ makeTreeEntry k e) S.empty
+toGitObject = runIdentity . convert pure
+    (Identity . Map.foldrWithKey (S.insert .: makeTreeEntry) S.empty)
 
 makeTreeEntry :: B.ByteString -> WorkTreeEntry -> TreeEntry
 makeTreeEntry entryName (WorkTreeEntry wo entryPerms) = let
