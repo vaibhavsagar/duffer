@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE StrictData #-}
 
 module Duffer.WorkObject (module Duffer.WorkObject) where
@@ -52,11 +53,10 @@ workObject ref = runMaybeT $ MaybeT (readObject ref) >>=
     convert pure (MaybeT . workTreeEntries)
 
 workTreeEntries :: S.Set TreeEntry -> WithRepo (Maybe WorkTreeEntryMap)
-workTreeEntries entries = do
-    let entriesL    = S.toList entries
-        filenames   = map entryName  entriesL
-        permissions = map entryPerms entriesL
-    children <- getCompose $ traverse (Compose . workObject . entryRef) entriesL
+workTreeEntries (S.toList -> entries) = do
+    let filenames   = map entryName  entries
+        permissions = map entryPerms entries
+    children <- getCompose $ traverse (Compose . workObject . entryRef) entries
     let wtEntries   = zipWith WorkTreeEntry <$> children <*> pure permissions
     return $ Map.fromList . zip filenames <$> wtEntries
 
@@ -68,9 +68,8 @@ toGitObject = runIdentity . convert pure
     (Identity . Map.foldrWithKey (S.insert .: makeTreeEntry) S.empty)
 
 makeTreeEntry :: B.ByteString -> WorkTreeEntry -> TreeEntry
-makeTreeEntry entryName (WorkTreeEntry wo entryPerms) = let
-    entryRef = hashWorkObject wo
-    in TreeEntry{..}
+makeTreeEntry entryName (WorkTreeEntry (hashWorkObject -> entryRef) entryPerms)
+    = TreeEntry{..}
 
 writeWorkObject :: WorkObject -> WithRepo Ref
 writeWorkObject wObject = writeObject =<< convert pure writeTreeEntries wObject
