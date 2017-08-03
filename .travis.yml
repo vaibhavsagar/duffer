@@ -27,7 +27,7 @@ script:
 - stack --no-terminal --skip-ghc-check test
 - git config --local --add repack.UseDeltaBaseOffset false
 - git repack -ad
-- stack --no-terminal --skip-ghc-check test
+- stack --no-terminal --skip-ghc-check test duffer
 
 after_success:
 - bash .ci/update_pages.sh
