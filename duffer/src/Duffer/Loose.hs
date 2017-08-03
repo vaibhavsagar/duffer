@@ -13,17 +13,19 @@ import System.FilePath            ((</>), takeDirectory)
 import Prelude hiding (readFile, writeFile, init)
 
 import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, Ref, sha1Path
-                            ,hash, showObject)
+                            ,hash, showObject, Commit(..))
 import Duffer.Loose.Parser  (parseObject)
 import Duffer.WithRepo      (WithRepo, asks, localObjects, liftIO)
 
 (~~) :: GitObject -> Int -> WithRepo (Maybe GitObject)
-(~~) object 0 = return (Just object)
-(~~) object n = readLooseObject (head $ commitParentRefs object)
+(~~) (GitCommit object) 0 = return (Just $ GitCommit object)
+(~~) (GitCommit object) n = readLooseObject (head $ commitParentRefs object)
     >>= maybe (return Nothing) (~~ (n-1))
+(~~) _                  _ = error "only works with commits"
 
 (^^) :: GitObject -> Int -> WithRepo (Maybe GitObject)
-(^^) object n = readLooseObject $ commitParentRefs object !! (n-1)
+(^^) (GitCommit object) n = readLooseObject $ commitParentRefs object !! (n-1)
+(^^) _                  _ = error "only works with commits"
 
 decompress :: ByteString -> ByteString
 decompress = L.toStrict . Z.decompress . L.fromStrict

@@ -25,24 +25,33 @@ import System.FilePath         ((</>))
 import Text.Printf             (printf)
 
 data GitObjectGeneric ref container entries
-    = Blob {blobContent :: B.ByteString}
-    | Tree {treeEntries :: container entries}
-    | Commit
-        { commitTreeRef    :: ref
-        , commitParentRefs :: [ref]
-        , commitAuthor     :: PersonTime
-        , commitCommitter  :: PersonTime
-        , commitSignature  :: Maybe B.ByteString
-        , commitMessage    :: B.ByteString
-        }
-    | Tag
-        { tagObjectRef  :: ref
-        , tagObjectType :: B.ByteString
-        , tagName       :: B.ByteString
-        , tagTagger     :: PersonTime
-        , tagAnnotation :: B.ByteString
-        }
+    = GitBlob    Blob
+    | GitTree   (Tree container entries)
+    | GitCommit (Commit ref)
+    | GitTag    (Tag ref)
     deriving (Eq)
+
+newtype Blob = Blob {blobContent :: B.ByteString} deriving (Eq)
+
+newtype Tree container entries =
+    Tree {treeEntries :: container entries} deriving (Eq)
+
+data Commit ref = Commit
+    { commitTreeRef    :: ref
+    , commitParentRefs :: [ref]
+    , commitAuthor     :: PersonTime
+    , commitCommitter  :: PersonTime
+    , commitSignature  :: Maybe B.ByteString
+    , commitMessage    :: B.ByteString
+    } deriving (Eq)
+
+data Tag ref = Tag
+    { tagObjectRef  :: ref
+    , tagObjectType :: B.ByteString
+    , tagName       :: B.ByteString
+    , tagTagger     :: PersonTime
+    , tagAnnotation :: B.ByteString
+    } deriving (Eq)
 
 type GitObject = GitObjectGeneric Ref Set TreeEntry
 
@@ -73,8 +82,9 @@ type Ref  = B.ByteString
 type Repo = FilePath
 
 instance Show GitObject where
-    show (Tree entries) = unlines . map show $ toAscList entries
-    show other          = UB.toString . TB.toByteString $ showContent other
+    show (GitTree (Tree entries)) = unlines . map show $ toAscList entries
+    show other                    =
+        UB.toString . TB.toByteString $ showContent other
 
 instance Byteable PersonTime where
     toBytes (PersonTime name mail time zone) =
@@ -135,16 +145,17 @@ showObject gitObject = header `B.append` content
 
 objectType :: IsString a => GitObjectGeneric r c e -> a
 objectType someObject = case someObject of
-    Blob{}   -> "blob"
-    Tree{}   -> "tree"
-    Commit{} -> "commit"
-    Tag{}    -> "tag"
+    GitBlob{}   -> "blob"
+    GitTree{}   -> "tree"
+    GitCommit{} -> "commit"
+    GitTag{}    -> "tag"
 
 showContent :: GitObject -> TB.Builder
 showContent gitObject = case gitObject of
-    Blob content -> TB.byteString content
-    Tree entries -> mconcat . map (TB.byteString . toBytes) $ toAscList entries
-    Commit {..}  -> mconcat
+    GitBlob (Blob content) -> TB.byteString content
+    GitTree (Tree entries) ->
+        mconcat . map (TB.byteString . toBytes) $ toAscList entries
+    GitCommit Commit{..}   -> mconcat
         [                "tree"      ?                commitTreeRef
         , mconcat $ map ("parent"    ?)               commitParentRefs
         ,                "author"    ?  toBytes       commitAuthor
@@ -152,7 +163,7 @@ showContent gitObject = case gitObject of
         , maybe mempty  ("gpgsig"    ?)               commitSignature
         ,                "\n"        ,  TB.byteString commitMessage
         ]
-    Tag {..} -> mconcat
+    GitTag Tag{..} -> mconcat
         [ "object" ?               tagObjectRef
         , "type"   ?               tagObjectType
         , "tag"    ?               tagName

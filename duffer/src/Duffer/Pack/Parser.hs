@@ -24,7 +24,7 @@ import Data.Map.Strict                  (Map, singleton, union, empty)
 
 import Prelude hiding (take, drop, head, length, concat, splitAt)
 
-import Duffer.Loose.Objects (GitObject, Ref, hashSHA1)
+import Duffer.Loose.Objects (GitObject, GitObjectGeneric(..), Ref, hashSHA1)
 import Duffer.Loose.Parser  (parseBinRef, parseBlob, parseTree, parseCommit
                             ,parseTag, parseRestOfLine, parseHexRef)
 import Duffer.Misc          ((.:), compose, ifLeft)
@@ -145,10 +145,10 @@ parseDelta = Delta <$> len <*> len <*> many1 parseDeltaInstruction
 
 parseObjectContent :: FullObjectType -> Parser GitObject
 parseObjectContent = \case
-    CommitType -> parseCommit
-    TreeType   -> parseTree
-    BlobType   -> parseBlob
-    TagType    -> parseTag
+    CommitType -> GitCommit <$> parseCommit
+    TreeType   -> GitTree   <$> parseTree
+    BlobType   -> GitBlob   <$> parseBlob
+    TagType    -> GitTag    <$> parseTag
 
 parseWCL :: Parser (WCL ByteString)
 parseWCL = takeLazyByteString >>= \compressed -> return $ WCL

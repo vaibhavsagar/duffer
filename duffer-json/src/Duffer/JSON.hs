@@ -24,7 +24,9 @@ import Data.Monoid             ((<>), mconcat)
 import Numeric                 (readOct)
 import Text.Printf             (printf)
 
-import Duffer.Loose.Objects (Ref, GitObjectGeneric(..), GitObject, TreeEntry(..), PersonTime(..), objectType)
+import Duffer.Loose.Objects (Ref, GitObjectGeneric(..), GitObject, TreeEntry(..)
+                            ,PersonTime(..), Commit(..), Tree(..), Blob(..)
+                            ,Tag(..), objectType)
 
 newtype RefJSON        = RefJSON        Ref
 newtype GitObjectJSON  = GitObjectJSON  GitObject
@@ -51,11 +53,11 @@ encodeBS  = E.encodeUtf8
 
 gitObjectPairs :: KeyValue t => GitObject -> [t]
 gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
-    Blob {..} ->
+    GitBlob Blob{..} ->
         [ "content"    .= b64encode blobContent ]
-    Tree {..} ->
+    GitTree Tree{..} ->
         [ "entries"    .= S.map TreeEntryJSON treeEntries ]
-    Commit {..} ->
+    GitCommit Commit{..} ->
         [ "tree"       .=     decodeRef  commitTreeRef
         , "parents"    .= map decodeRef  commitParentRefs
         , "author"     .= PersonTimeJSON commitAuthor
@@ -63,7 +65,7 @@ gitObjectPairs obj = ["object_type" .= String (objectType obj)] <> case obj of
         , "gpgsig"     .= may decodeBS   commitSignature
         , "message"    .=     decodeBS   commitMessage
         ]
-    Tag {..} ->
+    GitTag Tag{..} ->
         [ "object"     .= decodeRef      tagObjectRef
         , "type"       .= decodeBS       tagObjectType
         , "name"       .= decodeBS       tagName
@@ -109,16 +111,16 @@ instance ToJSON PersonTimeJSON where
 instance FromJSON GitObjectJSON where
     parseJSON = withObject "GitObject" $ \v -> v .: "object_type" >>= \t ->
         coerce <$> case (t :: String) of
-            "blob"   -> Blob <$> (b64decode      <$> v .: "content")
-            "tree"   -> Tree <$> (S.map encodeTE <$> v .: "entries")
-            "commit" -> Commit
+            "blob"   -> GitBlob . Blob <$> (b64decode      <$> v .: "content")
+            "tree"   -> GitTree . Tree <$> (S.map encodeTE <$> v .: "entries")
+            "commit" -> fmap GitCommit $ Commit
                 <$> (     encodeRef <$> v .:  "tree")
                 <*> (map  encodeRef <$> v .:  "parents")
                 <*> (     encodePT  <$> v .:  "author")
                 <*> (     encodePT  <$> v .:  "committer")
                 <*> (fmap encodeBS  <$> v .:? "gpgsig")
                 <*> (     encodeBS  <$> v .:  "message")
-            "tag"    -> Tag
+            "tag"    -> fmap GitTag $ Tag
                 <$> (encodeRef <$> v .: "object")
                 <*> (encodeBS  <$> v .: "type")
                 <*> (encodeBS  <$> v .: "name")
