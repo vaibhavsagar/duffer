@@ -12,13 +12,14 @@ import IHaskell.Display       (IHaskellDisplay(..), Display(..), plain)
 import Text.Printf            (printf)
 
 import Duffer.Loose.Objects   (GitObjectGeneric(..), GitObject, TreeEntry(..)
-                              ,PersonTime(..), EntryPermission(..), showContent)
+                              ,PersonTime(..), EntryPermission(..), Tree(..)
+                              ,showContent)
 
 wrap :: String -> IO Display
 wrap = return . Display . return . plain
 
 instance IHaskellDisplay GitObject where
-    display (Tree entries) =
+    display (GitTree (Tree entries)) =
         wrap . unlines . map toDisplayString $ toAscList entries
     display other          =
         wrap . toString . toByteString $ showContent other

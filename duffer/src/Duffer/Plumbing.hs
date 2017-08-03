@@ -15,7 +15,7 @@ import Data.ByteString.UTF8      (fromString)
 import Data.List                 (isPrefixOf)
 
 import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..)
-                            ,EntryPermission(..), Ref)
+                            ,EntryPermission(..), Ref, Blob(..), Tree(..))
 import Duffer.Pack          (getPackObjectRefs)
 import Duffer.Unified       (readRef, readObject, writeObject)
 import Duffer.WithRepo      (WithRepo, liftIO, ask, asks, localObjects)
@@ -70,16 +70,17 @@ initRepo = ask >>= \path -> do
             ]
 
 writeTree :: FilePath -> WithRepo Ref
-writeTree path = writeObject . Tree . S.fromList =<< traverse (\entry -> do
-    fileExists <- liftIO . doesFileExist      $ path </> entry
-    dirExists  <- liftIO . doesDirectoryExist $ path </> entry
-    case (dirExists, fileExists) of
-        (True, _) -> do
-            tRef <- writeTree $ path </> entry
-            return $ TreeEntry Directory (fromString entry) tRef
-        (_, True) -> do
-            bContent <- liftIO . B.readFile $ path </> entry
-            bRef     <- writeObject $ Blob bContent
-            return $ TreeEntry Regular (fromString entry) bRef
-        (False, False) -> error "what even"
+writeTree path = writeObject . GitTree . Tree . S.fromList =<< traverse
+    (\entry -> do
+        fileExists <- liftIO . doesFileExist      $ path </> entry
+        dirExists  <- liftIO . doesDirectoryExist $ path </> entry
+        case (dirExists, fileExists) of
+            (True, _) -> do
+                tRef <- writeTree $ path </> entry
+                return $ TreeEntry Directory (fromString entry) tRef
+            (_, True) -> do
+                bContent <- liftIO . B.readFile $ path </> entry
+                bRef     <- writeObject . GitBlob $ Blob bContent
+                return $ TreeEntry Regular (fromString entry) bRef
+            (False, False) -> error "what even"
     ) =<< liftIO (listDirectory path)

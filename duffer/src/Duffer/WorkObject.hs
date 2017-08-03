@@ -15,7 +15,8 @@ import Data.Functor.Compose      (Compose(..))
 import Data.Functor.Identity     (Identity(..))
 import Duffer.Loose.Objects      (GitObjectGeneric(..), GitObject, Ref
                                  ,EntryPermission, EntryPermission
-                                 ,TreeEntry(..), hash)
+                                 ,TreeEntry(..), Commit(..), Tree(..), Blob(..)
+                                 ,Tag(..), hash)
 import Duffer                    (readObject, writeObject)
 import Duffer.Misc               ((.:))
 import Duffer.WithRepo
@@ -33,16 +34,16 @@ convert
     -> GitObjectGeneric a b c
     -> f (GitObjectGeneric g h i)
 convert ref tree = \case
-    Blob{..}   -> pure Blob{..}
-    Tree{..}   -> Tree <$> tree treeEntries
-    Commit{..} -> Commit
+    GitBlob Blob{..}   -> pure $ GitBlob Blob{..}
+    GitTree Tree{..}   -> GitTree . Tree <$> tree treeEntries
+    GitCommit Commit{..} -> fmap GitCommit $ Commit
         <$> ref  commitTreeRef
         <*> traverse ref commitParentRefs
         <*> pure commitAuthor
         <*> pure commitCommitter
         <*> pure commitSignature
         <*> pure commitMessage
-    Tag{..}    -> Tag
+    GitTag Tag{..}    -> fmap GitTag $ Tag
         <$> ref  tagObjectRef
         <*> pure tagObjectType
         <*> pure tagName

@@ -12,11 +12,12 @@ import Data.Attoparsec.ByteString.Char8 (anyChar, char, char8, choice, digit
                                         ,takeWhile1, many', take, option)
 import Data.ByteString.Base16           (encode)
 import Data.ByteString.UTF8             (fromString)
-import Data.Set                         (fromList)
+import Data.Set                         (Set, fromList)
 import Numeric                          (readOct)
 
 import Duffer.Loose.Objects (GitObjectGeneric(..), GitObject, TreeEntry(..)
-                            ,PersonTime(..), Ref)
+                            ,PersonTime(..), Ref, Blob(..), Tree(..)
+                            ,Commit(..), Tag(..))
 
 parseNull :: Parser Char
 parseNull = char '\NUL'
@@ -50,10 +51,10 @@ parseHexRef, parseBinRef :: Parser Ref
 parseHexRef = validateRef =<< take 40
 parseBinRef = validateRef =<< encode <$> take 20
 
-parseBlob :: Parser GitObject
+parseBlob :: Parser Blob
 parseBlob = Blob <$> takeByteString
 
-parseTree :: Parser GitObject
+parseTree :: Parser (Tree Set TreeEntry)
 parseTree = Tree . fromList <$> many' parseTreeEntry
 
 parseTreeEntry :: Parser TreeEntry
@@ -69,7 +70,7 @@ parsePersonTime = PersonTime
     <*> (fromString <$> digit    `manyTill'` space)
     <*> parseTimeZone
 
-parseCommit :: Parser GitObject
+parseCommit :: Parser (Commit Ref)
 parseCommit = Commit
     <$>          "tree"      .= parseHexRef
     <*> many'   ("parent"    .= parseHexRef)
@@ -81,7 +82,7 @@ parseCommit = Commit
         perhaps         = option Nothing . fmap Just
         field .= parser = string field *> space *> parser <* endOfLine
 
-parseTag :: Parser GitObject
+parseTag :: Parser (Tag Ref)
 parseTag = Tag
     <$> "object" .= parseHexRef
     <*> "type"   .= parseType
@@ -94,10 +95,10 @@ parseTag = Tag
 
 parseObject :: Parser GitObject
 parseObject = choice
-    [ "blob"   .*> parseBlob
-    , "tree"   .*> parseTree
-    , "commit" .*> parseCommit
-    , "tag"    .*> parseTag
+    [ "blob"   .*> (GitBlob   <$> parseBlob)
+    , "tree"   .*> (GitTree   <$> parseTree)
+    , "commit" .*> (GitCommit <$> parseCommit)
+    , "tag"    .*> (GitTag    <$> parseTag)
     ] where (.*>) oType = (parseHeader oType *>)
 
 parseSymRef :: Parser String
