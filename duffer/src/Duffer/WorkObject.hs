@@ -9,6 +9,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.ByteString as B
 import qualified Data.Set        as S
 
+import Control.Arrow             ((&&&))
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Functor.Compose      (Compose(..))
 import Data.Functor.Identity     (Identity(..))
@@ -54,11 +55,10 @@ workObject ref = runMaybeT $ MaybeT (readObject ref) >>=
 
 workTreeEntries :: S.Set TreeEntry -> WithRepo (Maybe WorkTreeEntryMap)
 workTreeEntries (S.toList -> entries) = do
-    let filenames   = map entryName  entries
-        permissions = map entryPerms entries
     children <- getCompose $ traverse (Compose . workObject . entryRef) entries
-    let wtEntries   = zipWith WorkTreeEntry <$> children <*> pure permissions
-    return $ Map.fromList . zip filenames <$> wtEntries
+    let (names, perms) = unzip $ map (entryName &&& entryPerms) entries
+        wtEntries      = zipWith WorkTreeEntry <$> children <*> pure perms
+    return $ Map.fromList . zip names <$> wtEntries
 
 hashWorkObject :: WorkObject -> Ref
 hashWorkObject = hash . toGitObject
