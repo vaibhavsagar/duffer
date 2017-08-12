@@ -41,15 +41,15 @@ parseSignature = do
 parseTimeZone :: Parser ByteString
 parseTimeZone = cons <$> (char8 '+' <|> char8 '-') <*> takeWhile1 isDigit
 
-validateRef :: Monad m => ByteString -> m Ref
-validateRef possibleRef = maybe
+validateSha1 :: Monad m => ByteString -> m Ref
+validateSha1 possibleRef = maybe
     (return possibleRef)
     (const $ fail "invalid ref")
     $ find (notInClass "0-9a-f") possibleRef
 
 parseHexRef, parseBinRef :: Parser Ref
-parseHexRef = validateRef =<< take 40
-parseBinRef = validateRef =<< encode <$> take 20
+parseHexRef = validateSha1 =<< take 40
+parseBinRef = validateSha1 =<< encode <$> take 20
 
 parseBlob :: Parser Blob
 parseBlob = Blob <$> takeByteString
