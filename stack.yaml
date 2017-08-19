@@ -9,18 +9,13 @@ packages:
 - './duffer-streaming'
 - './duffer-json'
 - './ihaskell-duffer'
-- location:
-    git: https://github.com/gibiansky/IHaskell.git
-    commit: 8df923f9e556ec93103978b1f12d7124019d8767
-  extra-dep: true
-  subdirs:
-    - '.'
-    - 'ghc-parser'
-    - 'ipython-kernel'
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - pipes-zlib-0.4.4.1
+- ihaskell-0.9.0.0
+- ghc-parser-0.2.0.0
+- ipython-kernel-0.9.0.0
 
 allow-newer: true
 
