@@ -21,6 +21,7 @@ import Data.ByteString.UTF8             (fromString)
 import Data.Bool                        (bool)
 import Data.List                        (foldl')
 import Data.Map.Strict                  (Map, singleton, union, empty)
+import Numeric.Natural                  (Natural)
 
 import Prelude hiding (take, drop, head, length, concat, splitAt)
 
@@ -80,7 +81,7 @@ parse4Bytes = fromBytes <$> take 4
 parsedIndex :: ByteString -> [PackIndexEntry]
 parsedIndex = parsedOnly parsePackIndex
 
-parseVarInt :: (Bits t, Integral t) => Parser [t]
+parseVarInt :: Parser [Natural]
 parseVarInt = anyWord8 >>= \byte ->
     let value = fromIntegral $ byte .&. 127
     in (value:) <$> bool (return []) parseVarInt (testMSB byte)
@@ -88,11 +89,11 @@ parseVarInt = anyWord8 >>= \byte ->
 testMSB :: Bits t => t -> Bool
 testMSB = flip testBit 7
 
-littleEndian, bigEndian :: (Bits t, Integral t) => [t] -> t
+littleEndian, bigEndian :: [Natural] -> Natural
 littleEndian = foldr  (\a b -> a + (b `shiftL` 7)) 0
 bigEndian    = foldl' (\a b -> (a `shiftL` 7) + b) 0
 
-parseOffset :: (Bits t, Integral t) => Parser t
+parseOffset :: Parser Natural
 parseOffset = parseVarInt >>= \values -> let len = P.length values - 1 in
     return $ bigEndian values + bool
     -- I think the addition reinstates the MSBs that are otherwise
@@ -100,7 +101,7 @@ parseOffset = parseVarInt >>= \values -> let len = P.length values - 1 in
     -- integer to parse.
     0 (sum $ map (\i -> 2^(7*i)) [1..len]) (len > 0)
 
-parseTypeLen :: (Bits t, Integral t) => Parser (PackObjectType, t)
+parseTypeLen :: Parser (PackObjectType, Natural)
 parseTypeLen = anyWord8 >>= \header -> (,)
     <$> pure (packObjectType header)
     <*> (+) (fromIntegral $ header .&. 15) <$> bool
@@ -112,8 +113,8 @@ parseDeltaInstruction :: Parser DeltaInstruction
 parseDeltaInstruction = fromIntegral <$> anyWord8 >>=
     (bool parseInsertInstruction parseCopyInstruction =<< testMSB)
 
-parseInsertInstruction :: Int -> Parser DeltaInstruction
-parseInsertInstruction = fmap InsertInstruction . take
+parseInsertInstruction :: Natural -> Parser DeltaInstruction
+parseInsertInstruction = fmap InsertInstruction . take . fromIntegral
 
 parseCopyInstruction :: Bits t => t -> Parser DeltaInstruction
 parseCopyInstruction byte = CopyInstruction
@@ -172,7 +173,7 @@ parsePackRegion :: Parser PackEntry
 parsePackRegion = parsePackRegion' parseWCL
 
 parsePackRegion' :: Parser (WCL ByteString) -> Parser PackEntry
-parsePackRegion' parser = fst <$> parseTypeLen @Int >>= \case
+parsePackRegion' parser = fst <$> parseTypeLen >>= \case
     DeltaType OfsDeltaType -> UnResolved <$> parseOfsDelta   parser
     DeltaType RefDeltaType -> UnResolved <$> parseRefDelta   parser
     FullType  fType        -> Resolved   <$> parseFullObject parser fType

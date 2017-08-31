@@ -2,8 +2,9 @@ module Duffer.Pack.Bits (module Duffer.Pack.Bits) where
 
 import qualified Data.ByteString as B
 import Data.Bits
-import Data.Bool (bool)
-import Data.Word (Word8)
+import Data.Bool       (bool)
+import Data.Word       (Word8)
+import Numeric.Natural (Natural)
 
 import Duffer.Misc ((.:))
 
@@ -30,17 +31,17 @@ fromBytes = B.foldl' (\a b -> (a `shiftL` 8) + fromIntegral b) 0
  - n+1         = log128 x(r-1) + r
  - n           = floor ((log128 x(2^7-1) + 2^7) - 1)
  -}
-encodeOffset :: Int -> B.ByteString
+encodeOffset :: Natural -> B.ByteString
 encodeOffset n = let
     noTermsLog = logBase 128 (fromIntegral n * (128 - 1) + 128) :: Double
-    noTerms    = floor noTermsLog - 1
+    noTerms    = floor noTermsLog - 1 :: Int
     powers128  = map (128^) ([1..] :: [Integer])
-    remove     = sum $ take noTerms powers128 :: Integer
-    remainder  = n - fromIntegral remove :: Int
+    remove     = sum $ take noTerms powers128 :: Natural
+    remainder  = n - fromIntegral remove :: Natural
     varInt     = to7BitList remainder
     in toLittleEndian . reverse $ leftPadZeros varInt (noTerms + 1)
 
-leftPadZeros :: [Int] -> Int -> [Int]
+leftPadZeros :: [Natural] -> Int -> [Natural]
 leftPadZeros ints n
     | length ints < n = leftPadZeros (0:ints) n
     | otherwise       = ints
@@ -55,9 +56,9 @@ setMSBs (i:is) = map fromIntegral $ i : map setMSB is
 toLittleEndian :: (Bits t, Integral t) => [t] -> B.ByteString
 toLittleEndian = B.pack . reverse . setMSBs
 
-packEntryLenList :: Int -> (Int, B.ByteString)
+packEntryLenList :: Natural -> (Natural, B.ByteString)
 packEntryLenList n = let
-    rest   = fromIntegral n `shiftR` 4 :: Int
+    rest   = fromIntegral n `shiftR` 4 :: Natural
     last4  = fromIntegral n .&. 15
     last4' = bool last4 (setMSB last4) (rest > 0)
     restL  = to7BitList rest

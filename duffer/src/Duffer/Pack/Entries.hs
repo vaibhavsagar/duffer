@@ -19,6 +19,7 @@ import Data.Digest.CRC32      (crc32)
 import Data.List              (foldl')
 import Data.Map.Strict        (Map, insert, empty, foldrWithKey)
 import Data.Word              (Word8, Word32)
+import Numeric.Natural        (Natural)
 
 import Duffer.Loose.Objects (Ref)
 import Duffer.Pack.Bits
@@ -38,7 +39,7 @@ data DeltaObjectType = OfsDeltaType | RefDeltaType
 data PackObjectType = FullType FullObjectType | DeltaType DeltaObjectType
     deriving (Eq, Show)
 
-data PackDelta = OfsDelta Int (WCL Delta) | RefDelta Ref (WCL Delta)
+data PackDelta = OfsDelta Natural (WCL Delta) | RefDelta Ref (WCL Delta)
     deriving (Show, Eq)
 
 data PackedObject = PackedObject FullObjectType Ref (WCL B.ByteString)
@@ -59,11 +60,11 @@ data WCL a = WCL
     } deriving (Show, Eq, Functor)
 
 data DeltaInstruction
-    = CopyInstruction   Int Int
+    = CopyInstruction   Natural Natural
     | InsertInstruction B.ByteString
     deriving (Show, Eq)
 
-data Delta = Delta Int Int [DeltaInstruction] deriving (Show, Eq)
+data Delta = Delta Natural Natural [DeltaInstruction] deriving (Show, Eq)
 
 data CombinedMap = CombinedMap
     { getOffsetMap :: OffsetMap
@@ -104,17 +105,18 @@ instance Byteable FullObjectType where
 instance Byteable PackEntry where
     toBytes (Resolved  packedObject) = toBytes packedObject
     toBytes (UnResolved ofsD@(OfsDelta _ WCL{..})) = let
-        header = encodeTypeLen (DeltaType OfsDeltaType)
+        header = encodeTypeLen (DeltaType OfsDeltaType) . fromIntegral
             $ B.length (toBytes wclContent)
         in header `B.append` toBytes ofsD
     toBytes (UnResolved refD@(RefDelta _ WCL{..})) = let
-        header = encodeTypeLen (DeltaType RefDeltaType)
+        header = encodeTypeLen (DeltaType RefDeltaType) . fromIntegral
             $ B.length (toBytes wclContent)
         in header `B.append` toBytes refD
 
 instance Byteable PackedObject where
     toBytes (PackedObject t _ packed) = let
-        header = encodeTypeLen (FullType t) . B.length $ wclContent packed
+        header = encodeTypeLen (FullType t) . fromIntegral . B.length
+            $ wclContent packed
         in header `B.append` toBytes packed
 
 instance (Byteable a) => Byteable (WCL a) where
@@ -135,10 +137,10 @@ getCompressionLevel levelByte = case levelByte of
         156 -> defaultCompression
         _   -> error "I can't make sense of this compression level"
 
-encodeTypeLen :: PackObjectType -> Int -> B.ByteString
+encodeTypeLen :: PackObjectType -> Natural -> B.ByteString
 encodeTypeLen packObjType len = let
     (last4, rest) = packEntryLenList len
-    firstByte     = fromEnum packObjType `shiftL` 4 .|. last4
+    firstByte     = fromEnum packObjType `shiftL` 4 .|. fromIntegral last4
     firstByte'    = bool firstByte (setMSB firstByte) (rest /= B.empty)
     in B.cons (fromIntegral firstByte') rest
 
