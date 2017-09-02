@@ -24,10 +24,11 @@ install:
 
 script:
 - git repack -ad
-- stack --no-terminal --skip-ghc-check test
+- stack --no-terminal --skip-ghc-check test duffer
 - git config --local --add repack.UseDeltaBaseOffset false
 - git repack -ad
 - stack --no-terminal --skip-ghc-check test duffer
+- stack --no-terminal --skip-ghc-check test duffer-json duffer-streaming
 
 after_success:
 - bash .ci/update_pages.sh
