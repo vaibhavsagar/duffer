@@ -8,6 +8,8 @@ import Prelude hiding       (concat, take, drop)
 import Data.Bool            (bool)
 import Data.ByteString      (ByteString, concat, take, drop)
 import Data.Tuple           (swap)
+import Numeric.Natural      (Natural)
+
 import Duffer.Loose.Objects (Ref, GitObject)
 import Duffer.Pack.Parser   (hashResolved, parseResolved, parsedIndex)
 import Duffer.Pack.Entries  (WCL(..), PackDelta(..), PackEntry(..)
@@ -18,8 +20,8 @@ import Duffer.Pack.Entries  (WCL(..), PackDelta(..), PackEntry(..)
 applyInstructions :: ByteString -> [DeltaInstruction] -> ByteString
 applyInstructions source = concat . map (`applyInstruction` source)
 
-substring :: Int -> Int -> ByteString -> ByteString
-substring offset len = take len . drop offset
+substring :: Natural -> Natural -> ByteString -> ByteString
+substring offset len = take (fromIntegral len) . drop (fromIntegral offset)
 
 applyInstruction :: DeltaInstruction -> ByteString -> ByteString
 applyInstruction (CopyInstruction offset len) = substring offset len
@@ -31,21 +33,25 @@ resolve (PackedObject t _ (WCL _ source)) (WCL l (Delta _ _ is)) = let
     r        = hashResolved t resolved
     in PackedObject t r (WCL l resolved)
 
-resolveDelta :: CombinedMap -> Int -> (PackedObject, CombinedMap)
-resolveDelta combinedMap index = case getOffsetMap combinedMap IntMap.! index of
+resolveDelta :: CombinedMap -> Natural -> (PackedObject, CombinedMap)
+resolveDelta combinedMap i = case getOffsetMap combinedMap IntMap.! index of
     Resolved   object     -> (object, combinedMap)
     UnResolved unresolved -> let
         (delta, index') = case unresolved of
-            OfsDelta o d -> (d, index - o)
+            OfsDelta o d -> (d, index - fromIntegral o)
             RefDelta r d -> (d, getRefIndex combinedMap Map.! r)
-        (source, combinedMap') = resolveDelta combinedMap index'
+        (source, combinedMap') = resolveDelta combinedMap $ fromIntegral index'
         resolved = resolve source delta
         in (resolved, insertOffsetMap index (Resolved resolved) combinedMap')
-    where insertOffsetMap key value cMap = cMap
+    where
+        insertOffsetMap key value cMap = cMap
             {getOffsetMap = IntMap.insert key value $ getOffsetMap cMap}
+        index = fromIntegral i
+
 
 resolveEntry :: CombinedMap -> Ref -> Maybe GitObject
-resolveEntry combinedMap ref = unpackObject . fst . resolveDelta combinedMap <$>
+resolveEntry combinedMap ref =
+    unpackObject . fst . resolveDelta combinedMap . fromIntegral <$>
     Map.lookup ref (getRefIndex combinedMap)
 
 unpackObject :: PackedObject -> GitObject
@@ -82,8 +88,10 @@ separateResolved objectMap offsetMap = let
 
 resolveIfPossible :: ObjectMap -> Int -> PackEntry -> PackEntry
 resolveIfPossible (ObjectMap oMap oIndex) o entry = case entry of
-    UnResolved (OfsDelta o' delta) | Just base <- IntMap.lookup (o-o') oMap ->
-        Resolved $ resolve base                 delta
-    UnResolved (RefDelta r' delta) | Just offs <- Map.lookup r' oIndex      ->
-        Resolved $ resolve (oMap IntMap.! offs) delta
+    UnResolved (OfsDelta o' delta)
+        | Just base <- IntMap.lookup (o - fromIntegral o') oMap ->
+            Resolved $ resolve base                 delta
+    UnResolved (RefDelta r' delta)
+        | Just offs <- Map.lookup r' oIndex                     ->
+            Resolved $ resolve (oMap IntMap.! offs) delta
     _ -> entry

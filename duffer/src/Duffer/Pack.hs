@@ -90,7 +90,7 @@ combinedEntryMap indexPath = CombinedMap
     <*> fmap makeRefIndex (B.readFile indexPath)
 
 resolveAll :: CombinedMap -> [GitObject]
-resolveAll = go <*> (Map.elems . getRefIndex)
+resolveAll = go <*> (map fromIntegral . Map.elems . getRefIndex)
     where go _Map []     = []
           go cMap (x:xs) = let (o, cMap') = resolveDelta cMap x
             in unpackObject o : go cMap' xs
