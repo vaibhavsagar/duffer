@@ -23,6 +23,9 @@ import Duffer.JSON          (GitObjectJSON(..), RefJSON(..))
 repo :: String
 repo = "../.git"
 
+gitDir :: String
+gitDir = "GIT_DIR=" ++ repo ++ " "
+
 main :: IO ()
 main = let objectTypes = ["blob", "tree", "commit", "tag"] in
     traverse objectsOfType objectTypes >>=
@@ -52,8 +55,9 @@ roundTrip = coerce @a . fromJust . decode . encode
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
-    cmd "git rev-list --objects --all"
-    >|> "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'"
+    cmd (gitDir ++ "git rev-list --objects --all")
+    >|> (gitDir ++
+        "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'")
     >|> ("grep '^[^ ]* " ++ objectType ++ "'")
     >|> "cut -d' ' -f1"
     >>= hGetContents

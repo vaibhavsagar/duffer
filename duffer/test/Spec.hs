@@ -38,6 +38,9 @@ import Duffer.WorkObject
 repo :: String
 repo = "../.git"
 
+gitDir :: String
+gitDir = "GIT_DIR=" ++ repo ++ " "
+
 main :: IO ()
 main = do
     let objectTypes = ["blob", "tree", "commit", "tag"]
@@ -126,15 +129,16 @@ testAndWriteUnpacked indexPath = describe (show indexPath) $ do
 
 objectsOfType :: String -> IO [Ref]
 objectsOfType objectType = fmap lines $
-    cmd "git rev-list --objects --all"
-    >|> "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'"
+    cmd (gitDir ++ "git rev-list --objects --all")
+    >|> (gitDir ++
+        "git cat-file --batch-check='%(objectname) %(objecttype) %(rest)'")
     >|> ("grep '^[^ ]* " ++ objectType ++ "'")
     >|> "cut -d' ' -f1"
     >>= hGetContents
 
 allRefs :: IO [(FilePath, Ref)]
 allRefs = map ((\[p, h] -> (toString h, p)) . split 32) . lines <$>
-    (cmd "git show-ref" >>= hGetContents)
+    (cmd (gitDir ++ "git show-ref") >>= hGetContents)
 
 cmd :: String -> IO Handle
 cmd command = createProcess (shell command) {std_out = CreatePipe} >>=
