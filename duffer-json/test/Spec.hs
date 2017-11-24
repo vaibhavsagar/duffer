@@ -20,6 +20,9 @@ import Duffer.Loose.Objects (Ref)
 import Duffer.WithRepo      (withRepo)
 import Duffer.JSON          (GitObjectJSON(..), RefJSON(..))
 
+repo :: String
+repo = "../.git"
+
 main :: IO ()
 main = let objectTypes = ["blob", "tree", "commit", "tag"] in
     traverse objectsOfType objectTypes >>=
@@ -33,7 +36,7 @@ testJSON types partitionedRefs = describe "decoding and encoding" $ do
 describeDecodingEncodingAll :: String -> [Ref] -> SpecWith ()
 describeDecodingEncodingAll oType =
     it ("correctly decodes and encodes all " ++ oType ++ "s") .
-        traverse_ (decodeEncodeObject "../.git")
+        traverse_ (decodeEncodeObject repo)
 
 decodeEncodeObject :: FilePath -> Ref -> Expectation
 decodeEncodeObject path ref = withRepo path (readObject ref) >>= maybe
