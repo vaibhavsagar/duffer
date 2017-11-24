@@ -8,14 +8,10 @@ packages:
 - './duffer'
 - './duffer-streaming'
 - './duffer-json'
-- './ihaskell-duffer'
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - pipes-zlib-0.4.4.1
-- ihaskell-0.9.0.1
-- ghc-parser-0.2.0.0
-- ipython-kernel-0.9.0.0
 
 allow-newer: true
 
@@ -42,4 +38,4 @@ extra-package-dbs: []
 
 nix:
   enable: false
-  packages: [zlib, gcc, git, ncurses, pkgconfig, zeromq]
+  packages: [zlib, gcc, git, ncurses, pkgconfig]
