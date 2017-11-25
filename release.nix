@@ -1,8 +1,20 @@
 let
   pkgs       = import <nixpkgs> { };
   pipes-zlib = pkgs.haskell.lib.doJailbreak pkgs.haskellPackages.pipes-zlib;
-  produce    = path: args: pkgs.haskell.lib.dontCheck
-      (pkgs.haskellPackages.callCabal2nix (builtins.baseNameOf path) path args);
+  gitRepo    = pkgs.runCommand "gitRepo" { src = ./.; } ''
+    mkdir -p $out
+    cp -r $src/.git/* $out/
+  '';
+  testPatch  = prj: pkgs.haskell.lib.overrideCabal prj (oldDrv: {
+    testSystemDepends = (oldDrv.testSystemDepends or []) ++ [ pkgs.git ];
+    postPatch = ''
+      original="$(${pkgs.gnugrep}/bin/grep "repo =" ./test/Spec.hs)"
+      replacement='repo = "${gitRepo}"'
+      substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
+    '';
+  });
+  produce    = path: args: testPatch
+    (pkgs.haskellPackages.callCabal2nix (builtins.baseNameOf path) path args);
 
 in rec {
   duffer           = produce ./duffer           {};
