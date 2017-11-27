@@ -13,8 +13,9 @@ let
       substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
     '';
   });
-  produce    = path: args: testPatch
-    (pkgs.haskellPackages.callCabal2nix (builtins.baseNameOf path) path args);
+  produce    = path: args: let
+    drv = testPatch (pkgs.haskellPackages.callCabal2nix (builtins.baseNameOf path) path args);
+  in if pkgs.lib.inNixShell then drv.env else drv;
 
 in rec {
   duffer           = produce ./duffer           {};
