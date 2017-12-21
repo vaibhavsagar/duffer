@@ -18,6 +18,7 @@ import Test.Hspec                 (hspec, expectationFailure, parallel, describe
                                   ,Expectation, SpecWith)
 import Test.Hspec.QuickCheck      (prop)
 import Test.QuickCheck            (Arbitrary(..), oneof)
+import Test.QuickCheck.Instances  ()
 
 import Prelude hiding (lines, readFile)
 

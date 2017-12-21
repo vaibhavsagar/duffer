@@ -69,6 +69,7 @@ test-suite duffer-test
                      , filepath
                      , hspec
                      , process
+                     , quickcheck-instances
                      , transformers
                      , utf8-string
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
