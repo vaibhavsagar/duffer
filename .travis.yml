@@ -30,5 +30,4 @@ script:
 - stack --no-terminal --skip-ghc-check test duffer-json duffer-streaming
 
 after_success:
-- stack install pandoc --fast
 - bash .ci/update_pages.sh
