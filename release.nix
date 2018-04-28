@@ -13,12 +13,17 @@ let
       substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
     '';
   });
-  produce    = path: args: let
-    drv = testPatch (pkgs.haskellPackages.callCabal2nix (builtins.baseNameOf path) path args);
-  in if pkgs.lib.inNixShell then drv.env else drv;
+  haskellPackages = pkgs.haskellPackages.extend (self: super: let
+    produce    = path: args: let
+      drv = testPatch (self.callCabal2nix (builtins.baseNameOf path) path args);
+    in if pkgs.lib.inNixShell then drv.env else drv;
+  in {
+    bytestring-tree-builder = pkgs.haskell.lib.doJailbreak super.bytestring-tree-builder;
+    duffer = produce ./duffer {};
+    duffer-json = produce ./duffer-json {};
+    duffer-streaming = produce ./duffer-streaming {};
+  });
 
-in rec {
-  duffer           = produce ./duffer           {};
-  duffer-json      = produce ./duffer-json      { inherit duffer; };
-  duffer-streaming = produce ./duffer-streaming { inherit duffer pipes-zlib; };
+in with haskellPackages; {
+  inherit duffer duffer-json duffer-streaming;
 }
