@@ -9,7 +9,9 @@ let
     testSystemDepends = (oldDrv.testSystemDepends or []) ++ [ pkgs.git ];
     postPatch = ''
       original="$(${pkgs.gnugrep}/bin/grep "repo =" ./test/Spec.hs)"
-      replacement='repo = "${gitRepo}"'
+      gitDir=$(${pkgs.coreutils}/bin/mktemp -d)
+      cp -r ${gitRepo}/* $gitDir/
+      replacement="repo = \"$gitDir\""
       substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
     '';
   });
