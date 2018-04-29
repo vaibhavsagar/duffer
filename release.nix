@@ -11,6 +11,7 @@ let
       original="$(${pkgs.gnugrep}/bin/grep "repo =" ./test/Spec.hs)"
       gitDir=$(${pkgs.coreutils}/bin/mktemp -d)
       cp -r ${gitRepo}/* $gitDir/
+      ${pkgs.coreutils}/bin/chmod -R 0755 $gitDir
       replacement="repo = \"$gitDir\""
       substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
     '';
