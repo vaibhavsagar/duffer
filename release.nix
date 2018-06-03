@@ -17,7 +17,7 @@ let
     '';
   });
   haskellPackages = pkgs.haskellPackages.extend (self: super: let
-    produce    = path: args: let
+    produce = path: args: let
       drv = testPatch (self.callCabal2nix (builtins.baseNameOf path) path args);
     in if pkgs.lib.inNixShell then drv.env else drv;
   in {
