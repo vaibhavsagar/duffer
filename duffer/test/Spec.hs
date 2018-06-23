@@ -158,8 +158,8 @@ readHashObject path sha1 = withRepo path (readObject sha1) >>= maybe
 
 readHashWorkObject :: FilePath -> Ref -> Expectation
 readHashWorkObject path sha1 = withRepo path (workObject sha1) >>= maybe
-  (failureNotFound $ toString sha1)
-  (\object -> hashWorkObject object `shouldBe` sha1)
+    (failureNotFound $ toString sha1)
+    (\object -> hashWorkObject object `shouldBe` sha1)
 
 failureNotFound :: String -> Expectation
 failureNotFound string = expectationFailure $ string ++ " not found"
