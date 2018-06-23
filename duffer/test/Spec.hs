@@ -15,7 +15,7 @@ import System.Process             (CreateProcess(..), StdStream(..)
                                   ,createProcess, shell)
 import Test.Hspec                 (hspec, expectationFailure, parallel, describe
                                   ,it, runIO, shouldBe, shouldMatchList
-                                  ,Expectation, SpecWith)
+                                  ,Expectation, SpecWith, Spec)
 import Test.Hspec.QuickCheck      (prop)
 import Test.QuickCheck            (Arbitrary(..), oneof)
 import Test.QuickCheck.Instances  ()
@@ -69,7 +69,7 @@ instance Arbitrary TestPackObjectType where
         , DeltaType RefDeltaType
         ]
 
-testEncodingAndParsing :: SpecWith ()
+testEncodingAndParsing :: Spec
 testEncodingAndParsing = describe "integer encodings" $ do
     prop "offsets" $ \offset -> let
         encoded = encodeOffset offset
@@ -80,32 +80,32 @@ testEncodingAndParsing = describe "integer encodings" $ do
         decoded = either error id $ parseOnly parseTypeLen encoded
         in decoded == (innerPackObject objType, len :: Natural)
 
-testUnpackingAndWriting :: [FilePath] -> SpecWith ()
+testUnpackingAndWriting :: [FilePath] -> Spec
 testUnpackingAndWriting = describe "unpacking packfiles" .
     traverse_ testAndWriteUnpacked
 
-testReading :: String -> [String] -> [[Ref]] -> SpecWith ()
+testReading :: String -> [String] -> [[Ref]] -> Spec
 testReading status types = describe ("reading " ++ status ++ " objects") .
     zipWithM_ describeReadingAll types
 
-describeReadingAll :: String -> [Ref] -> SpecWith ()
+describeReadingAll :: String -> [Ref] -> Spec
 describeReadingAll oType =
     readAll ("correctly parses and hashes all " ++ oType ++ "s")
     where readAll desc os = it desc (traverse_ (readHashObject repo) os)
 
 
-testWorkTrees :: [Ref] -> SpecWith ()
+testWorkTrees :: [Ref] -> Spec
 testWorkTrees refs = describe "work trees" . it "reads and hashes WorkObjects" $
     traverse_ (readHashWorkObject repo) refs
 
-testRefs :: [(FilePath, Ref)] -> SpecWith ()
+testRefs :: [(FilePath, Ref)] -> Spec
 testRefs refsOutput = describe "reading refs" .
     it "correctly reads refs" $ traverse_ (checkRef repo) refsOutput
     where checkRef repo (path, ref) = withRepo repo (readRef path) >>= maybe
             (failureNotFound path)
             (`shouldBe` ref)
 
-testAndWriteUnpacked :: FilePath -> SpecWith ()
+testAndWriteUnpacked :: FilePath -> Spec
 testAndWriteUnpacked indexPath = describe (show indexPath) $ do
     index    <- runIO $ parsedIndex <$> readFile indexPath
     entryMap <- runIO $ indexedEntryMap          indexPath
