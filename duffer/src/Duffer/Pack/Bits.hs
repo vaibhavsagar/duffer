@@ -44,7 +44,7 @@ encodeOffset n = let
 
 leftPadZeros :: [Natural] -> Int -> [Natural]
 leftPadZeros ints n
-    | length ints < n = leftPadZeros (0:ints) n
+    | length ints < n = replicate (n - length ints) 0 ++ ints
     | otherwise       = ints
 
 setMSB :: Bits t => t -> t
