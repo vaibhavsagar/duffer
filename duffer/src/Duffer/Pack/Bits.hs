@@ -3,16 +3,17 @@ module Duffer.Pack.Bits (module Duffer.Pack.Bits) where
 import qualified Data.ByteString as B
 import Data.Bits
 import Data.Bool       (bool)
+import qualified Data.DList as D
 import Data.Word       (Word8)
 import Numeric.Natural (Natural)
 
 import Duffer.Misc ((.:))
 
 toBitList :: (Bits t, Integral t) => Int -> t -> [t]
-toBitList = reverse .: go
+toBitList = D.toList .: go
     where go some n = case divMod n (bit some) of
-            (0, i) -> [fromIntegral i]
-            (x, y) ->  fromIntegral y : go some x
+            (0, i) -> D.singleton $      fromIntegral i
+            (x, y) -> go some x `D.snoc` fromIntegral y
 
 toByteList, to7BitList :: (Bits t, Integral t) => t -> [t]
 toByteList = toBitList 8

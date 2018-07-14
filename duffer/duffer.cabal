@@ -39,6 +39,7 @@ library
                      , cryptonite
                      , digest
                      , directory
+                     , dlist
                      , filepath
                      , memory
                      , mmap
