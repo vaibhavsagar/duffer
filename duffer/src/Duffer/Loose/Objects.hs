@@ -11,7 +11,7 @@ import qualified ByteString.TreeBuilder as TB
 import qualified Data.ByteString.UTF8   as UB (toString)
 
 import Crypto.Hash             (hashWith)
-import Crypto.Hash.Algorithms  (SHA1)
+import Crypto.Hash.Algorithms  (SHA1(SHA1))
 import Data.Bool               (bool)
 import Data.ByteArray.Encoding (Base(Base16), convertToBase)
 import Data.Byteable           (Byteable(toBytes))
@@ -173,7 +173,7 @@ showContent gitObject = case gitObject of
     where (?) key value = mconcat $ map TB.byteString [key, " ", value, "\n"]
 
 hashSHA1 :: B.ByteString -> Ref
-hashSHA1 = convertToBase Base16 . hashWith (undefined :: SHA1)
+hashSHA1 = convertToBase Base16 . hashWith SHA1
 
 hash :: GitObject -> Ref
 hash = hashSHA1 . toBytes
