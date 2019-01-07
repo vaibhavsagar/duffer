@@ -7,7 +7,7 @@ let
   '';
   testPatch  = prj: pkgs.haskell.lib.overrideCabal prj (oldDrv: {
     testSystemDepends = (oldDrv.testSystemDepends or []) ++ [ pkgs.git ];
-    postPatch = ''
+    postPatch = if pkgs.lib.inNixShell then "" else ''
       original="$(${pkgs.gnugrep}/bin/grep "repo =" ./test/Spec.hs)"
       gitDir=$(${pkgs.coreutils}/bin/mktemp -d)
       cp -r ${gitRepo}/* $gitDir/
@@ -15,11 +15,12 @@ let
       replacement="repo = \"$gitDir\""
       substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
     '';
+    checkPhase = if pkgs.lib.inNixShell then ":" else oldDrv.checkPhase;
   });
   haskellPackages = pkgs.haskellPackages.extend (self: super: let
     produce = path: args: let
       drv = testPatch (self.callCabal2nix (builtins.baseNameOf path) path args);
-    in if pkgs.lib.inNixShell then drv.env else drv;
+    in drv;
   in {
     bytestring-tree-builder = pkgs.haskell.lib.doJailbreak super.bytestring-tree-builder;
     duffer = produce ./duffer {};
