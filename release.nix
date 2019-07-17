@@ -22,7 +22,6 @@ let
       drv = testPatch (self.callCabal2nix (builtins.baseNameOf path) path args);
     in drv;
   in {
-    bytestring-tree-builder = pkgs.haskell.lib.doJailbreak super.bytestring-tree-builder;
     duffer = produce ./duffer {};
     duffer-json = produce ./duffer-json {};
     duffer-streaming = produce ./duffer-streaming {};
