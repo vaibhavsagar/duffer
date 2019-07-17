@@ -1,7 +1,6 @@
 let
-  pkgs       = import <nixpkgs> { };
-  pipes-zlib = pkgs.haskell.lib.doJailbreak pkgs.haskellPackages.pipes-zlib;
-  gitRepo    = pkgs.runCommand "gitRepo" { src = ./.; } ''
+  pkgs = import <nixpkgs> { };
+  gitRepo = pkgs.runCommand "gitRepo" { src = ./.; } ''
     mkdir -p $out
     cp -r $src/.git/* $out/
   '';
@@ -15,7 +14,7 @@ let
       replacement="repo = \"$gitDir\""
       substituteInPlace ./test/Spec.hs --replace "$original" "$replacement"
     '';
-    checkPhase = if pkgs.lib.inNixShell then ":" else oldDrv.checkPhase;
+    checkPhase = if pkgs.lib.inNixShell then ":" else (oldDrv.checkPhase or null);
   });
   haskellPackages = pkgs.haskellPackages.extend (self: super: let
     produce = path: args: let
