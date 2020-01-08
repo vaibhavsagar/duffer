@@ -34,10 +34,10 @@ newtype TreeEntryJSON  = TreeEntryJSON  TreeEntry deriving (Eq, Ord)
 newtype PersonTimeJSON = PersonTimeJSON PersonTime
 
 b64encode :: B.ByteString -> T.Text
-b64encode = E.decodeUtf8 . B64.encode
+b64encode = B64.encodeBase64
 
 b64decode :: T.Text -> B.ByteString
-b64decode = B64.decodeLenient . E.encodeUtf8
+b64decode = B64.decodeBase64Lenient . E.encodeUtf8
 
 decodeRef :: Ref -> T.Text
 decodeRef = E.decodeUtf8
