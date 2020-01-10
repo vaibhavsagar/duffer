@@ -5,8 +5,8 @@ let
     cp -r $src/.git/* $out/
   '';
   base64-src = builtins.fetchTarball {
-    url = "https://github.com/emilypi/base64/tarball/fab53ab62e115bf21986e91ee539ea8764db9a7a";
-    sha256 = "1d7pv6fp3m3ny7iayzss6iqyp0jd1sd5w11pviy8sn112vbmjj52";
+    url = "https://github.com/emilypi/base64/tarball/0fb0ff3043110bcbee6e50788bfba1c0db8549c4";
+    sha256 = "1q5qhk3b6hfcwimxnra2xyzixgnkfgiy7gizg6j624n4ghq3y474";
   };
   testPatch  = prj: pkgs.haskell.lib.overrideCabal prj (oldDrv: {
     testSystemDepends = (oldDrv.testSystemDepends or []) ++ [ pkgs.git ];
